@@ -1,0 +1,23 @@
+{%- doc -%}
+  Prints one `"<kind>:<id>": {url, title, image}` entry (with a trailing comma)
+  for a resource the menu links to, resolved by Shopify from its reference.
+  Prints nothing when the resource no longer exists or isn't published.
+  @param {string} kind - collection, product, page or article.
+  @param {object} object - The referenced resource.
+{%- enddoc -%}
+{%- if object -%}
+  {%- liquid
+    assign image = nil
+    case kind
+      when 'collection', 'product'
+        assign image = object.featured_image
+      when 'article'
+        assign image = object.image
+    endcase
+  -%}
+  {{ kind | append: ':' | append: object.id | json }}: {
+    "url": {{ object.url | json }},
+    "title": {{ object.title | json }}
+    {%- if image %}, "image": {{ image | image_url: width: 600 | json }}{% endif %}
+  },
+{%- endif -%}

@@ -1,0 +1,953 @@
+/* Full-screen canvas editor (inside an App Bridge max modal). Admin-like colors and spacing. */
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: #f1f1f1;
+}
+.cve {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr) 340px;
+  grid-template-rows: 56px minmax(0, 1fr);
+  height: 100vh;
+  font:
+    13px/1.4 -apple-system,
+    BlinkMacSystemFont,
+    "San Francisco",
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  color: #303030;
+}
+.cve__bar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 16px;
+  background: #fff;
+  border-bottom: 1px solid #e3e3e3;
+}
+.cve__title,
+.cve__tools,
+.cve__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cve__sep {
+  width: 1px;
+  height: 24px;
+  background: #e3e3e3;
+  margin: 0 4px;
+}
+.cve__zoom {
+  min-width: 52px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+.cve__zoom:hover {
+  background: #f1f1f1;
+}
+
+.cve__left,
+.cve__right {
+  overflow: auto;
+  background: #fff;
+}
+.cve__left {
+  border-right: 1px solid #e3e3e3;
+}
+.cve__right {
+  border-left: 1px solid #e3e3e3;
+  padding: 16px;
+}
+.cve__tabs {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: #fff;
+  border-bottom: 1px solid #e3e3e3;
+}
+.cve__tabs button {
+  padding: 12px 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font: inherit;
+  font-weight: 550;
+  color: #616161;
+  cursor: pointer;
+}
+.cve__tabs button[aria-selected="true"] {
+  color: #303030;
+  border-bottom-color: #303030;
+}
+.cve__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 16px 14px 24px;
+}
+.cve__group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cve__group + .cve__group {
+  padding-top: 18px;
+  border-top: 1px solid #ebebeb;
+}
+.cve__group-title {
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.2px;
+  color: #303030;
+}
+.cve__tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.cve__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #e3e3e3;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+  text-align: center;
+  cursor: grab;
+}
+.cve__tile:hover {
+  border-color: #8a8a8a;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+.cve__tile:active {
+  cursor: grabbing;
+}
+.cve__tile:focus-visible {
+  outline: 2px solid #005bd3;
+  outline-offset: 1px;
+}
+
+.cve__layers {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cve__layer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  border-radius: 8px;
+}
+.cve__layer:hover {
+  background: #f6f6f6;
+}
+.cve__layer.is-selected {
+  background: #e3f1ff;
+}
+.cve__layer.is-hidden .cve__layer-name {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+.cve__layer-input {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 6px;
+  border: 1px solid #005bd3;
+  border-radius: 6px;
+  font: inherit;
+}
+.cve__layer-toggle {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  opacity: 0;
+}
+.cve__layer:hover .cve__layer-toggle,
+.cve__layer-toggle:focus-visible,
+.cve__layer-toggle.is-on {
+  opacity: 1;
+}
+.cve__layer-toggle:hover {
+  background: #ebebeb;
+}
+.cve__layer-fold {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.cve__layer-name {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 4px;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.cve__stage {
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 24px 48px;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.08) 1px, transparent 0) 0
+      0 / 16px 16px,
+    #f1f1f1;
+}
+/* The phone screen: fixed to the chosen device, the canvas scrolls inside. */
+.cve__screen {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 20px;
+  background: #fff;
+  scrollbar-width: thin;
+}
+.cve__phone {
+  flex: none;
+  padding: 10px;
+  border-radius: 30px;
+  background: #1a1a1a;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+}
+.cve__hint {
+  margin: 16px 0 0;
+  color: #8a8a8a;
+  font-size: 12px;
+  text-align: center;
+}
+
+.cve-canvas {
+  position: relative;
+  overflow: visible;
+  border-radius: 20px;
+  background: #fff;
+}
+.cve-canvas__scale {
+  position: relative;
+  transform-origin: 0 0;
+}
+.cve-canvas__render {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 20px;
+}
+.cve-canvas__layer {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+}
+.cve-canvas__layer.is-dropping {
+  outline: 2px dashed #005bd3;
+  outline-offset: -2px;
+  background: rgba(0, 91, 211, 0.04);
+}
+.cve-canvas__layer.is-busy {
+  cursor: grabbing;
+}
+.cve-canvas__layer.is-editing {
+  pointer-events: none;
+}
+.cve-box {
+  position: absolute;
+  pointer-events: none;
+}
+.cve-box.is-hover {
+  outline: 1.5px solid rgba(0, 91, 211, 0.6);
+}
+.cve-box.is-parent {
+  outline: 1px dashed rgba(0, 91, 211, 0.55);
+}
+.cve-box.is-target {
+  outline: 2px solid #005bd3;
+  background: rgba(0, 91, 211, 0.06);
+}
+.cve-box.is-selected {
+  outline: 2px solid #005bd3;
+}
+.cve-box.is-member {
+  outline: 1px solid #005bd3;
+}
+.cve-marquee {
+  position: absolute;
+  pointer-events: none;
+  border: 1px solid #005bd3;
+  background: rgba(0, 91, 211, 0.08);
+}
+.cve-align {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid #e3e3e3;
+  border-radius: 10px;
+}
+.cve-align__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: #303030;
+  cursor: pointer;
+}
+.cve-align__button:hover:not(:disabled) {
+  background: #f1f1f1;
+}
+.cve-align__button:disabled {
+  color: #b5b5b5;
+  cursor: default;
+}
+.cve-align__sep {
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: #e3e3e3;
+}
+.cve-box.is-hidden {
+  opacity: 0.4;
+  outline-style: dashed;
+}
+.cve-box__size {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  translate: -50% 0;
+  transform-origin: top center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #005bd3;
+  color: #fff;
+  font-size: 11px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.cve-handle {
+  pointer-events: auto;
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  margin: -5px;
+  border: 1.5px solid #005bd3;
+  border-radius: 2px;
+  background: #fff;
+}
+.cve-handle--nw {
+  top: 0;
+  left: 0;
+  cursor: nwse-resize;
+}
+.cve-handle--n {
+  top: 0;
+  left: 50%;
+  cursor: ns-resize;
+}
+.cve-handle--ne {
+  top: 0;
+  left: 100%;
+  cursor: nesw-resize;
+}
+.cve-handle--e {
+  top: 50%;
+  left: 100%;
+  cursor: ew-resize;
+}
+.cve-handle--se {
+  top: 100%;
+  left: 100%;
+  cursor: nwse-resize;
+}
+.cve-handle--s {
+  top: 100%;
+  left: 50%;
+  cursor: ns-resize;
+}
+.cve-handle--sw {
+  top: 100%;
+  left: 0;
+  cursor: nesw-resize;
+}
+.cve-handle--w {
+  top: 50%;
+  left: 0;
+  cursor: ew-resize;
+}
+.cve-guide {
+  position: absolute;
+  pointer-events: none;
+  border: 0 solid #e5137e;
+  z-index: 9999;
+}
+.cve-guide--x {
+  top: -2000px;
+  bottom: -2000px;
+  width: 0;
+  border-left-style: solid;
+}
+.cve-guide--y {
+  left: -2000px;
+  right: -2000px;
+  height: 0;
+  border-top-style: solid;
+}
+.cve-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #8a8a8a;
+  font-size: 14px;
+  pointer-events: none;
+}
+.cve-canvas__height {
+  position: absolute;
+  left: 50%;
+  bottom: -14px;
+  width: 44px;
+  height: 22px;
+  margin-left: -22px;
+  border: 1px solid #c9c9c9;
+  border-radius: 11px;
+  background: #fff;
+  font-size: 13px;
+  line-height: 1;
+  cursor: ns-resize;
+  transform-origin: center;
+  touch-action: none;
+}
+
+/* Element tiles: a live preview (rendered at 280px, shown at half size) + label. */
+.cve__tile-preview {
+  position: relative;
+  display: block;
+  height: 86px;
+  overflow: hidden;
+  background: #f6f6f7;
+  border-bottom: 1px solid #ebebeb;
+  pointer-events: none;
+}
+.cve__tile-scale {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: block;
+  overflow: hidden;
+  transform-origin: center;
+}
+.cve__tile-label {
+  display: block;
+  padding: 8px 8px 9px;
+  font-size: 12px;
+  font-weight: 550;
+  text-align: center;
+  color: #303030;
+}
+
+/* Templates tab */
+.cve__templates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.cve__template {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid #e3e3e3;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+.cve__template:hover {
+  border-color: #8a8a8a;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.cve__template:focus-visible {
+  outline: 2px solid #005bd3;
+  outline-offset: 1px;
+}
+.cve__template-preview {
+  display: flex;
+  justify-content: center;
+  height: 190px;
+  overflow: hidden;
+  padding-top: 8px;
+  background: #f1f1f1;
+  pointer-events: none;
+}
+
+/* Hover preview next to the Elements panel */
+.cve-hover {
+  position: fixed;
+  left: 312px;
+  z-index: 50;
+  width: 400px;
+  overflow: hidden;
+  border: 1px solid #e3e3e3;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+  pointer-events: none;
+  animation: cve-hover-in 0.14s ease-out;
+}
+@keyframes cve-hover-in {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.cve-hover__head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px 10px;
+}
+.cve-hover__head strong {
+  font-size: 14px;
+  color: #303030;
+}
+.cve-hover__head span {
+  font-size: 12.5px;
+  color: #616161;
+  line-height: 1.4;
+}
+.cve-hover__preview {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.07) 1px, transparent 0) 0
+      0 / 14px 14px,
+    #f6f6f7;
+}
+.cve-hover__foot {
+  padding: 8px 16px 10px;
+  font-size: 11.5px;
+  color: #8a8a8a;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* Distances to the parent's edges while dragging (Figma's red measurements). */
+.cve-distance {
+  position: absolute;
+  pointer-events: none;
+  z-index: 9999;
+  border: 0 solid #f24822;
+}
+.cve-distance--x {
+  height: 0;
+  border-top-style: solid;
+}
+.cve-distance--y {
+  width: 0;
+  border-left-style: solid;
+}
+.cve-distance__label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: #f24822;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  white-space: nowrap;
+}
+.cve-distance--y > .cve-distance__label {
+  left: 0;
+}
+.cve-distance--x > .cve-distance__label {
+  top: 0;
+}
+
+/* Right-click menu and quick insert, styled like the admin's popovers. */
+.cve-menu {
+  position: fixed;
+  z-index: 10000;
+  min-width: 230px;
+  max-width: 280px;
+  padding: 6px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.16),
+    0 0 0 1px rgba(0, 0, 0, 0.06);
+  font-size: 13px;
+}
+.cve-menu__item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: #303030;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.cve-menu__item:hover,
+.cve-menu__item:focus-visible {
+  background: #f1f1f1;
+  outline: none;
+}
+.cve-menu__item:disabled {
+  color: #b5b5b5;
+  cursor: default;
+  background: none;
+}
+.cve-menu__item.is-critical {
+  color: #c70a24;
+}
+.cve-menu__keys {
+  color: #8a8a8a;
+  font-size: 12px;
+}
+.cve-menu__sep {
+  height: 1px;
+  margin: 5px 4px;
+  background: #ebebeb;
+}
+.cve-menu__results {
+  display: flex;
+  flex-direction: column;
+  max-height: 300px;
+  margin-top: 6px;
+  overflow: auto;
+}
+.cve-menu__group {
+  color: #8a8a8a;
+  font-size: 12px;
+}
+
+/* Template preview: a bar above the phone to use or cancel the template. */
+.cve-preview-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: -12px 0 16px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+.cve__template.is-previewing {
+  outline: 2px solid #005bd3;
+  outline-offset: 2px;
+}
+
+/* Layer box: pressed alignment toggles and the four padding fields. */
+.cve-align__button[aria-pressed="true"] {
+  background: #e3f1ff;
+  color: #005bd3;
+}
+.cve-padding {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+/* Edit / Preview switch above the phone. */
+.cve-mode {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: -16px 0 14px;
+}
+/* Sub-menu breadcrumbs: back to the menu that opens this one. */
+.cve-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  max-width: 520px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
+  font-size: 13px;
+  color: #616161;
+}
+.cve-crumbs__back {
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: #1a1a1a;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cve-crumbs__back:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.cve-crumbs__step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.cve-crumbs__step button {
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: #005bd3;
+  font: inherit;
+  cursor: pointer;
+}
+.cve-crumbs__step button:hover {
+  background: #e3f1ff;
+}
+.cve-crumbs__step .is-current {
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+/* Items panel of smart lists. */
+.cve-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cve-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid #e3e3e3;
+  border-radius: 10px;
+  background: #fff;
+}
+.cve-item.is-selected {
+  border-color: #005bd3;
+  box-shadow: 0 0 0 1px #005bd3;
+}
+.cve-item__main {
+  display: grid;
+  grid-template-columns: auto 36px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+.cve-item__thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: #f1f1f1;
+}
+.cve-item__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+.cve-item__link {
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: #616161;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.cve-item__link:hover {
+  color: #005bd3;
+  text-decoration: underline;
+}
+.cve-item__actions {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Menu tab: the menu as a tree. */
+.cve-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+}
+.cve-tree__note {
+  margin: 0;
+  color: #616161;
+}
+.cve-tree__title {
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+.cve-tree__level {
+  margin: 0;
+  padding: 0 0 0 10px;
+  list-style: none;
+  border-left: 1px solid #e3e3e3;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cve-tree__list {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0;
+  color: #616161;
+  font-weight: 600;
+}
+.cve-tree__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+}
+.cve-tree__name {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.cve-tree__name > span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.cve-tree__name:hover {
+  background: #f1f1f1;
+}
+.cve-tree__name > .cve-tree__link {
+  color: #8a8a8a;
+  font-size: 12px;
+}
+.cve-tree__action {
+  flex: none;
+  padding: 3px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: #005bd3;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cve-tree__action:hover {
+  background: #e3f1ff;
+}
+
+/* Spacing between smart-list items while one is selected. */
+.cve-gap {
+  position: absolute;
+  pointer-events: none;
+  z-index: 9998;
+  background: rgba(242, 72, 34, 0.18);
+}
+.cve-gap__label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: #f24822;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+/* A sub-menu's back bar above its canvas (click to restyle). */
+.cve-backbar {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  outline: 1px solid transparent;
+  outline-offset: -1px;
+}
+.cve-backbar:hover {
+  outline-color: rgba(0, 91, 211, 0.6);
+}
+.cve-backbar.is-selected {
+  outline: 2px solid #005bd3;
+  outline-offset: -2px;
+}

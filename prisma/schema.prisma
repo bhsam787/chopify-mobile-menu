@@ -9,26 +9,74 @@ generator client {
 // enough when changing adapters.
 // See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
 datasource db {
-  provider = "sqlite"
-  url      = "file:dev.sqlite"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Session {
-  id            String    @id
-  shop          String
-  state         String
-  isOnline      Boolean   @default(false)
-  scope         String?
-  expires       DateTime?
-  accessToken   String
-  userId        BigInt?
-  firstName     String?
-  lastName      String?
-  email         String?
-  accountOwner  Boolean   @default(false)
-  locale        String?
-  collaborator  Boolean?  @default(false)
-  emailVerified Boolean?  @default(false)
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
   refreshToken        String?
   refreshTokenExpires DateTime?
+}
+
+enum Plan {
+  FREE
+  PRO
+}
+
+/// One row per installed shop. Every app-owned row hangs off this.
+model Shop {
+  id            String    @id @default(cuid())
+  shop          String    @unique /// myshopify domain
+  plan          Plan      @default(FREE)
+  isDevStore    Boolean   @default(false)
+  installedAt   DateTime  @default(now())
+  uninstalledAt DateTime?
+  updatedAt     DateTime  @updatedAt
+  menus         Menu[]
+}
+
+/// A menu design. `draft` is the full editor state; `published` is the
+/// compiled JSON last written to the storefront metafield.
+model Menu {
+  id            String        @id @default(cuid())
+  shopId        String
+  shop          Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name          String
+  schemaVersion Int
+  draft         Json
+  published     Json?
+  publishedAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  versions      MenuVersion[]
+
+  @@index([shopId])
+}
+
+/// Snapshot of a menu's design, taken on every publish, for restore.
+model MenuVersion {
+  id        String   @id @default(cuid())
+  menuId    String
+  menu      Menu     @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  design    Json
+  label     String?
+  createdAt DateTime @default(now())
+
+  @@index([menuId, createdAt])
 }

@@ -1,0 +1,9 @@
+{
+  "embed": {
+    "name": "Mobile menu",
+    "trigger_selector": {
+      "label": "Menu button selector (advanced)",
+      "info": "Leave empty. Only needed if your theme's menu button isn't detected automatically."
+    }
+  }
+}

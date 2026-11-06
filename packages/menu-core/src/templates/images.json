@@ -1,0 +1,513 @@
+[
+  {
+    "name": "fashion/bestsellers",
+    "prompt": "navy wool suit jacket on a wooden hanger, plain light grey background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#d9dde3",
+    "file": "fashion/bestsellers.webp",
+    "source": "generated"
+  },
+  {
+    "name": "fashion/shirts",
+    "prompt": "crisp white dress shirt on a hanger, plain light grey background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#e6e6e6",
+    "file": "fashion/shirts.webp",
+    "source": "generated"
+  },
+  {
+    "name": "fashion/suits",
+    "prompt": "navy blue double-breasted suit jacket on a hanger, light grey background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#cfd6df",
+    "file": "fashion/suits.webp",
+    "source": "generated"
+  },
+  {
+    "name": "fashion/trousers",
+    "prompt": "pair of tailored charcoal trousers hanging, light grey background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#d6d6d6",
+    "file": "fashion/trousers.webp",
+    "source": "generated"
+  },
+  {
+    "name": "fashion/jeans",
+    "prompt": "folded dark indigo denim jeans, light grey background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#c9d0da",
+    "file": "fashion/jeans.webp",
+    "source": "generated"
+  },
+  {
+    "name": "fashion/chinos",
+    "prompt": "folded beige chino trousers, light grey background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#e3dccf",
+    "file": "fashion/chinos.webp",
+    "source": "generated"
+  },
+  {
+    "name": "fashion/tshirts",
+    "prompt": "stack of folded white and grey t-shirts, light grey background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#e8e8e8",
+    "file": "fashion/tshirts.webp",
+    "source": "generated"
+  },
+  {
+    "name": "fashion/knitwear",
+    "prompt": "folded black merino turtleneck sweater, light grey background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#cfcfcf",
+    "file": "fashion/knitwear.webp",
+    "source": "generated"
+  },
+  {
+    "name": "fashion/jackets",
+    "prompt": "grey checked wool blazer on a hanger, light grey background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#d5d5d2",
+    "file": "fashion/jackets.webp",
+    "source": "generated"
+  },
+  {
+    "name": "fashion/outlet",
+    "prompt": "light beige linen blazer on a hanger, light grey background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#e8e1d4",
+    "file": "fashion/outlet.webp",
+    "source": "generated"
+  },
+  {
+    "name": "fashion/look-wedding-guest",
+    "prompt": "light blue three-piece suit with brown tie on a mannequin torso, studio, soft shadows, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#cbd8e6",
+    "file": "fashion/look-wedding-guest.webp",
+    "source": "generated"
+  },
+  {
+    "name": "fashion/look-groom",
+    "prompt": "navy three-piece wedding suit with white shirt on a mannequin torso, studio, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#c3cad6",
+    "file": "fashion/look-groom.webp",
+    "source": "generated"
+  },
+  {
+    "name": "fashion/look-business",
+    "prompt": "charcoal business suit with white shirt and dark tie on a mannequin torso, studio, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#cfd2d6",
+    "file": "fashion/look-business.webp",
+    "source": "generated"
+  },
+  {
+    "name": "fashion/look-gala",
+    "prompt": "lilac tuxedo jacket with black bow tie on a mannequin torso, studio, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#d9d0e3",
+    "file": "fashion/look-gala.webp",
+    "source": "generated"
+  },
+  {
+    "name": "fashion/look-smart-casual",
+    "prompt": "olive green blazer over white t-shirt with jeans, flat lay, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#d2d6c8",
+    "file": "fashion/look-smart-casual.webp",
+    "source": "generated"
+  },
+  {
+    "name": "fashion/look-summer",
+    "prompt": "cream linen suit with light shirt on a mannequin torso, bright studio, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#ece6da",
+    "file": "fashion/look-summer.webp",
+    "source": "generated"
+  },
+  {
+    "name": "fashion/jacket-classic",
+    "prompt": "navy single-breasted blazer on a hanger, white background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#d5dbe3",
+    "file": "fashion/jacket-classic.webp",
+    "source": "generated"
+  },
+  {
+    "name": "fashion/jacket-clean",
+    "prompt": "minimal navy blazer without lapel stitching on a hanger, white background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#d7dce4",
+    "file": "fashion/jacket-clean.webp",
+    "source": "generated"
+  },
+  {
+    "name": "fashion/jacket-double",
+    "prompt": "navy double-breasted blazer on a hanger, white background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#d3d9e2",
+    "file": "fashion/jacket-double.webp",
+    "source": "generated"
+  },
+  {
+    "name": "fashion/smoking",
+    "prompt": "light grey tuxedo jacket on a hanger, white background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#dfe1e4",
+    "file": "fashion/smoking.webp",
+    "source": "generated"
+  },
+  {
+    "name": "fashion/vest",
+    "prompt": "navy waistcoat on a hanger, white background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#d6dbe2",
+    "file": "fashion/vest.webp",
+    "source": "generated"
+  },
+  {
+    "name": "botanical/oils",
+    "prompt": "three amber glass essential oil bottles with yellow, purple and teal labels, warm cream background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#efe3c8",
+    "file": "botanical/oils.webp",
+    "source": "generated"
+  },
+  {
+    "name": "botanical/black-seed-oil",
+    "prompt": "dark glass bottle of black seed oil with blue nigella flowers, cream background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#e2dccb",
+    "file": "botanical/black-seed-oil.webp",
+    "source": "generated"
+  },
+  {
+    "name": "botanical/capsules",
+    "prompt": "amber glass jar with herbal supplement capsules spilling out, cream background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#ecdcc0",
+    "file": "botanical/capsules.webp",
+    "source": "generated"
+  },
+  {
+    "name": "botanical/roll-on",
+    "prompt": "small essential oil roll-on bottles with citrus slices, cream background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#f0e2c2",
+    "file": "botanical/roll-on.webp",
+    "source": "generated"
+  },
+  {
+    "name": "botanical/room-spray",
+    "prompt": "purple glass room spray bottle with lavender sprigs, cream background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#e3dbe8",
+    "file": "botanical/room-spray.webp",
+    "source": "generated"
+  },
+  {
+    "name": "botanical/sauna",
+    "prompt": "brown glass sauna infusion bottle with pine branches and wooden bucket, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#e2d3bd",
+    "file": "botanical/sauna.webp",
+    "source": "generated"
+  },
+  {
+    "name": "botanical/sets",
+    "prompt": "gift box with five small essential oil bottles, cream background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#eadfca",
+    "file": "botanical/sets.webp",
+    "source": "generated"
+  },
+  {
+    "name": "botanical/carrier-oils",
+    "prompt": "three clear bottles of golden carrier oil with almonds and jojoba seeds, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#efe2c4",
+    "file": "botanical/carrier-oils.webp",
+    "source": "generated"
+  },
+  {
+    "name": "botanical/bundle",
+    "prompt": "essential oil bundle of four bottles tied with twine and a kraft paper tag, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#e6dcc4",
+    "file": "botanical/bundle.webp",
+    "source": "generated"
+  },
+  {
+    "name": "botanical/goal-sleep",
+    "prompt": "lavender bunch and a white aroma diffuser on a bedside table at dusk, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#cfc6dc",
+    "file": "botanical/goal-sleep.webp",
+    "source": "generated"
+  },
+  {
+    "name": "botanical/goal-skin",
+    "prompt": "glass dropper bottle of facial oil with rose petals on stone, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#ead7cf",
+    "file": "botanical/goal-skin.webp",
+    "source": "generated"
+  },
+  {
+    "name": "botanical/goal-vitality",
+    "prompt": "herbal tea in a glass cup with lemon and ginger on linen, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#e8e0bf",
+    "file": "botanical/goal-vitality.webp",
+    "source": "generated"
+  },
+  {
+    "name": "botanical/goal-home",
+    "prompt": "white ultrasonic aroma diffuser releasing mist on a wooden shelf, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#ddd6cb",
+    "file": "botanical/goal-home.webp",
+    "source": "generated"
+  },
+  {
+    "name": "botanical/goal-cooking",
+    "prompt": "bottles of herb-infused oil with rosemary and thyme in a kitchen, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#d9dfc6",
+    "file": "botanical/goal-cooking.webp",
+    "source": "generated"
+  },
+  {
+    "name": "botanical/goal-travel",
+    "prompt": "small essential oil bottles in a canvas travel pouch, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#e3dccb",
+    "file": "botanical/goal-travel.webp",
+    "source": "generated"
+  },
+  {
+    "name": "botanical/about",
+    "prompt": "small apothecary workshop with amber bottles on wooden shelves, warm light, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#d8cbb4",
+    "file": "botanical/about.webp",
+    "source": "generated"
+  },
+  {
+    "name": "botanical/help",
+    "prompt": "tidy desk with a notebook, a pen and a small potted plant, cream tones, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#e4ddd0",
+    "file": "botanical/help.webp",
+    "source": "generated"
+  },
+  {
+    "name": "nutrition/powder",
+    "prompt": "matte black pouch of meal replacement powder with a scoop, white background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#e3e3e3",
+    "file": "nutrition/powder.webp",
+    "source": "generated"
+  },
+  {
+    "name": "nutrition/shake",
+    "prompt": "ready-to-drink protein shake bottle, white background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#ececec",
+    "file": "nutrition/shake.webp",
+    "source": "generated"
+  },
+  {
+    "name": "nutrition/meal",
+    "prompt": "healthy grain bowl with vegetables and chickpeas, top view, white background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#ece4d4",
+    "file": "nutrition/meal.webp",
+    "source": "generated"
+  },
+  {
+    "name": "nutrition/snack",
+    "prompt": "protein bars stacked with oats, white background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#eadfcd",
+    "file": "nutrition/snack.webp",
+    "source": "generated"
+  },
+  {
+    "name": "nutrition/greens",
+    "prompt": "green superfood powder in a glass with a spoon, white background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#dbe6d2",
+    "file": "nutrition/greens.webp",
+    "source": "generated"
+  },
+  {
+    "name": "nutrition/bundle",
+    "prompt": "stack of nutrition product boxes and pouches, white background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#e2e2e2",
+    "file": "nutrition/bundle.webp",
+    "source": "generated"
+  },
+  {
+    "name": "nutrition/goal-healthy",
+    "prompt": "colorful healthy lunch bowl on a red background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#e9b9a8",
+    "file": "nutrition/goal-healthy.webp",
+    "source": "generated"
+  },
+  {
+    "name": "nutrition/goal-weight",
+    "prompt": "glass shaker bottle with vanilla shake on a warm yellow background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#f0dca0",
+    "file": "nutrition/goal-weight.webp",
+    "source": "generated"
+  },
+  {
+    "name": "nutrition/goal-protein",
+    "prompt": "chocolate protein shake being poured into a glass on a brown background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#c9a98c",
+    "file": "nutrition/goal-protein.webp",
+    "source": "generated"
+  },
+  {
+    "name": "nutrition/goal-time",
+    "prompt": "protein bar unwrapped next to a coffee cup on an orange background, studio product photo, no people, no text, no logos, soft natural light, high quality",
+    "tint": "#efc39a",
+    "file": "nutrition/goal-time.webp",
+    "source": "generated"
+  },
+  {
+    "name": "nutrition/referral",
+    "prompt": "person closing a shaker bottle next to a powder pouch in a modern kitchen, studio product photo, no text",
+    "tint": "#e4f5e1",
+    "file": "nutrition/referral.webp",
+    "source": "generated"
+  },
+  {
+    "name": "kids/category-all",
+    "prompt": "Sliding Menu template round product photo (from the Figma design; replace before App Store release)",
+    "tint": "#fdf5f8",
+    "file": "kids/category-all.webp",
+    "source": "figma"
+  },
+  {
+    "name": "kids/category-best",
+    "prompt": "Sliding Menu template round product photo (from the Figma design; replace before App Store release)",
+    "tint": "#fdf5f8",
+    "file": "kids/category-best.webp",
+    "source": "figma"
+  },
+  {
+    "name": "kids/category-new",
+    "prompt": "Sliding Menu template round product photo (from the Figma design; replace before App Store release)",
+    "tint": "#fdf5f8",
+    "file": "kids/category-new.webp",
+    "source": "figma"
+  },
+  {
+    "name": "kids/icon-balloons",
+    "prompt": "Sliding Menu template line icon (from the Figma design; replace before App Store release)",
+    "tint": "#fdf5f8",
+    "file": "kids/icon-balloons.webp",
+    "source": "figma"
+  },
+  {
+    "name": "kids/icon-books",
+    "prompt": "Sliding Menu template line icon (from the Figma design; replace before App Store release)",
+    "tint": "#fdf5f8",
+    "file": "kids/icon-books.webp",
+    "source": "figma"
+  },
+  {
+    "name": "kids/icon-cake",
+    "prompt": "Sliding Menu template line icon (from the Figma design; replace before App Store release)",
+    "tint": "#fdf5f8",
+    "file": "kids/icon-cake.webp",
+    "source": "figma"
+  },
+  {
+    "name": "kids/icon-calendar",
+    "prompt": "Sliding Menu template line icon (from the Figma design; replace before App Store release)",
+    "tint": "#fdf5f8",
+    "file": "kids/icon-calendar.webp",
+    "source": "figma"
+  },
+  {
+    "name": "kids/icon-diploma",
+    "prompt": "Sliding Menu template line icon (from the Figma design; replace before App Store release)",
+    "tint": "#fdf5f8",
+    "file": "kids/icon-diploma.webp",
+    "source": "figma"
+  },
+  {
+    "name": "kids/icon-dove",
+    "prompt": "Sliding Menu template line icon (from the Figma design; replace before App Store release)",
+    "tint": "#fdf5f8",
+    "file": "kids/icon-dove.webp",
+    "source": "figma"
+  },
+  {
+    "name": "kids/icon-egg",
+    "prompt": "Sliding Menu template line icon (from the Figma design; replace before App Store release)",
+    "tint": "#fdf5f8",
+    "file": "kids/icon-egg.webp",
+    "source": "figma"
+  },
+  {
+    "name": "kids/icon-food",
+    "prompt": "Sliding Menu template line icon (from the Figma design; replace before App Store release)",
+    "tint": "#fdf5f8",
+    "file": "kids/icon-food.webp",
+    "source": "figma"
+  },
+  {
+    "name": "kids/icon-heart",
+    "prompt": "Sliding Menu template line icon (from the Figma design; replace before App Store release)",
+    "tint": "#fdf5f8",
+    "file": "kids/icon-heart.webp",
+    "source": "figma"
+  },
+  {
+    "name": "kids/icon-nursery",
+    "prompt": "Sliding Menu template line icon (from the Figma design; replace before App Store release)",
+    "tint": "#fdf5f8",
+    "file": "kids/icon-nursery.webp",
+    "source": "figma"
+  },
+  {
+    "name": "kids/icon-party",
+    "prompt": "Sliding Menu template line icon (from the Figma design; replace before App Store release)",
+    "tint": "#fdf5f8",
+    "file": "kids/icon-party.webp",
+    "source": "figma"
+  },
+  {
+    "name": "kids/icon-pumpkin",
+    "prompt": "Sliding Menu template line icon (from the Figma design; replace before App Store release)",
+    "tint": "#fdf5f8",
+    "file": "kids/icon-pumpkin.webp",
+    "source": "figma"
+  },
+  {
+    "name": "kids/icon-teddy",
+    "prompt": "Sliding Menu template line icon (from the Figma design; replace before App Store release)",
+    "tint": "#fdf5f8",
+    "file": "kids/icon-teddy.webp",
+    "source": "figma"
+  },
+  {
+    "name": "kids/icon-textiles",
+    "prompt": "Sliding Menu template line icon (from the Figma design; replace before App Store release)",
+    "tint": "#fdf5f8",
+    "file": "kids/icon-textiles.webp",
+    "source": "figma"
+  },
+  {
+    "name": "kids/icon-toys",
+    "prompt": "Sliding Menu template line icon (from the Figma design; replace before App Store release)",
+    "tint": "#fdf5f8",
+    "file": "kids/icon-toys.webp",
+    "source": "figma"
+  },
+  {
+    "name": "kids/occasion-baptism",
+    "prompt": "Sliding Menu template round product photo (from the Figma design; replace before App Store release)",
+    "tint": "#fdf5f8",
+    "file": "kids/occasion-baptism.webp",
+    "source": "figma"
+  },
+  {
+    "name": "kids/occasion-birth",
+    "prompt": "Sliding Menu template round product photo (from the Figma design; replace before App Store release)",
+    "tint": "#fdf5f8",
+    "file": "kids/occasion-birth.webp",
+    "source": "figma"
+  },
+  {
+    "name": "kids/occasion-christmas",
+    "prompt": "Sliding Menu template round product photo (from the Figma design; replace before App Store release)",
+    "tint": "#fdf5f8",
+    "file": "kids/occasion-christmas.webp",
+    "source": "figma"
+  },
+  {
+    "name": "kids/occasion-first-birthday",
+    "prompt": "Sliding Menu template round product photo (from the Figma design; replace before App Store release)",
+    "tint": "#fdf5f8",
+    "file": "kids/occasion-first-birthday.webp",
+    "source": "figma"
+  },
+  {
+    "name": "kids/occasion-kindergarten",
+    "prompt": "Sliding Menu template round product photo (from the Figma design; replace before App Store release)",
+    "tint": "#fdf5f8",
+    "file": "kids/occasion-kindergarten.webp",
+    "source": "figma"
+  },
+  {
+    "name": "kids/occasion-school",
+    "prompt": "Sliding Menu template round product photo (from the Figma design; replace before App Store release)",
+    "tint": "#fdf5f8",
+    "file": "kids/occasion-school.webp",
+    "source": "figma"
+  }
+]

@@ -2,11 +2,11 @@
   "name": "chopify-menu",
   "private": true,
   "scripts": {
-    "build": "react-router build",
-    "dev": "shopify app dev",
+    "build": "npm run build:storefront && react-router build",
+    "dev": "npm run build:storefront && shopify app dev",
     "config:link": "shopify app config link",
     "generate": "shopify app generate",
-    "deploy": "shopify app deploy",
+    "deploy": "npm run build:storefront && shopify app deploy",
     "config:use": "shopify app config use",
     "env": "shopify app env",
     "start": "react-router-serve ./build/server/index.js",
@@ -17,13 +17,17 @@
     "prisma": "prisma",
     "graphql-codegen": "graphql-codegen",
     "vite": "vite",
-    "typecheck": "react-router typegen && tsc --noEmit"
+    "typecheck": "react-router typegen && tsc --noEmit",
+    "build:storefront": "node scripts/build-storefront.mjs"
   },
   "type": "module",
   "engines": {
     "node": ">=22.12"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@prisma/client": "^6.16.3",
     "@react-router/dev": "7.18.2",
     "@react-router/fs-routes": "7.18.2",
@@ -41,6 +45,7 @@
   },
   "devDependencies": {
     "@shopify/api-codegen-preset": "^1.2.0",
+    "@shopify/app-bridge-types": "^0.7.3",
     "@shopify/polaris-types": "^2.0.0",
     "@types/eslint": "^9.6.1",
     "@types/node": "^22.18.8",
@@ -60,7 +65,8 @@
     "vite": "^6.3.6"
   },
   "workspaces": [
-    "extensions/*"
+    "extensions/*",
+    "packages/*"
   ],
   "trustedDependencies": [
     "@shopify/plugin-cloudflare"

@@ -27,9 +27,9 @@ export default function App() {
   return (
     <div className={styles.index}>
       <div className={styles.content}>
-        <h1 className={styles.heading}>A short heading about [your app]</h1>
+        <h1 className={styles.heading}>Chopify Menu</h1>
         <p className={styles.text}>
-          A tagline about [your app] that describes your value proposition.
+          Design a mobile menu that sells, without touching theme code.
         </p>
         {showForm && (
           <Form className={styles.form} method="post">
@@ -45,16 +45,16 @@ export default function App() {
         )}
         <ul className={styles.list}>
           <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
+            <strong>Ready-made templates</strong>. Start from a proven mobile
+            menu design and make it yours.
           </li>
           <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
+            <strong>Visual editor</strong>. Drag in widgets like story circles,
+            category cards and banners, with a live preview.
           </li>
           <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
+            <strong>Works with your theme</strong>. Turn on the app embed and
+            your new menu replaces the theme&apos;s mobile menu.
           </li>
         </ul>
       </div>

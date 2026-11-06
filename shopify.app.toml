@@ -7,34 +7,16 @@ name = "Chopify - Menu"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products,write_metaobjects,write_metaobject_definitions"
-
-[product.metafields.app.demo_info]
-type = "single_line_text_field"
-name = "Demo Source Info"
-description = "Tracks products created by the Shopify app template for development"
-
-  [product.metafields.app.demo_info.access]
-  admin = "merchant_read_write"
-
-[metaobjects.app.example]
-name = "Example"
-description = "An example metaobject definition created by this template"
-
-  [metaobjects.app.example.access]
-  admin = "merchant_read_write"
-
-[metaobjects.app.example.fields.title]
-name = "Title"
-type = "single_line_text_field"
-required = true
-
-[metaobjects.app.example.fields.description]
-name = "Description"
-type = "multi_line_text_field"
+# read_products: collections/products for widgets and links
+# read_content, read_legal_policies: pages, blogs, articles and policies in the link picker
+# write_online_store_navigation: the hidden links menu the theme reads for current URLs
+# read_themes: theme detection (burger adapters) and app embed status
+# write_files: images picked or uploaded in the editor
+# read_locales: languages for menu translations
+scopes = "read_products,read_content,read_legal_policies,read_themes,write_files,read_locales"
 
 [webhooks]
-api_version = "2027-01"
+api_version = "2026-10"
 
   [[webhooks.subscriptions]]
   uri = "/webhooks/app/uninstalled"
@@ -44,31 +26,9 @@ api_version = "2027-01"
   uri = "/webhooks/app/scopes_update"
   topics = [ "app/scopes_update" ]
 
-[events]
-api_version = "2026-10"
-
-  [[events.subscription]]
-  handle = "product-price-change"
-  topic = "Product"
-  actions = [ "update" ]
-  triggers = [ "product.variants.price", "product.variants.compareAtPrice" ]
-  uri = "/webhooks/products/update"
-  query = """
-  query product_variant_price_change($productId: ID!, $variantsId: ID!) {
-    product(id: $productId) {
-      id
-      title
-      status
-    }
-    productVariant(id: $variantsId) {
-      id
-      title
-      price
-      compareAtPrice
-    }
-  }
-  """
-  query_filter = "product.status:'ACTIVE'"
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/compliance"
+  compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
 
 [auth]
 redirect_urls = [ "https://example.com/api/auth" ]

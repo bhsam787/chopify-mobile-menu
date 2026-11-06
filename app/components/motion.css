@@ -1,0 +1,110 @@
+/*
+ * Light, consistent motion for the whole app (loaded by the /app layout).
+ * Short fades only: nothing moves the layout, and everything is off for
+ * people who ask for reduced motion.
+ */
+
+@keyframes chm-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes chm-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* A ring that fades out: "this is the section you just added". */
+@keyframes chm-flash {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 91, 211, 0);
+  }
+  20% {
+    box-shadow: 0 0 0 3px rgba(0, 91, 211, 0.35);
+  }
+  100% {
+    box-shadow: 0 0 0 3px rgba(0, 91, 211, 0);
+  }
+}
+
+/* Something that just appeared: a new section, item or opened panel. */
+.chm-enter {
+  animation: chm-enter 220ms cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
+}
+
+.chm-flash {
+  border-radius: 16px;
+  animation: chm-flash 1.4s ease-out both;
+}
+
+/* Gallery tiles and library tiles come in one after another. */
+.chm-lib__tile,
+.chm-tile {
+  animation: chm-enter 260ms cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
+}
+.chm-lib__tile:nth-child(2),
+.chm-tile:nth-child(2) {
+  animation-delay: 30ms;
+}
+.chm-lib__tile:nth-child(3),
+.chm-tile:nth-child(3) {
+  animation-delay: 60ms;
+}
+.chm-lib__tile:nth-child(4),
+.chm-tile:nth-child(4) {
+  animation-delay: 90ms;
+}
+.chm-lib__tile:nth-child(n + 5),
+.chm-tile:nth-child(n + 5) {
+  animation-delay: 120ms;
+}
+
+/* Phone previews and backdrops fade in as they render. */
+.chm-stage,
+.chm-fan {
+  animation: chm-fade 300ms ease-out backwards;
+}
+
+/* Our own controls ease their hover and pressed states. */
+.chm-lib__chip,
+.chm-lib__style,
+.chm-back-style,
+.chm-segmented button {
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+.chm-lib__chip:active,
+.chm-lib__style:active,
+.chm-back-style:active {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chm-enter,
+  .chm-flash,
+  .chm-lib__tile,
+  .chm-tile,
+  .chm-stage,
+  .chm-fan {
+    animation: none;
+  }
+  .chm-lib__chip:active,
+  .chm-lib__style:active,
+  .chm-back-style:active {
+    transform: none;
+  }
+}

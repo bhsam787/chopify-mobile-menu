@@ -1,0 +1,168 @@
+/*
+ * Home and template gallery: only what Polaris has no component for (phone
+ * stages, the empty-state phone fan, the blank-canvas sketch). Everything
+ * else is Polaris.
+ */
+
+/* A soft backdrop tinted with the menu's accent color, phone centered. */
+.chm-stage {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 24px 16px 0;
+  overflow: hidden;
+  border-radius: 12px;
+  background:
+    radial-gradient(
+      120% 80% at 50% 0%,
+      color-mix(in srgb, var(--chm-stage-tint) 22%, transparent),
+      transparent 70%
+    ),
+    color-mix(in srgb, var(--chm-stage-tint) 7%, #f7f7f7);
+}
+.chm-stage--base {
+  height: 360px;
+}
+.chm-stage--large {
+  height: 470px;
+}
+/* The phone runs off the bottom of the stage, like a product shot. */
+.chm-stage::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 56px;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--chm-stage-tint) 7%, #f7f7f7),
+    transparent
+  );
+  pointer-events: none;
+}
+.chm-stage__picture {
+  pointer-events: none;
+  user-select: none;
+}
+
+/* A gallery tile lifts a little under the pointer. */
+.chm-tile {
+  height: 100%;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+  border-radius: 12px;
+}
+@media (hover: hover) {
+  .chm-tile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chm-tile,
+  .chm-tile:hover {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* Empty home: three template phones fanned out. */
+.chm-fan {
+  position: relative;
+  height: 300px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 20px;
+  overflow: hidden;
+  border-radius: 12px;
+  background:
+    radial-gradient(
+      90% 70% at 50% 10%,
+      rgba(48, 98, 212, 0.14),
+      transparent 70%
+    ),
+    #f4f5f8;
+}
+.chm-fan__phone {
+  pointer-events: none;
+  user-select: none;
+}
+.chm-fan__phone:nth-child(1) {
+  transform: translate(46px, 26px) rotate(-8deg);
+}
+.chm-fan__phone:nth-child(2) {
+  position: relative;
+  z-index: 1;
+}
+.chm-fan__phone:nth-child(3) {
+  transform: translate(-46px, 26px) rotate(8deg);
+}
+
+/* The blank canvas card: a sketch of free-placed layers. */
+.chm-sketch {
+  position: relative;
+  width: 132px;
+  height: 108px;
+  flex: none;
+  border-radius: 12px;
+  background:
+    radial-gradient(circle, rgba(0, 0, 0, 0.12) 1px, transparent 1.5px) 0 0 /
+      10px 10px,
+    #f7f7f7;
+}
+.chm-sketch span {
+  position: absolute;
+  border-radius: 6px;
+}
+.chm-sketch span:nth-child(1) {
+  inset: 14px 20px auto 16px;
+  height: 34px;
+  background: #e3e8f8;
+  border: 1.5px solid #3062d4;
+}
+.chm-sketch span:nth-child(2) {
+  top: 58px;
+  left: 16px;
+  width: 44px;
+  height: 34px;
+  background: #fde8d8;
+}
+.chm-sketch span:nth-child(3) {
+  top: 58px;
+  left: 68px;
+  width: 44px;
+  height: 14px;
+  background: #e6e6e6;
+}
+.chm-sketch span:nth-child(4) {
+  top: 78px;
+  left: 68px;
+  width: 30px;
+  height: 14px;
+  background: #e6e6e6;
+}
+
+/* Tiles in a row are equally tall; their buttons line up at the bottom. */
+.chm-tile > s-box {
+  display: block;
+  height: 100%;
+}
+.chm-tile__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+}
+.chm-tile__actions {
+  margin-top: auto;
+}
+
+/* Preview modal: the phone stays put while the details scroll. */
+.chm-sticky {
+  position: sticky;
+  top: 0;
+  display: flex;
+  justify-content: center;
+}
