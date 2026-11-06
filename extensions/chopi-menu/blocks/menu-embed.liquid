@@ -1,26 +1,26 @@
 {%- liquid
-  assign menu = app.metafields.chopify.menu.value
-  assign entitlement = app.metafields.chopify.entitlement.value
+  assign menu = app.metafields.chopi.menu.value
+  assign entitlement = app.metafields.chopi.entitlement.value
   # Linked resources by ID (written on publish): Shopify resolves current URLs, titles and images.
-  assign refs = shop.metafields['$app:chopify']
+  assign refs = shop.metafields['$app:chopi']
   assign reference_keys = 'collection_1,collection_2,collection_3,collection_4,product_1,product_2,product_3,product_4,page_1,page_2,page_3,page_4,article_1,article_2,article_3,article_4' | split: ','
   assign product_limit = menu.meta.productLimit | default: 8
   # Only the shopper's language is loaded: "t_pt-BR", else the base "t_pt".
   assign locale_code = request.locale.iso_code
   assign texts_key = 't_' | append: locale_code
-  assign texts = app.metafields.chopify[texts_key].value
+  assign texts = app.metafields.chopi[texts_key].value
   if texts == blank
     assign base_code = locale_code | split: '-' | first
     assign texts_key = 't_' | append: base_code
-    assign texts = app.metafields.chopify[texts_key].value
+    assign texts = app.metafields.chopi[texts_key].value
   endif
 -%}
 {%- if menu != blank -%}
-  <script type="application/json" id="chopify-menu-data">
+  <script type="application/json" id="chopi-menu-data">
     {
       "menu": {{ menu | json }},
       "translations": {{ texts | json }},
-      "appUrl": {{ 'chopify-menu-app.js' | asset_url | json }},
+      "appUrl": {{ 'chopi-menu-app.js' | asset_url | json }},
       "liveAllowed": {% if entitlement.live_allowed %}true{% else %}false{% endif %},
       "designMode": {{ request.design_mode | json }},
       "triggerOverride": {{ block.settings.trigger_selector | json }},
@@ -28,6 +28,9 @@
         "locale": {{ request.locale.iso_code | json }},
         "shopName": {{ shop.name | json }},
         "customerLoggedIn": {% if customer %}true{% else %}false{% endif %},
+        "currency": {{ cart.currency.iso_code | json }},
+        {%- comment -%} The store's most searched terms (refreshed by the app from Shopify's search statistics). {%- endcomment -%}
+        "topSearches": {{ app.metafields.chopi.top_searches.value.terms | json }},
         {%- if shop.brand.logo %}
           "logo": { "url": {{ shop.brand.logo | image_url: width: 400 | json }} },
         {%- endif %}
@@ -69,7 +72,7 @@
                 {%- render 'menu-resource', kind: kind, object: object -%}
               {%- endfor -%}
             {%- endfor -%}
-            {%- comment -%} Story circles: a collection's products, read from the referenced collection. {%- endcomment -%}
+            {%- comment -%} Story circles and product cards: a collection's products, read from the referenced collection. Prices are in the shopper's currency; strip_html because a store's money format may contain HTML. {%- endcomment -%}
             {%- for collection in refs.product_collections.value -%}
               {{ 'collection:' | append: collection.id | json }}: {
                 "url": {{ collection.url | json }},
@@ -80,8 +83,10 @@
                     {%- unless forloop.first %},{% endunless -%}
                     {
                       "title": {{ product.title | json }},
-                      "url": {{ product.url | json }}
-                      {%- if product.featured_image %}, "image": {{ product.featured_image | image_url: width: 300 | json }}{% endif -%}
+                      "url": {{ product.url | json }},
+                      "price": {{ product.price | money | strip_html | json }}
+                      {%- if product.compare_at_price > product.price %}, "compareAtPrice": {{ product.compare_at_price | money | strip_html | json }}{% endif -%}
+                      {%- if product.featured_image %}, "image": {{ product.featured_image | image_url: width: 400 | json }}{% endif -%}
                     }
                   {%- endfor -%}
                 ]
@@ -93,7 +98,7 @@
       }
     }
   </script>
-  <script src="{{ 'chopify-menu.js' | asset_url }}" defer></script>
+  <script src="{{ 'chopi-menu.js' | asset_url }}" defer></script>
 {%- endif -%}
 
 {% schema %}

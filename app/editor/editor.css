@@ -435,6 +435,158 @@
   box-shadow: inset 0 0 0 1px #ebebeb;
   zoom: 0.72;
 }
+/* Header style picker: the real header in each style, on a soft stage. */
+.chm-header-styles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 10px;
+}
+.chm-header-style {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 8px 10px;
+  border: 1px solid #e3e3e3;
+  border-radius: 12px;
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+.chm-header-style:hover {
+  border-color: #b5b5b5;
+  transform: translateY(-1px);
+}
+.chm-header-style:focus-visible {
+  outline: 2px solid #005bd3;
+  outline-offset: 2px;
+}
+.chm-header-style[aria-checked="true"] {
+  border-color: #303030;
+  box-shadow: 0 0 0 1px #303030;
+}
+/* A check in the corner of the chosen style. */
+.chm-header-style[aria-checked="true"]::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #303030
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M6 10.5l2.5 2.5L14 7.5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    center / 14px no-repeat;
+}
+.chm-header-style__stage {
+  display: flex;
+  align-items: center;
+  height: 64px;
+  margin-bottom: 6px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: #f4f4f5;
+  overflow: hidden;
+}
+.chm-header-style__preview {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  /* Headers render at phone width; shrink them to fit the tile. */
+  zoom: 0.5;
+  pointer-events: none;
+}
+.chm-header-style__name {
+  font-size: 13px;
+  font-weight: 650;
+  color: #303030;
+}
+.chm-header-style__description {
+  font-size: 12px;
+  line-height: 1.35;
+  color: #616161;
+}
+
+/* Live search results styles: the real results, small, on a soft stage. */
+.chm-search-styles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.chm-search-style__stage {
+  display: block;
+  margin-bottom: 6px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #f4f4f5;
+  box-shadow: inset 0 0 0 1px #ebebeb;
+  /* Results render at phone width; shrink them to fit the tile. */
+  zoom: 0.42;
+  height: 400px;
+  pointer-events: none;
+}
+.chm-search-style__stage--wide {
+  zoom: 0.6;
+  height: auto;
+  max-height: 260px;
+  max-width: 390px;
+}
+
+/* Header shortcut buttons: tap to show or hide each one. */
+.chm-hchips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chm-hchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid #e3e3e3;
+  border-radius: 999px;
+  background: #fff;
+  color: #4a4a4a;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+.chm-hchip:hover {
+  border-color: #b5b5b5;
+}
+.chm-hchip:focus-visible {
+  outline: 2px solid #005bd3;
+  outline-offset: 2px;
+}
+.chm-hchip {
+  touch-action: none;
+}
+.chm-hchip.is-dragging {
+  position: relative;
+  z-index: 1;
+  cursor: grabbing;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+}
+.chm-hchip[aria-pressed="true"] {
+  border-color: #303030;
+  background: #303030;
+  color: #fff;
+}
 .chm-back-style__none {
   display: grid;
   place-items: center;
@@ -516,6 +668,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  /* Room for the Reset button, so the row doesn't grow when it appears. */
+  min-height: 28px;
 }
 .chm-field__label {
   font-size: 13px;
@@ -835,6 +989,15 @@
   background: #2c6ecb;
   box-shadow: 0 0 0 3px rgba(44, 110, 203, 0.2);
 }
+.chm-designws__live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* Narrow dialogs: the phone goes above the settings. */
 @container (max-width: 720px) {
   .chm-designws {

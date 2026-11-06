@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import type { Design, TextEntry, UiTextKey } from "@chopify/menu-core";
-import { builtInText, collectTexts, richToPlain } from "@chopify/menu-core";
+import type { Design, TextEntry, UiTextKey } from "@chopi/menu-core";
+import { builtInText, collectTexts, richToPlain } from "@chopi/menu-core";
 import type { PreviewContext } from "../components/MenuPreview";
 import { SearchField, TextField } from "./controls";
 import { DesignWorkspace } from "./DesignWorkspace";

@@ -1,8 +1,10 @@
-import { CANVAS_WIDTH } from "@chopify/menu-core";
+import { CANVAS_WIDTH } from "@chopi/menu-core";
 import { countdownText, remaining } from "./countdown";
+import { attachLiveSearch, type SearchSource } from "./liveSearch";
 
 export interface MenuController {
-  open(): void;
+  /** `focus: false` keeps keyboard focus where it is (the editor's preview). */
+  open(options?: { focus?: boolean }): void;
   close(): void;
   showScreen(id: string): void;
   back(): void;
@@ -39,6 +41,8 @@ export interface BehaviorOptions {
   onSelect?: (nodeId: string) => void;
   onScreenChange?: (screenId: string) => void;
   onClose?: () => void;
+  /** Live search results from somewhere other than the store (the editor). */
+  searchSource?: SearchSource;
 }
 
 /**
@@ -96,11 +100,12 @@ export function attachBehavior(
       .chmScreenId ?? "main";
 
   const controller: MenuController = {
-    open() {
+    open({ focus = true } = {}) {
       menu()?.classList.add("is-open");
       startTimer();
       // Focus for keyboard users, without scrolling the page behind the drawer.
-      window.setTimeout(() => panel()?.focus({ preventScroll: true }), 50);
+      if (focus)
+        window.setTimeout(() => panel()?.focus({ preventScroll: true }), 50);
     },
     close() {
       menu()?.classList.remove("is-open");
@@ -126,6 +131,8 @@ export function attachBehavior(
       root.removeEventListener("click", onClick);
       root.removeEventListener("change", onChange);
       root.removeEventListener("keydown", onKeydown);
+      root.removeEventListener("submit", onSubmit);
+      liveSearch?.destroy();
     },
   };
 
@@ -160,6 +167,34 @@ export function attachBehavior(
       return;
     }
 
+    // The header has a search field too: its search button goes to the
+    // field (unfolding it first when it's tucked away).
+    const searchButton = target.closest<HTMLElement>("[data-chm-search-field]");
+    if (searchButton && !options.editor) {
+      const form = root.querySelector<HTMLElement>(".chm-header__search");
+      const field = form?.querySelector<HTMLInputElement>("input[name='q']");
+      if (form && field) {
+        event.preventDefault();
+        form.classList.remove("is-folded");
+        field.focus();
+        return;
+      }
+    }
+
+    const copyButton = target.closest<HTMLElement>("[data-chm-copy]");
+    if (copyButton) {
+      void copyCode(copyButton);
+      return;
+    }
+
+    // A canvas frame's link is a tap area behind its layers, so a tap on
+    // its picture or text is passed on to it.
+    const hit = frameHitArea(target);
+    if (hit) {
+      hit.click();
+      return;
+    }
+
     if (options.sandbox && target.closest("a[href], form"))
       event.preventDefault();
     if (target.closest("[data-chm-close]")) {
@@ -175,6 +210,16 @@ export function attachBehavior(
       controller.showScreen(screenLink.dataset.chmScreen);
   }
 
+  /** An empty search would open an empty results page: stay and keep typing. */
+  function onSubmit(event: Event) {
+    const form = event.target as HTMLFormElement;
+    const query = form.querySelector<HTMLInputElement>("input[name='q']");
+    if (query && !query.value.trim()) {
+      event.preventDefault();
+      query.focus();
+    }
+  }
+
   function onChange(event: Event) {
     if (options.editor || options.sandbox) return;
     const select = (event.target as HTMLElement).closest<HTMLSelectElement>(
@@ -184,6 +229,8 @@ export function attachBehavior(
   }
 
   function onKeydown(event: KeyboardEvent) {
+    // Escape leaves search first (in the admin preview too).
+    if (event.key === "Escape" && liveSearch?.exit()) return;
     if (options.editor || options.sandbox) return;
     if (event.key === "Escape") {
       controller.close();
@@ -239,9 +286,17 @@ export function attachBehavior(
   mutationObserver?.observe(root, { childList: true });
   watchCanvases();
 
+  const liveSearch = options.editor
+    ? null
+    : attachLiveSearch(root, {
+        source: options.searchSource,
+        sandbox: options.sandbox,
+        onScreen: (id) => controller.showScreen(id),
+      });
   root.addEventListener("click", onClick);
   root.addEventListener("change", onChange);
   root.addEventListener("keydown", onKeydown);
+  root.addEventListener("submit", onSubmit);
   if (options.editor) startTimer();
 
   return controller;
@@ -289,4 +344,48 @@ function toggleCollapsible(item: HTMLElement) {
     const canvas = container.parentElement;
     if (canvas) canvas.style.aspectRatio = `${CANVAS_WIDTH}/${height}`;
   }
+}
+
+/**
+ * The link of the canvas frame a tap landed in, when the tap hit one of its
+ * layers (a picture, a text) rather than a link of its own.
+ */
+function frameHitArea(target: HTMLElement): HTMLElement | null {
+  if (target.closest("a[href], button, select, input, label")) return null;
+  for (
+    let frame = target.closest<HTMLElement>(".chm-shape--frame");
+    frame;
+    frame =
+      frame.parentElement?.closest<HTMLElement>(".chm-shape--frame") ?? null
+  ) {
+    const hit = frame.querySelector<HTMLElement>(":scope > .chm-shape__hit");
+    if (hit) return hit;
+  }
+  return null;
+}
+
+/** Copies a discount code and says so on the button for a moment. */
+async function copyCode(button: HTMLElement) {
+  const code = button.dataset.chmCopy;
+  if (!code || button.classList.contains("is-copied")) return;
+  try {
+    await navigator.clipboard.writeText(code);
+  } catch {
+    // Older browsers, or a page that blocks the clipboard API.
+    const field = document.createElement("textarea");
+    field.value = code;
+    field.setAttribute("readonly", "");
+    field.style.cssText = "position:fixed;opacity:0;pointer-events:none";
+    document.body.appendChild(field);
+    field.select();
+    document.execCommand("copy");
+    field.remove();
+  }
+  const label = button.textContent;
+  button.textContent = button.dataset.chmCopied || label;
+  button.classList.add("is-copied");
+  window.setTimeout(() => {
+    button.textContent = label;
+    button.classList.remove("is-copied");
+  }, 2000);
 }

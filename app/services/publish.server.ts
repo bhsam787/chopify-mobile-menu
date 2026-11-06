@@ -1,13 +1,14 @@
 import type { Prisma } from "@prisma/client";
-import type { Design } from "@chopify/menu-core";
-import { compile } from "@chopify/menu-core";
+import type { Design } from "@chopi/menu-core";
+import { compile } from "@chopi/menu-core";
 import prisma from "../db.server";
 import { assertNoUserErrors, gql, type Admin } from "./admin-graphql.server";
 import { deleteMenuReferences, writeMenuReferences } from "./references.server";
 import { importTemplateImages } from "./template-images.server";
+import { topSearches } from "./top-searches.server";
 
-/** Namespace of the app-data metafields the theme embed reads (`app.metafields.chopify.*`). */
-export const METAFIELD_NAMESPACE = "chopify";
+/** Namespace of the app-data metafields the theme embed reads (`app.metafields.chopi.*`). */
+export const METAFIELD_NAMESPACE = "chopi";
 
 const APP_INSTALLATION = `#graphql
   query AppInstallation {
@@ -140,6 +141,9 @@ export async function publishMenu(
     }),
   ]);
 
+  // Live search's popular searches: refresh the store's top searches with
+  // the menu (at most daily; never fails the publish).
+  if (design.header.liveSearch?.enabled) await topSearches(admin);
   return { bytes, design, importedImages: imported.imported };
 }
 
@@ -160,7 +164,7 @@ export const translationKey = (locale: string) => `t_${locale}`;
 const TRANSLATION_KEYS = `#graphql
   query MenuTranslationKeys {
     currentAppInstallation {
-      metafields(first: 100, namespace: "chopify") {
+      metafields(first: 100, namespace: "chopi") {
         nodes { key }
       }
     }

@@ -19,7 +19,7 @@ import {
   useSearchParams,
 } from "react-router";
 import type { Prisma } from "@prisma/client";
-import type { ContainerNode, Design, Node } from "@chopify/menu-core";
+import type { ContainerNode, Design, Node } from "@chopi/menu-core";
 import {
   addScreen,
   compile,
@@ -29,20 +29,28 @@ import {
   mapNode,
   METAFIELD_WARN_BYTES,
   MenuTooLargeError,
+  NODE_LABELS,
+  nodeLabel,
   TooManyLinksError,
   parseDesign,
   removeNode,
   removeScreen,
   updateNode,
-} from "@chopify/menu-core";
-import type { ResolvedResource } from "@chopify/menu-renderer";
+} from "@chopi/menu-core";
+import type { ResolvedResource } from "@chopi/menu-renderer";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 import { MenuPreview } from "../components/MenuPreview";
+import {
+  setGuidePref,
+  useGuidePrefs,
+  type GuideLine,
+} from "../components/GuideBot";
 import { BackBarFields } from "../editor/BackBarFields";
 import { ModeSwitch, type PreviewMode } from "../components/ModeSwitch";
 import { DEFAULT_DEVICE, DEVICES, type Device } from "../components/devices";
 import { buildPreviewContext } from "../services/preview-context.server";
+import { topSearches } from "../services/top-searches.server";
 import { publishMenu, unpublishMenu } from "../services/publish.server";
 import { importTemplateImages } from "../services/template-images.server";
 import { ShopifyUserError } from "../services/admin-graphql.server";
@@ -53,9 +61,15 @@ import {
 } from "../editor/Inspector";
 import { NodeList, SectionCard, type ListContext } from "../editor/SectionList";
 import { isItemList, isPanel, sectionTitle } from "../editor/sections";
-import { DesignWorkspace } from "../editor/DesignWorkspace";
+import { DesignWorkspace, lowerFirst } from "../editor/DesignWorkspace";
+import { SEARCH_RESULTS_TARGET } from "../editor/LiveSearchFields";
+import { previewSearchResults as sampleSearch } from "../editor/searchPreview";
 import { TranslationsPanel } from "../editor/TranslationsPanel";
-import { Segmented } from "../editor/designControls";
+import {
+  DesignFocusContext,
+  Segmented,
+  type DesignFocus,
+} from "../editor/designControls";
 import { hasItemColors, ItemColorFields } from "../editor/ItemColors";
 import { SelectField, TextField } from "../editor/controls";
 import { cleanMenuName } from "../models/menu-name";
@@ -76,7 +90,15 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   });
   if (!menu) throw new Response("Menu not found", { status: 404 });
   const design = menu.draft as unknown as Design;
-  const { context, locales } = await buildPreviewContext(admin, [design]);
+  const [{ context: baseContext, locales }, top] = await Promise.all([
+    buildPreviewContext(admin, [design]),
+    // The store's top searches for live search (refreshed at most daily).
+    topSearches(admin),
+  ]);
+  const context = {
+    ...baseContext,
+    topSearches: top.available ? top.terms : null,
+  };
   // Only one menu is live per store: publishing this one replaces it.
   const liveMenu = await prisma.menu.findFirst({
     where: {
@@ -304,6 +326,9 @@ interface Step {
   isLast: boolean;
 }
 
+/** A Customize card's part of a section, outlined on the phone. */
+type PreviewFocus = DesignFocus & { nodeId: string };
+
 /** A top-level block of a screen: one section, or a group (a box around several sections). */
 type Block =
   | { kind: "step"; step: Step }
@@ -414,6 +439,8 @@ export default function MenuEditor() {
   >({});
   const [openSections, setOpenSections] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
+  /** The section opened last: the preview scrolls to it and the helper points at it. */
+  const [pointedId, setPointedId] = useState<string | null>(null);
   /** The merchant's choice in an item's dialog: design this item or all like it. */
   const [itemScope, setItemScope] = useState<{
     id: string;
@@ -432,6 +459,7 @@ export default function MenuEditor() {
   const translationsModal = useRef<ModalElement>(null);
   // The Menu design dialog's phone renders on first open only.
   const [menuDesignOpened, setMenuDesignOpened] = useState(false);
+
   // The library's live previews render on first open only.
   const [libraryOpened, setLibraryOpened] = useState(false);
   /** Phone the live preview shows the menu on (real width and screen height). */
@@ -462,6 +490,21 @@ export default function MenuEditor() {
     },
     [data.menu.id],
   );
+
+  /**
+   * Opens the custom CSS editor (a full page in a max modal, like the
+   * canvas). It works on the saved draft, so unsaved changes are saved first.
+   */
+  const pendingCss = useRef(false);
+  const showCss = useCallback(() => {
+    const modal = document.getElementById(
+      "css-editor",
+    ) as UIModalElement | null;
+    if (!modal) return;
+    modal.src = `/app/css/${data.menu.id}?v=${Date.now()}`;
+    if (modal.show) void modal.show();
+    else void shopify.modal.show("css-editor");
+  }, [data.menu.id]);
 
   const itemModal = useRef<ModalElement>(null);
   const designModal = useRef<ModalElement>(null);
@@ -527,6 +570,11 @@ export default function MenuEditor() {
       showCanvas(canvasId);
       return;
     }
+    if (pendingCss.current) {
+      pendingCss.current = false;
+      showCss();
+      return;
+    }
     if (result.intent === "publish") {
       setPublished(true);
       setLiveMenuName(null);
@@ -539,7 +587,7 @@ export default function MenuEditor() {
         "This menu is close to Shopify's size limit. Remove some translations or sections.",
         { isError: true },
       );
-  }, [fetcher.data, fetcher.state, showCanvas, history]);
+  }, [fetcher.data, fetcher.state, showCanvas, showCss, history]);
 
   const unpublishModal = useRef<ModalElement>(null);
   const rename = () => {
@@ -587,6 +635,15 @@ export default function MenuEditor() {
   );
 
   /** Opens the full-screen canvas editor; unsaved changes are saved first. */
+  const openCss = () => {
+    if (design !== savedDesign) {
+      pendingCss.current = true;
+      submit("save");
+    } else {
+      showCss();
+    }
+  };
+
   const openCanvas = (canvasId: string) => {
     itemModal.current?.hideOverlay();
     designModal.current?.hideOverlay();
@@ -616,13 +673,14 @@ export default function MenuEditor() {
   // The canvas editor saves to the database; reload the design when it closes.
   useEffect(() => {
     const modal = canvasModal();
+    const cssModal = document.getElementById("css-editor");
     const onDone = (event: MessageEvent) => {
-      if (
-        event.origin !== window.location.origin ||
-        event.data?.type !== "chopify:canvas-done"
-      )
-        return;
-      canvasModal()?.hide?.();
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type === "chopi:canvas-done") canvasModal()?.hide?.();
+      if (event.data?.type === "chopi:css-done")
+        (
+          document.getElementById("css-editor") as UIModalElement | null
+        )?.hide?.();
     };
     const onHide = () => {
       reloadFromServer.current = true;
@@ -630,9 +688,11 @@ export default function MenuEditor() {
     };
     window.addEventListener("message", onDone);
     modal?.addEventListener("hide", onHide);
+    cssModal?.addEventListener("hide", onHide);
     return () => {
       window.removeEventListener("message", onDone);
       modal?.removeEventListener("hide", onHide);
+      cssModal?.removeEventListener("hide", onHide);
     };
   }, [revalidator]);
 
@@ -683,6 +743,7 @@ export default function MenuEditor() {
     onOpenScreen: openScreen,
     onOpenCanvas: openCanvas,
     onResource,
+    preview: context,
     ...overrides,
   });
 
@@ -744,13 +805,15 @@ export default function MenuEditor() {
       ),
     ].map((step) => step.node.id),
   );
-  const toggleSection = (id: string, open: boolean) =>
+  const toggleSection = (id: string, open: boolean) => {
     setOpenSections((current) => {
       const next = new Set(current);
       if (open) next.add(id);
       else next.delete(id);
       return next;
     });
+    setPointedId((current) => (open ? id : current === id ? null : current));
+  };
 
   /** Clicking the preview opens the section it belongs to, and the item's editor. */
   const selectFromPreview = (id: string) => {
@@ -833,6 +896,64 @@ export default function MenuEditor() {
     shopify.toast.show("Design applied to all items here");
   };
 
+  /**
+   * The part of a section a Customize card changes, outlined on the phone
+   * while the card is hovered (or was last touched), like in Design.
+   */
+  const [hoverFocus, setHoverFocus] = useState<PreviewFocus | null>(null);
+  const [touchFocus, setTouchFocus] = useState<PreviewFocus | null>(null);
+  const previewFocus = hoverFocus ?? touchFocus;
+  // Working on the search results: the phone shows them, with samples.
+  const showSearchSample = previewFocus?.target === SEARCH_RESULTS_TARGET;
+  const previewContext = useMemo(
+    () =>
+      showSearchSample
+        ? { ...context, searchSample: sampleSearch(context) }
+        : context,
+    [context, showSearchSample],
+  );
+  /** What the preview outlines, scrolls to and the helper points at. */
+  const previewSelectedId = previewFocus?.nodeId ?? editingId ?? pointedId;
+
+  // The helper says, in plain words, what's being looked at.
+  const guide = useGuidePrefs().shown;
+  const [guideLine, setGuideLine] = useState<GuideLine | null>(null);
+  const guideLineId = useRef(0);
+  const pointedNode = previewSelectedId
+    ? locate(design, previewSelectedId)?.node
+    : undefined;
+  const pointedFocus = previewFocus?.label;
+  useEffect(() => {
+    if (!pointedNode) return;
+    const isSection = stepIds.has(pointedNode.id);
+    const kind = lowerFirst(
+      isSection ? sectionTitle(pointedNode) : NODE_LABELS[pointedNode.type],
+    );
+    // A merchant's own name stays as written; built-in names read as words.
+    const thing = pointedNode.name ? `“${pointedNode.name}”` : `the ${kind}`;
+    const title = isSection ? undefined : nodeLabel(pointedNode);
+    setGuideLine({
+      id: ++guideLineId.current,
+      caption: pointedFocus ? sectionTitle(pointedNode) : title,
+      text: pointedFocus
+        ? `You're editing the ${lowerFirst(pointedFocus)}`
+        : isSection
+          ? `You're looking at ${thing}`
+          : `You're editing ${thing}`,
+    });
+    // Only when it points somewhere else (edits don't repeat the line).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pointedNode?.id, pointedFocus]);
+  const focusFor = (nodeId: string) => ({
+    hover: (focus: DesignFocus | null) =>
+      setHoverFocus(focus ? { ...focus, nodeId } : null),
+    touch: (focus: DesignFocus) => setTouchFocus({ ...focus, nodeId }),
+  });
+  // A closed section's part isn't outlined any longer.
+  useEffect(() => {
+    if (touchFocus && !openSections.has(touchFocus.nodeId)) setTouchFocus(null);
+  }, [openSections, touchFocus]);
+
   const customize = (node: Node) => {
     switch (node.type) {
       case "container":
@@ -913,7 +1034,10 @@ export default function MenuEditor() {
           ctx={listContext}
           handle={handle}
         >
-          {customize(step.node)}
+          {/* Hovering a settings card outlines its part on the phone. */}
+          <DesignFocusContext.Provider value={focusFor(step.node.id)}>
+            {customize(step.node)}
+          </DesignFocusContext.Provider>
         </SectionCard>
       </div>
     );
@@ -1167,6 +1291,9 @@ export default function MenuEditor() {
                   >
                     Menu design
                   </s-button>
+                  <s-button icon="code" onClick={openCss}>
+                    Custom CSS
+                  </s-button>
                   {isCanvasScreen(design, screen.id) ? (
                     <s-button
                       icon="layout-block"
@@ -1388,7 +1515,7 @@ export default function MenuEditor() {
                     value={device.id}
                     options={DEVICES.map((candidate) => ({
                       value: candidate.id,
-                      label: candidate.label,
+                      label: `${candidate.label} (${candidate.width} × ${candidate.height})`,
                     }))}
                     onChange={(id) =>
                       setDevice(
@@ -1403,19 +1530,31 @@ export default function MenuEditor() {
                 width={device.width + 20}
                 height={device.height + 20}
                 design={design}
-                context={context}
+                context={previewContext}
                 screenId={screen.id}
-                selectedId={editingId}
+                selectedId={previewSelectedId}
+                focusSelector={previewFocus?.target ?? null}
+                focusLabel={previewFocus?.label}
                 onSelect={selectFromPreview}
                 onScreenChange={(id) => id !== screen.id && openScreen(id)}
                 scale={0.86}
                 interactive={previewMode === "preview"}
+                guide
+                guideLine={guideLine}
               />
               <s-text color="subdued">
                 {previewMode === "edit"
                   ? "Click anything to edit it."
                   : "Works like your store: switch tabs, open accordions and sub-menus, swipe rows. Links stay here."}
               </s-text>
+              {!guide && previewMode === "edit" && (
+                <s-button
+                  variant="tertiary"
+                  onClick={() => setGuidePref("shown", true)}
+                >
+                  Show helper
+                </s-button>
+              )}
             </s-stack>
           </s-section>
         </div>
@@ -1740,6 +1879,10 @@ export default function MenuEditor() {
           />
         )}
       </Modal>
+
+      <ui-modal id="css-editor" variant="max">
+        <ui-title-bar title="Custom CSS"></ui-title-bar>
+      </ui-modal>
 
       <Modal
         id="menu-design"

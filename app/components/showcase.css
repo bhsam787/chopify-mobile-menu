@@ -1,0 +1,896 @@
+/*
+ * The showcase look shared by Home and the template gallery: a hero card
+ * (greeting or title, Chopi on its stage, benefits or a blank-page offer)
+ * and template tiles with a phone on a tinted stage. Everything else on
+ * those pages stays in Polaris cards.
+ */
+.chm-hero {
+  --chm-hero-ink: #1d2a14;
+  --chm-hero-green: #4f8a2e;
+  --chm-hero-muted: #5b6455;
+  position: relative;
+  container-type: inline-size;
+  overflow: hidden;
+  border: 1px solid rgba(29, 42, 20, 0.07);
+  border-radius: 20px;
+  background:
+    radial-gradient(70% 90% at 100% 0%, #e3f3cf 0%, rgba(227, 243, 207, 0) 70%),
+    radial-gradient(60% 80% at 0% 100%, #fbf1e2 0%, rgba(251, 241, 226, 0) 70%),
+    linear-gradient(160deg, #ffffff 0%, #f7faf3 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 1px 2px rgba(29, 42, 20, 0.06),
+    0 12px 32px -18px rgba(29, 42, 20, 0.28);
+  color: var(--chm-hero-ink);
+}
+/* A faint dotted texture, like fine paper. */
+.chm-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    rgba(29, 42, 20, 0.07) 1px,
+    transparent 1px
+  );
+  background-size: 18px 18px;
+  -webkit-mask-image: linear-gradient(115deg, transparent 35%, #000 100%);
+  mask-image: linear-gradient(115deg, transparent 35%, #000 100%);
+  pointer-events: none;
+}
+
+.chm-hero__main {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  align-items: center;
+  gap: 24px;
+  padding: 32px 36px 24px;
+}
+
+.chm-hero__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 560px;
+}
+.chm-hero__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 10px;
+  border: 1px solid rgba(79, 138, 46, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
+  color: var(--chm-hero-green);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.chm-hero__eyebrow::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #95bf47;
+  box-shadow: 0 0 0 3px rgba(149, 191, 71, 0.25);
+}
+.chm-hero__title {
+  margin: 2px 0 0;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  /* Even lines: never one word left alone on the second. */
+  text-wrap: balance;
+}
+.chm-hero__brand {
+  background: linear-gradient(100deg, #3f7a22 0%, #6aa83a 55%, #95bf47 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.chm-hero__lead {
+  margin: 0;
+  color: var(--chm-hero-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.chm-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+/* Chopi's stage: a soft glowing disc with sparkles, and its hello. */
+.chm-hero__stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.chm-hero__say {
+  position: relative;
+  max-width: 260px;
+  margin: 0 0 6px;
+  padding: 10px 14px;
+  border: 1px solid rgba(29, 42, 20, 0.08);
+  border-radius: 16px 16px 16px 16px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--chm-hero-muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+  text-align: center;
+  box-shadow: 0 10px 24px -14px rgba(29, 42, 20, 0.35);
+  animation: chm-hero-pop 0.6s cubic-bezier(0.34, 1.5, 0.5, 1) 0.3s both;
+}
+.chm-hero__say strong {
+  color: var(--chm-hero-ink);
+  font-weight: 650;
+}
+.chm-hero__say::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  width: 11px;
+  height: 11px;
+  border-right: 1px solid rgba(29, 42, 20, 0.08);
+  border-bottom: 1px solid rgba(29, 42, 20, 0.08);
+  background: #fff;
+  transform: translateX(-50%) rotate(45deg);
+}
+.chm-hero__spot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 190px;
+  height: 170px;
+}
+.chm-hero__spot::before {
+  content: "";
+  position: absolute;
+  inset: 18px 14px 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 55%,
+    #ffffff 0%,
+    #eef7e3 45%,
+    rgba(214, 236, 190, 0) 72%
+  );
+}
+.chm-hero__sparkle {
+  position: absolute;
+  color: #95bf47;
+  animation: chm-hero-twinkle 2.4s ease-in-out infinite;
+}
+.chm-hero__sparkle--a {
+  top: 18px;
+  left: 18px;
+  width: 16px;
+  height: 16px;
+}
+.chm-hero__sparkle--b {
+  top: 40px;
+  right: 14px;
+  width: 11px;
+  height: 11px;
+  color: #f5b041;
+  animation-delay: 0.8s;
+}
+.chm-hero__sparkle--c {
+  bottom: 30px;
+  left: 30px;
+  width: 9px;
+  height: 9px;
+  color: #ff8fb3;
+  animation-delay: 1.5s;
+}
+
+/* Chopi standing on the stage (not hanging beside a phone). */
+.chm-bot.chm-bot--hero {
+  position: relative;
+  top: auto;
+  left: auto;
+  width: 132px;
+  height: 137px;
+  opacity: 1;
+  transform: none;
+  transition: none;
+  pointer-events: auto;
+}
+.chm-bot--hero .chm-bot__tools {
+  top: calc(100% - 10px);
+}
+/* From here Chopi can take a dance break, but it's never hidden. */
+.chm-bot--hero .chm-bot__tool--hide {
+  display: none;
+}
+
+/* Why it works on mobile: four frosted tiles along the bottom. */
+.chm-hero__benefits {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 4px 24px 24px;
+  list-style: none;
+}
+.chm-hero__benefit {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  border: 1px solid rgba(29, 42, 20, 0.07);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.72);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+.chm-hero__benefit:hover {
+  background: #fff;
+  box-shadow: 0 10px 24px -14px rgba(29, 42, 20, 0.3);
+  transform: translateY(-2px);
+}
+.chm-hero__benefit-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  margin-bottom: 8px;
+  border-radius: 11px;
+  background: linear-gradient(140deg, #eef7e3, #d9eec2);
+  color: #3f7a22;
+  box-shadow: inset 0 0 0 1px rgba(63, 122, 34, 0.12);
+}
+.chm-hero__benefit:nth-child(2) .chm-hero__benefit-icon {
+  background: linear-gradient(140deg, #fdf3e3, #f9e2bf);
+  color: #a3661a;
+  box-shadow: inset 0 0 0 1px rgba(163, 102, 26, 0.12);
+}
+.chm-hero__benefit:nth-child(3) .chm-hero__benefit-icon {
+  background: linear-gradient(140deg, #fdeef3, #f9d6e2);
+  color: #b0436c;
+  box-shadow: inset 0 0 0 1px rgba(176, 67, 108, 0.12);
+}
+.chm-hero__benefit:nth-child(4) .chm-hero__benefit-icon {
+  background: linear-gradient(140deg, #eaf2fd, #d3e3f9);
+  color: #2f62a8;
+  box-shadow: inset 0 0 0 1px rgba(47, 98, 168, 0.12);
+}
+.chm-hero__benefit-title {
+  color: var(--chm-hero-ink);
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.chm-hero__benefit-text {
+  color: var(--chm-hero-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+/*
+ * "Try another look": each template as a showcase tile. The phone sits on a
+ * stage in the template's colors; on hover it rises and "Preview" appears.
+ */
+.chm-looks {
+  container-type: inline-size;
+}
+.chm-looks__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.chm-look {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid #ebebeb;
+  border-radius: 16px;
+  background: #fff;
+  transition:
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+.chm-look__stage {
+  position: relative;
+}
+.chm-look__stage .chm-stage {
+  /* Room above the phone for the ribbon. */
+  padding-top: 46px;
+  border-radius: 0;
+}
+/* The phone, gently rising under the pointer. */
+.chm-look__stage .chm-stage > div {
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.chm-look__ribbon {
+  position: absolute;
+  z-index: 1;
+  top: 12px;
+  left: 12px;
+  max-width: calc(100% - 24px);
+  overflow: hidden;
+  padding: 4px 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #303030;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+.chm-look__ribbon.is-new {
+  border-color: transparent;
+  background: linear-gradient(100deg, #3f7a22, #6aa83a);
+  color: #fff;
+}
+.chm-look__cta {
+  position: absolute;
+  z-index: 2;
+  bottom: 16px;
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(26, 26, 26, 0.82);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transform: translate(-50%, 8px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.3s cubic-bezier(0.34, 1.5, 0.5, 1);
+}
+.chm-look__info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px 16px;
+  border-top: 1px solid #f1f1f1;
+}
+.chm-look__name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #1a1a1a;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.chm-look__arrow {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #f3f3f3;
+  color: #303030;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.25s ease;
+}
+.chm-look__tagline {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #616161;
+  font-size: 13px;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.chm-look__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: auto;
+  padding-top: 6px;
+}
+.chm-look__chip {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #f4f6f1;
+  color: #4a5442;
+  font-size: 11px;
+  font-weight: 550;
+}
+
+/* Gallery: the blank-page offer along the hero's bottom. */
+.chm-hero__blank {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  margin: 0 24px 24px;
+  padding: 14px 18px 14px 14px;
+  border: 1px solid rgba(29, 42, 20, 0.07);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.chm-hero__blank .chm-sketch {
+  zoom: 0.8;
+}
+.chm-hero__blank-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.chm-hero__blank-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--chm-hero-ink);
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.chm-hero__blank-text {
+  color: var(--chm-hero-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Gallery filters: soft pills with counts; the chosen one turns green. */
+.chm-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.chm-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px 7px 14px;
+  border: 1px solid #e3e3e3;
+  border-radius: 999px;
+  background: #fff;
+  color: #303030;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.chm-filter:hover {
+  border-color: #c9c9c9;
+  background: #fafafa;
+}
+.chm-filter:focus-visible {
+  outline: 2px solid #5e8e3e;
+  outline-offset: 2px;
+}
+.chm-filter__count {
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #f1f1f1;
+  color: #616161;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.chm-filter[aria-pressed="true"] {
+  border-color: transparent;
+  background: linear-gradient(100deg, #3f7a22, #6aa83a);
+  color: #fff;
+  box-shadow: 0 6px 16px -8px rgba(63, 122, 34, 0.7);
+}
+.chm-filter[aria-pressed="true"] .chm-filter__count {
+  background: rgba(255, 255, 255, 0.24);
+  color: #fff;
+}
+
+/* Gallery tiles: phones you can use, with the actions at the bottom. */
+.chm-looks__grid--gallery {
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 18px;
+}
+.chm-look__best {
+  color: #4f8a2e;
+  font-size: 12px;
+  font-weight: 600;
+}
+.chm-look--live .chm-look__chips {
+  margin-top: 4px;
+}
+.chm-look__actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 14px;
+}
+
+@media (hover: hover) {
+  .chm-look:hover {
+    border-color: #dcdcdc;
+    box-shadow: 0 18px 40px -20px rgba(0, 0, 0, 0.3);
+    transform: translateY(-3px);
+  }
+  /* Pictures rise; working phones stay put (they're being tapped). */
+  .chm-look:not(.chm-look--live):hover .chm-stage > div {
+    transform: translateY(-10px) scale(1.02);
+  }
+  .chm-look:hover .chm-look__cta {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  .chm-look:hover .chm-look__arrow {
+    background: #1a1a1a;
+    color: #fff;
+    transform: translateX(2px);
+  }
+}
+@container (max-width: 640px) {
+  .chm-looks__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/*
+ * Template preview (gallery modal): the phone on a stage in the template's
+ * colors, and the pitch beside it in soft cards.
+ */
+.chm-pv__stage {
+  padding: 22px 26px 22px 16px;
+  border-radius: 20px;
+  background:
+    radial-gradient(
+      110% 70% at 50% 0%,
+      color-mix(in srgb, var(--chm-stage-tint) 20%, transparent),
+      transparent 70%
+    ),
+    color-mix(in srgb, var(--chm-stage-tint) 6%, #f7f7f7);
+}
+.chm-pv {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  color: #1a1a1a;
+}
+.chm-pv__head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.chm-pv__head .chm-look__ribbon {
+  position: static;
+}
+.chm-pv__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.chm-pv__lead {
+  margin: 0;
+  color: #616161;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.chm-pv__best {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.chm-pv__best-label {
+  margin-right: 4px;
+  color: #616161;
+  font-size: 13px;
+}
+.chm-pv__best-pill {
+  padding: 4px 11px;
+  border: 1px solid rgba(79, 138, 46, 0.2);
+  border-radius: 999px;
+  background: #f1f8e9;
+  color: #3f7a22;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.chm-pv__block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.chm-pv__heading {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.chm-pv__highlights {
+  display: grid;
+  gap: 10px;
+}
+.chm-pv__highlight {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 14px;
+  row-gap: 2px;
+  padding: 14px 16px;
+  border: 1px solid #ededed;
+  border-radius: 14px;
+  background: #fff;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.chm-pv__highlight:hover {
+  border-color: #dfe8d6;
+  box-shadow: 0 10px 22px -16px rgba(29, 42, 20, 0.35);
+}
+.chm-pv__highlight-icon {
+  display: grid;
+  grid-row: span 2;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(140deg, #eef7e3, #d9eec2);
+  box-shadow: inset 0 0 0 1px rgba(63, 122, 34, 0.12);
+}
+.chm-pv__highlight:nth-child(2) .chm-pv__highlight-icon {
+  background: linear-gradient(140deg, #fdf3e3, #f9e2bf);
+  box-shadow: inset 0 0 0 1px rgba(163, 102, 26, 0.12);
+}
+.chm-pv__highlight:nth-child(3) .chm-pv__highlight-icon {
+  background: linear-gradient(140deg, #eaf2fd, #d3e3f9);
+  box-shadow: inset 0 0 0 1px rgba(47, 98, 168, 0.12);
+}
+.chm-pv__highlight-title {
+  align-self: end;
+  font-size: 14px;
+  font-weight: 650;
+}
+.chm-pv__highlight-text {
+  color: #616161;
+  font-size: 13px;
+  line-height: 1.5;
+}
+/* Why it sells: a soft green panel with ticks. */
+.chm-pv__sells {
+  padding: 16px 18px;
+  border-radius: 16px;
+  background:
+    radial-gradient(80% 120% at 100% 0%, #e3f3cf 0%, transparent 70%), #f6faf1;
+}
+.chm-pv__reasons,
+.chm-pv__included {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.chm-pv__reasons li,
+.chm-pv__included li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.chm-pv__tick {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-top: 0.5px;
+  border-radius: 50%;
+  background: linear-gradient(140deg, #5fae2f, #3f7a22);
+  color: #fff;
+}
+.chm-pv__included {
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+.chm-pv__included li {
+  padding: 10px 12px;
+  border: 1px solid #ededed;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 13px;
+}
+.chm-pv__included .chm-pv__tick {
+  background: #eef7e3;
+  color: #3f7a22;
+}
+/* Chopi's tip: a warm card. */
+.chm-pv__tip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  border: 1px solid rgba(163, 102, 26, 0.14);
+  border-radius: 16px;
+  background:
+    radial-gradient(70% 120% at 0% 0%, #fdf1dc 0%, transparent 70%), #fffaf2;
+}
+.chm-pv__tip-badge {
+  align-self: flex-start;
+  margin-bottom: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: linear-gradient(100deg, #95bf47, #6aa83a);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+.chm-pv__tip-title {
+  font-size: 14px;
+  font-weight: 650;
+}
+.chm-pv__tip-text {
+  color: #6b5a44;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* The live menu's card: name, status and actions beside its phone. */
+.chm-featured {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 18px;
+}
+.chm-featured__head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.chm-featured__kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #616161;
+  font-size: 11.5px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.chm-featured__kicker::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #b5b5b5;
+}
+.chm-featured__kicker.is-live {
+  color: #3f7a22;
+}
+/* Live: a softly pulsing dot. */
+.chm-featured__kicker.is-live::before {
+  background: #5fae2f;
+  animation: chm-featured-pulse 2s ease-out infinite;
+}
+.chm-featured__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #1a1a1a;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+.chm-featured__meta {
+  color: #616161;
+  font-size: 13px;
+}
+.chm-featured__checks {
+  display: grid;
+  gap: 10px;
+  align-self: stretch;
+  padding: 14px 16px;
+  border: 1px solid #ebebeb;
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+@keyframes chm-featured-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(95, 174, 47, 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 7px rgba(95, 174, 47, 0);
+  }
+}
+@keyframes chm-hero-twinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.7) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(20deg);
+  }
+}
+@keyframes chm-hero-pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.92);
+  }
+}
+
+/* Narrow admin: Chopi above the words, tiles two by two. */
+@container (max-width: 720px) {
+  .chm-hero__blank {
+    grid-template-columns: minmax(0, 1fr);
+    margin: 0 16px 16px;
+  }
+  .chm-hero__blank .chm-sketch {
+    display: none;
+  }
+  .chm-hero__main {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 24px 20px 16px;
+  }
+  .chm-hero__stage {
+    order: -1;
+  }
+  .chm-hero__benefits {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 0 16px 16px;
+  }
+  .chm-hero__title {
+    font-size: 25px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chm-hero__sparkle,
+  .chm-hero__say,
+  .chm-featured__kicker.is-live::before {
+    animation: none;
+  }
+  .chm-look,
+  .chm-filter,
+  .chm-pv__highlight,
+  .chm-look__cta,
+  .chm-look__arrow,
+  .chm-look__stage .chm-stage > div {
+    transition: none;
+  }
+}

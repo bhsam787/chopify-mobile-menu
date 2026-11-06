@@ -5,9 +5,9 @@ import type {
   ResourceLink,
   RouteKey,
   Screen,
-} from "@chopify/menu-core";
-import { ROUTES, resourceKey } from "@chopify/menu-core";
-import type { ResolvedResource } from "@chopify/menu-renderer";
+} from "@chopi/menu-core";
+import { ROUTES, resourceKey } from "@chopi/menu-core";
+import type { ResolvedResource } from "@chopi/menu-renderer";
 import { TextField } from "./controls";
 
 interface LinkFieldProps {
@@ -20,6 +20,8 @@ interface LinkFieldProps {
   onOpenScreen?: (screenId: string) => void;
   /** Lets the preview show a picked resource's image right away. */
   onResource: (key: string, resource: ResolvedResource) => void;
+  /** Offer "Sub-menu…" (not for items that are already a second level). */
+  allowSubMenu?: boolean;
 }
 
 type ListKind = "page" | "blog" | "article" | "screen";
@@ -67,6 +69,7 @@ export function LinkField({
   onCreateScreen,
   onOpenScreen,
   onResource,
+  allowSubMenu = true,
 }: LinkFieldProps) {
   const menuId = `link-menu-${useId().replace(/:/g, "")}`;
   const [list, setList] = useState<ListKind | null>(null);
@@ -156,7 +159,9 @@ export function LinkField({
       icon: "cart",
       run: () => choose({ type: "route", route: "cart" }),
     },
-    { label: "Sub-menu…", icon: "menu", run: () => setList("screen") },
+    ...(allowSubMenu
+      ? [{ label: "Sub-menu…", icon: "menu", run: () => setList("screen") }]
+      : []),
   ];
 
   const isObject = value.type !== "url" && value.type !== "none";

@@ -5,8 +5,8 @@ import type {
   ListLayout,
   Node,
   ShapeNode,
-} from "@chopify/menu-core";
-import { childNodes, nodeLabel } from "@chopify/menu-core";
+} from "@chopi/menu-core";
+import { childNodes, nodeLabel } from "@chopi/menu-core";
 
 /**
  * Items of smart lists (link lists, card grids, chip rows, carousels): what

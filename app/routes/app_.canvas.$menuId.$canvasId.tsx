@@ -8,19 +8,20 @@ import { useLoaderData, useRouteError } from "react-router";
 import type { Prisma } from "@prisma/client";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { AppProvider } from "@shopify/shopify-app-react-router/react";
-import type { Design } from "@chopify/menu-core";
+import type { Design } from "@chopi/menu-core";
 import {
   compile,
   locate,
   MenuTooLargeError,
   parseDesign,
-} from "@chopify/menu-core";
+} from "@chopi/menu-core";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 import { buildPreviewContext } from "../services/preview-context.server";
 import { CanvasEditor } from "../canvas/CanvasEditor";
 import editorStyles from "../editor/editor.css?url";
 import canvasStyles from "../canvas/canvas.css?url";
+import guideBotStyles from "../components/guide-bot.css?url";
 
 /**
  * Full-screen canvas editor. Opened by the menu editor inside an App Bridge
@@ -29,6 +30,7 @@ import canvasStyles from "../canvas/canvas.css?url";
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: editorStyles },
   { rel: "stylesheet", href: canvasStyles },
+  { rel: "stylesheet", href: guideBotStyles },
 ];
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {

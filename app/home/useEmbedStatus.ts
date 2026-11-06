@@ -5,7 +5,7 @@ export const EMBED_HANDLE = "menu-embed";
 
 export type EmbedStatus = "loading" | "active" | "inactive" | "unknown";
 
-/** Whether the merchant's live theme has the Chopify Menu app embed turned on. */
+/** Whether the merchant's live theme has the Chopi - Menu app embed turned on. */
 export function useEmbedStatus(): EmbedStatus {
   const [status, setStatus] = useState<EmbedStatus>("loading");
   useEffect(() => {

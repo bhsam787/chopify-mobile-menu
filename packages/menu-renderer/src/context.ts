@@ -1,4 +1,5 @@
-import type { ImageRef, RouteKey } from "@chopify/menu-core";
+import type { ImageRef, RouteKey } from "@chopi/menu-core";
+import type { SearchResults } from "./search";
 
 /** Store data for one linked resource, resolved by Liquid (storefront) or the Admin API (editor). */
 export interface ResolvedResource {
@@ -6,7 +7,15 @@ export interface ResolvedResource {
   title: string;
   image?: string;
   /** Only for collections that story circles read products from. */
-  products?: { title: string; url: string; image?: string }[];
+  products?: {
+    title: string;
+    url: string;
+    image?: string;
+    /** Formatted in the shopper's currency, e.g. "€29,95". */
+    price?: string;
+    /** The price before a discount, when the product is on sale. */
+    compareAtPrice?: string;
+  }[];
 }
 
 export interface LocalizationOption {
@@ -43,6 +52,18 @@ export interface RenderContext {
   activeTabs?: Record<string, string>;
   /** Editor only: collapsible frames shown open while being edited. */
   expanded?: string[];
+  /**
+   * The store's most searched terms (Shopify's search statistics), merged
+   * into live search's popular searches. null/absent: not available.
+   */
+  topSearches?: string[] | null;
+  /**
+   * Editor only: show live search's results panel open with these results,
+   * so its design can be judged without typing.
+   */
+  searchSample?: SearchResults;
+  /** The shopper's currency (ISO code), for live search prices. */
+  currency?: string;
   /** Fallback image when a node has none (editor placeholders). */
   logo?: ImageRef;
 }

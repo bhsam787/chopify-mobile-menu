@@ -1,5 +1,5 @@
 import type { LoaderFunctionArgs } from "react-router";
-import type { ResourceLink } from "@chopify/menu-core";
+import type { ResourceLink } from "@chopi/menu-core";
 import { authenticate } from "../shopify.server";
 import { gql } from "../services/admin-graphql.server";
 import { storefrontPath } from "../services/resources.server";

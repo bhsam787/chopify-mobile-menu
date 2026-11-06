@@ -7,14 +7,14 @@ import type {
   RowNode,
   Screen,
   WidgetDefinition,
-} from "@chopify/menu-core";
+} from "@chopi/menu-core";
 import {
   childNodes,
   cloneWithNewIds,
   findTemplate,
   newId,
   WIDGETS,
-} from "@chopify/menu-core";
+} from "@chopi/menu-core";
 import { widgetPreview, widgetSample, type Sample } from "./widgetSamples";
 
 /**
@@ -103,6 +103,11 @@ const KEYWORDS: Partial<Record<Node["type"], string>> = {
   divider: "line separator",
   spacer: "gap space",
   canvas: "free design figma",
+  products: "bestsellers new arrivals shop items price collection",
+  perks: "trust shipping returns guarantee usp benefits",
+  contact: "help support whatsapp phone email call chat",
+  discount: "coupon promo code voucher copy",
+  ticker: "marquee announcement scrolling running text",
 };
 
 /** Styles a basic section can be added in (the first is its default). */

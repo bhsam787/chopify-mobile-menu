@@ -5,9 +5,10 @@ import type {
   ImageRef,
   LinkRef,
   Node,
-} from "@chopify/menu-core";
+} from "@chopi/menu-core";
 import {
   addLinksInside,
+  isInSideTabs,
   cloneWithNewIds,
   insertNode,
   isResourceLink,
@@ -17,8 +18,8 @@ import {
   shiftNode,
   updateNode,
   WIDGETS,
-} from "@chopify/menu-core";
-import type { ResolvedResource } from "@chopify/menu-renderer";
+} from "@chopi/menu-core";
+import type { ResolvedResource } from "@chopi/menu-renderer";
 import { SwitchField } from "./controls";
 import { reorder, SortableItem, SortableList } from "./Sortable";
 import {
@@ -477,7 +478,10 @@ export function NodeList({
                             </s-box>
                           )}
                         </s-stack>
-                      ) : canFoldOut && node.type === "row" ? (
+                      ) : canFoldOut &&
+                        node.type === "row" &&
+                        // Side tabs are the second level already.
+                        !isInSideTabs(ctx.design, node.id) ? (
                         <s-stack direction="inline">
                           <s-button
                             variant="tertiary"

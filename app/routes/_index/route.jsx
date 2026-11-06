@@ -27,7 +27,7 @@ export default function App() {
   return (
     <div className={styles.index}>
       <div className={styles.content}>
-        <h1 className={styles.heading}>Chopify Menu</h1>
+        <h1 className={styles.heading}>Chopi - Menu</h1>
         <p className={styles.text}>
           Design a mobile menu that sells, without touching theme code.
         </p>

@@ -4,18 +4,19 @@ import type {
   ListLayout,
   Node,
   ShapeNode,
-} from "@chopify/menu-core";
+} from "@chopi/menu-core";
 import {
   addScreen,
+  CANVAS_WIDTH,
   cloneWithNewIds,
   insertNode,
   locate,
   mapNode,
   newId,
   removeNode,
-} from "@chopify/menu-core";
+} from "@chopi/menu-core";
 import { areaOf, growToFit } from "./arrange";
-import { CANVAS_ELEMENTS } from "./elements";
+import { CANVAS_ELEMENTS, SIDE_MARGIN } from "./elements";
 import {
   isList,
   itemTitle,
@@ -33,7 +34,8 @@ import {
  * tab or canvas grows to fit.
  */
 
-const SAMPLE_LINK = {
+/** Where new sample items go until the merchant picks a link. */
+export const SAMPLE_LINK = {
   type: "route",
   route: "all_products",
   sample: true,
@@ -262,17 +264,30 @@ export function createSubMenu(
       ...SAMPLE_LINK,
     }),
   );
+  // The parent list may sit inside a frame; on the new screen it starts
+  // with the usual side margins. A sideways row runs to the edges and
+  // starts its first item at the margin, so it can still scroll.
+  const inner = CANVAS_WIDTH - SIDE_MARGIN * 2;
+  const row = list.list?.direction === "row";
   const subList: ShapeNode = {
     ...cloneWithNewIds({ ...list, children: [] }),
-    children: items,
-    frame: { ...list.frame, x: list.frame.x, y: 64 },
+    children: row
+      ? items.map((child, index) =>
+          index === 0 && child.frame
+            ? { ...child, frame: { ...child.frame, x: SIDE_MARGIN } }
+            : child,
+        )
+      : items,
+    frame: row
+      ? { ...list.frame, x: 0, y: 64, w: CANVAS_WIDTH }
+      : { ...list.frame, x: SIDE_MARGIN, y: 64, w: inner },
   };
   const heading: Node = {
     id: newId("hd"),
     type: "heading",
     text: title,
     style: { size: 22, weight: 700 },
-    frame: { x: list.frame.x, y: 16, w: Math.max(120, list.frame.w), h: 32 },
+    frame: { x: SIDE_MARGIN, y: 16, w: inner, h: 32 },
   };
   const laid = layoutList(subList as ListFrame);
   const height = Math.max(

@@ -1,5 +1,6 @@
 import { NO_LINK } from "./links";
 import { richToPlain } from "./richtext";
+import { templateImage } from "./templates/images";
 import { newId } from "./tree";
 import type { ContainerNode, Node, NodeType } from "./types";
 
@@ -75,7 +76,7 @@ export const WIDGETS: WidgetDefinition[] = [
     type: "canvas",
     label: "Canvas",
     description:
-      "Design freely: place text, images, shapes and widgets anywhere, like in Figma.",
+      "Design freely: place text, images, shapes and widgets anywhere you like.",
     group: "Layout",
     create: () => ({
       id: newId("cv"),
@@ -339,6 +340,111 @@ export const WIDGETS: WidgetDefinition[] = [
       radius: 12,
     }),
   },
+  {
+    type: "products",
+    label: "Product cards",
+    description:
+      "Products from a collection with photo, title and price, always current and in the shopper's currency.",
+    group: "Store",
+    create: () => ({
+      id: newId("pr"),
+      type: "products",
+      layout: "row",
+      limit: 6,
+      showPrice: true,
+      cardWidth: 140,
+      ratio: 1.2,
+      imageBackground: "#F4F4F4",
+      sample: (
+        [
+          ["Navy suit", "fashion/suits"],
+          ["Oxford shirt", "fashion/shirts"],
+          ["Merino knit", "fashion/knitwear"],
+          ["Slim jeans", "fashion/jeans"],
+          ["Field jacket", "fashion/jackets"],
+          ["Chinos", "fashion/chinos"],
+        ] as const
+      ).map(([title, image]) => ({
+        title,
+        image: templateImage(image, title),
+      })),
+    }),
+  },
+  {
+    type: "perks",
+    label: "Perks",
+    description:
+      "Short reassurances with icons, e.g. shipping, returns and secure checkout.",
+    group: "Promotion",
+    create: () => ({
+      id: newId("pk"),
+      type: "perks",
+      variant: "stacked",
+      columns: 3,
+      items: [
+        { id: newId("pi"), icon: "truck", text: "Fast shipping" },
+        { id: newId("pi"), icon: "return", text: "Easy returns" },
+        { id: newId("pi"), icon: "lock", text: "Secure checkout" },
+      ],
+      box: { background: "#F5F4F2", radius: 12, padding: [14, 8, 14, 8] },
+      style: { size: 12, weight: 600 },
+    }),
+  },
+  {
+    type: "contact",
+    label: "Contact & help",
+    description:
+      "Buttons to call, email or message the store, or open a help page.",
+    group: "Store",
+    create: () => ({
+      id: newId("ct"),
+      type: "contact",
+      title: "Need help?",
+      variant: "buttons",
+      items: [
+        { id: newId("ci"), kind: "email", label: "Email us", value: "" },
+        { id: newId("ci"), kind: "whatsapp", label: "WhatsApp", value: "" },
+      ],
+      titleStyle: { size: 15, weight: 600 },
+    }),
+  },
+  {
+    type: "discount",
+    label: "Discount code",
+    description:
+      "A code shoppers copy with one tap, optionally applied to the cart.",
+    group: "Promotion",
+    create: () => ({
+      id: newId("dc"),
+      type: "discount",
+      title: "Your welcome gift",
+      text: "Use this code at checkout.",
+      code: "WELCOME10",
+      applyLink: false,
+      box: { background: "#FFF4E5", radius: 14, padding: 16 },
+      titleStyle: { size: 16, weight: 700 },
+    }),
+  },
+  {
+    type: "ticker",
+    label: "Ticker",
+    description:
+      "A thin strip of short messages that scrolls sideways in a loop.",
+    group: "Promotion",
+    create: () => ({
+      id: newId("tk"),
+      type: "ticker",
+      speed: 40,
+      separator: "✦",
+      items: [
+        { id: newId("ti"), text: "New arrivals every week" },
+        { id: newId("ti"), text: "Free returns" },
+        { id: newId("ti"), text: "Gift wrapping available" },
+      ],
+      box: { background: "#1A1A1A", padding: [10, 0, 10, 0] },
+      style: { size: 13, weight: 600, color: "#FFFFFF" },
+    }),
+  },
 ];
 
 export const NODE_LABELS: Record<NodeType, string> = {
@@ -365,6 +471,11 @@ export const NODE_LABELS: Record<NodeType, string> = {
   spacer: "Spacer",
   canvas: "Canvas",
   shape: "Shape",
+  products: "Product cards",
+  perks: "Perks",
+  contact: "Contact & help",
+  discount: "Discount code",
+  ticker: "Ticker",
 };
 
 /** Short label for a node in the layers panel. */

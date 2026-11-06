@@ -1,5 +1,5 @@
-import type { Design, Screen } from "@chopify/menu-core";
-import { walkDesign } from "@chopify/menu-core";
+import type { Design, Screen } from "@chopi/menu-core";
+import { walkDesign } from "@chopi/menu-core";
 
 /**
  * The way from the main menu to a sub-menu, following the links that open

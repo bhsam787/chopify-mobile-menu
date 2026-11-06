@@ -1,5 +1,10 @@
-import type { Design, Node } from "@chopify/menu-core";
-import { childNodes, describeLink, nodeLabel } from "@chopify/menu-core";
+import type { Design, Node } from "@chopi/menu-core";
+import {
+  childNodes,
+  describeLink,
+  isInSideTabs,
+  nodeLabel,
+} from "@chopi/menu-core";
 import { isList, itemLink, itemTitle } from "./items";
 import { isCanvasScreen } from "./convert";
 
@@ -87,7 +92,7 @@ export function MenuTree({
             >
               Open
             </button>
-          ) : (
+          ) : isInSideTabs(design, item.node.id) ? null : (
             <button
               type="button"
               className="cve-tree__action"

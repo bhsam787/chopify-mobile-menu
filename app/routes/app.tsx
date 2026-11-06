@@ -9,9 +9,12 @@ import { AppProvider } from "@shopify/shopify-app-react-router/react";
 import { authenticate } from "../shopify.server";
 import { ensureShop } from "../models/shop.server";
 import motionStyles from "../components/motion.css?url";
+import guideBotStyles from "../components/guide-bot.css?url";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: motionStyles },
+  // Chopi, the helper robot: on the home page and beside every preview.
+  { rel: "stylesheet", href: guideBotStyles },
 ];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -27,7 +30,12 @@ export default function App() {
   return (
     <AppProvider apiKey={apiKey}>
       <s-app-nav>
-        <s-link href="/app">Home</s-link>
+        {/* The app's name in the sidebar opens the home page: rel="home"
+            sets it and keeps it out of the menu as a separate "Home" item
+            (App Bridge reads the attribute; Polaris' types don't list it). */}
+        <s-link href="/app" {...({ rel: "home" } as object)}>
+          Home
+        </s-link>
         <s-link href="/app/templates">Templates</s-link>
       </s-app-nav>
       <Outlet />

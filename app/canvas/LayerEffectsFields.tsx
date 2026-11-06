@@ -1,4 +1,4 @@
-import type { LayerEffects } from "@chopify/menu-core";
+import type { LayerEffects } from "@chopi/menu-core";
 import {
   ColorField,
   FieldRow,

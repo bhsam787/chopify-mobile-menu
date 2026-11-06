@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { isSafeUrl, richToHtml } from "@chopify/menu-core";
+import { isSafeUrl, richToHtml } from "@chopi/menu-core";
 import { TextField } from "./controls";
 
 /**

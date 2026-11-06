@@ -268,3 +268,15 @@ export function removeScreen(design: Design, screenId: string): Design {
   designRoots(next).forEach(visit);
   return next;
 }
+
+/**
+ * Whether a node sits inside side tabs. Side tabs are already the second
+ * level (tap a category, see its items), so their items don't get sub-menus.
+ */
+export function isInSideTabs(design: Design, id: string): boolean {
+  const path = locate(design, id)?.path ?? [];
+  return path.some((ancestorId) => {
+    const ancestor = locate(design, ancestorId)?.node;
+    return ancestor?.type === "tabs" && ancestor.placement === "side";
+  });
+}

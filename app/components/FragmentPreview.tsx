@@ -1,10 +1,11 @@
 import { useEffect, useRef } from "react";
-import type { Design, Node } from "@chopify/menu-core";
+import type { Design, Node } from "@chopi/menu-core";
 import {
   MENU_CSS,
   renderFragment,
   type RenderContext,
-} from "@chopify/menu-renderer";
+} from "@chopi/menu-renderer";
+import { cleanCustomCss } from "@chopi/menu-core";
 
 const PREVIEW_FONT = `-apple-system, BlinkMacSystemFont, "San Francisco", "Segoe UI", Roboto, "Helvetica Neue", sans-serif`;
 
@@ -33,7 +34,7 @@ export function FragmentPreview({
       : "";
     // The menu's editor styles turn clicks back on (.chm-editor); a picture
     // must never be clicked into (its links would navigate the admin).
-    shadow.innerHTML = `<style>${MENU_CSS} :host{pointer-events:none} .chm-root,.chm-root *{pointer-events:none!important}${bareCss}</style>${renderFragment(design, [node], { ...context, editor: true })}`;
+    shadow.innerHTML = `<style>${MENU_CSS} :host{pointer-events:none} .chm-root,.chm-root *{pointer-events:none!important}${bareCss}${cleanCustomCss(design.customCss)}</style>${renderFragment(design, [node], { ...context, editor: true })}`;
   }, [design, node, context, bare]);
 
   // Never follow a link of the menu inside the editor.

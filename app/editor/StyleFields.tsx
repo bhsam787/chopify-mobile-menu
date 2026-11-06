@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { Badge, BoxStyle, Spacing, TextStyle } from "@chopify/menu-core";
+import type { Badge, BoxStyle, Spacing, TextStyle } from "@chopi/menu-core";
 import { ColorField, FieldRow } from "./controls";
 import {
   ALIGN_ICONS,
@@ -195,6 +195,21 @@ const TEXT_PARTS: Record<
     title: "Label text",
     help: "The look of the names under the circles.",
     target: ".chm-story__label",
+  },
+  productTitleStyle: {
+    title: "Product name",
+    help: "The look of the product names.",
+    target: ".chm-product__title",
+  },
+  priceStyle: {
+    title: "Price",
+    help: "The look of the prices.",
+    target: ".chm-product__price",
+  },
+  contactStyle: {
+    title: "Button text",
+    help: "The look of the text on the contact buttons.",
+    target: ".chm-contact__item",
   },
   "style.text": {
     title: "Tab text",

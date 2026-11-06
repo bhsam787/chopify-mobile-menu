@@ -15,8 +15,8 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { Design } from "@chopify/menu-core";
-import { locate, moveNode } from "@chopify/menu-core";
+import type { Design } from "@chopi/menu-core";
+import { locate, moveNode } from "@chopi/menu-core";
 
 /**
  * Moves `activeId` to where `overId` is, within the same container

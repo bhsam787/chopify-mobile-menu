@@ -31,5 +31,5 @@ database.sqlite
 .playwright-mcp/
 
 # Built by scripts/build-storefront.mjs (npm run dev/build/deploy)
-extensions/chopify-menu/assets/chopify-menu.js
-extensions/chopify-menu/assets/chopify-menu-app.js
+extensions/chopi-menu/assets/chopi-menu.js
+extensions/chopi-menu/assets/chopi-menu-app.js

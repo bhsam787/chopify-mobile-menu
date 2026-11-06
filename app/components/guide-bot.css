@@ -1,0 +1,1021 @@
+/*
+ * Chopi, the helper robot (app/components/GuideBot.tsx), wherever it
+ * appears: beside a preview phone (editor, design dialogs, canvas, template
+ * preview) and on the home page.
+ */
+/* The helper's own lane beside the phone (MenuPreview adds it). */
+.chm-guide-lane {
+  flex: none;
+  padding-left: 86px;
+}
+.chm-guide-restore,
+.chm-designws__guide-on {
+  margin-left: 6px;
+  padding: 2px 8px;
+  border: 1px solid #d4d4d8;
+  border-radius: 999px;
+  background: #fff;
+  color: #3f7a22;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.chm-guide-restore:hover,
+.chm-designws__guide-on:hover {
+  border-color: #5e8e3e;
+}
+
+/*
+ * Chopi, the helper robot (app/components/GuideBot.tsx). It hangs on the
+ * phone's left edge; MenuPreview sets --chm-bot-y (the finger's height) and
+ * data-pose (side / up / down). The finger tip sits 37px below its top.
+ */
+.chm-bot {
+  --chm-bot-y: 50%;
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: -82px;
+  width: 80px;
+  height: 83px;
+  opacity: 0;
+  transform: translateY(calc(var(--chm-bot-y) - 37px)) scale(0.6);
+  transform-origin: 90% 45%;
+  pointer-events: none;
+}
+.chm-bot.is-shown {
+  opacity: 1;
+  transform: translateY(calc(var(--chm-bot-y) - 37px));
+  pointer-events: auto;
+  /* A springy glide to the next part. */
+  transition:
+    transform 0.6s cubic-bezier(0.34, 1.45, 0.5, 1),
+    opacity 0.25s ease;
+}
+/* Under its feet: stop/start dancing, hide. Only while the helper is hovered (or focused). */
+.chm-bot__tools {
+  position: absolute;
+  z-index: 1;
+  top: calc(100% - 4px);
+  left: 50%;
+  display: flex;
+  gap: 4px;
+  transform: translateX(-56%) translateY(-4px);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+.chm-bot:hover .chm-bot__tools,
+.chm-bot:has(.chm-bot__tool:focus-visible) .chm-bot__tools {
+  opacity: 1;
+  transform: translateX(-56%);
+  pointer-events: auto;
+}
+.chm-bot__tool {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid #d5dccf;
+  border-radius: 50%;
+  background: #fff;
+  color: #22401a;
+  box-shadow: 0 1px 3px rgba(34, 64, 26, 0.15);
+  cursor: pointer;
+}
+.chm-bot__tool:hover {
+  border-color: #5e8e3e;
+  background: #f1f7ea;
+}
+.chm-bot__tool:focus-visible {
+  outline: 2px solid #5e8e3e;
+  outline-offset: 1px;
+}
+/* A soft pill tooltip under the button ("Take a dance break", "Hide me for now"), with a little pointer. */
+.chm-bot__tool {
+  position: relative;
+}
+.chm-bot__tool::before,
+.chm-bot__tool::after {
+  position: absolute;
+  left: 50%;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.18s ease,
+    transform 0.28s cubic-bezier(0.34, 1.5, 0.5, 1);
+}
+.chm-bot__tool::after {
+  content: attr(data-tip);
+  z-index: 1;
+  top: calc(100% + 9px);
+  padding: 6px 11px 6px;
+  border: 1px solid rgba(34, 64, 26, 0.1);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffffff, #f4f9ee);
+  color: #22401a;
+  font:
+    600 11.5px/1.2 -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  box-shadow:
+    0 10px 24px -8px rgba(34, 64, 26, 0.35),
+    0 2px 6px rgba(34, 64, 26, 0.08);
+  transform: translate(-50%, -4px) scale(0.9);
+  transform-origin: 50% 0;
+}
+.chm-bot__tool::before {
+  content: "";
+  z-index: 2;
+  top: calc(100% + 5px);
+  width: 8px;
+  height: 8px;
+  border-top: 1px solid rgba(34, 64, 26, 0.1);
+  border-left: 1px solid rgba(34, 64, 26, 0.1);
+  border-radius: 2px 0 0;
+  background: #fff;
+  transform: translate(-50%, -4px) rotate(45deg) scale(0.9);
+}
+.chm-bot__tool:hover::after,
+.chm-bot__tool:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+.chm-bot__tool:hover::before,
+.chm-bot__tool:focus-visible::before {
+  opacity: 1;
+  transform: translate(-50%, 0) rotate(45deg);
+}
+.chm-bot svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transition: transform 0.2s ease;
+}
+.chm-bot svg:hover {
+  transform: scale(1.08) rotate(-3deg);
+}
+
+/* Always grooving a little, to the beat, even while pointing. */
+.chm-bot__float {
+  transform-origin: 44px 92px;
+  animation: chm-bot-bob 0.6s ease-in-out infinite alternate;
+}
+.chm-bot__shadow {
+  transform-origin: 44px 91px;
+  animation: chm-bot-shadow 0.6s ease-in-out infinite alternate;
+}
+.chm-bot__eyes {
+  transform-origin: 43.5px 48px;
+  animation: chm-bot-blink 4.2s infinite;
+  transition: translate 0.3s ease;
+}
+/* The heart on the handle beats. */
+.chm-bot__heart {
+  transform-origin: 44px 15px;
+  animation: chm-bot-heartbeat 1.2s ease-in-out infinite;
+}
+.chm-bot__arm {
+  transform-origin: 66px 50px;
+  transition: transform 0.35s cubic-bezier(0.34, 1.45, 0.5, 1);
+}
+.chm-bot__poke {
+  animation: chm-bot-poke 0.9s ease-in-out infinite alternate;
+}
+.chm-bot__wave {
+  transform-origin: 22px 50px;
+  transition: transform 0.35s cubic-bezier(0.34, 1.45, 0.5, 1);
+  animation: chm-bot-sway 2.2s ease-in-out infinite alternate;
+}
+.chm-bot__leg--a {
+  transform-origin: 35px 70px;
+  animation: chm-bot-dangle 1.9s ease-in-out infinite alternate;
+}
+.chm-bot__leg--b {
+  transform-origin: 51px 70px;
+  animation: chm-bot-dangle 1.9s ease-in-out -0.95s infinite alternate;
+}
+/* Gliding to another part: legs kick like it's climbing the phone. */
+.chm-bot.is-moving .chm-bot__leg--a,
+.chm-bot.is-moving .chm-bot__leg--b {
+  animation-name: chm-bot-kick;
+  animation-duration: 0.22s;
+}
+
+/* Out of sight above or below: it points that way and looks there. */
+.chm-bot[data-pose="up"] .chm-bot__arm {
+  transform: rotate(-58deg);
+}
+.chm-bot[data-pose="down"] .chm-bot__arm {
+  transform: rotate(58deg);
+}
+.chm-bot[data-pose="up"] .chm-bot__eyes {
+  translate: 1px -2.5px;
+}
+.chm-bot[data-pose="down"] .chm-bot__eyes {
+  translate: 1px 2.5px;
+}
+
+/* Nothing to point at: it dances beside the phone. */
+.chm-bot[data-pose="dance"] .chm-bot__float {
+  animation: chm-bot-groove 0.5s ease-in-out infinite alternate;
+}
+.chm-bot[data-pose="dance"] .chm-bot__arm {
+  animation: chm-bot-raise 0.5s ease-in-out infinite alternate;
+}
+.chm-bot[data-pose="dance"] .chm-bot__wave {
+  animation: chm-bot-wave-up 0.5s ease-in-out -0.25s infinite alternate;
+}
+.chm-bot[data-pose="dance"] .chm-bot__leg--a,
+.chm-bot[data-pose="dance"] .chm-bot__leg--b {
+  animation: chm-bot-step 0.5s ease-in-out infinite alternate;
+}
+.chm-bot[data-pose="dance"] .chm-bot__leg--b {
+  animation-delay: -0.5s;
+}
+.chm-bot[data-pose="dance"] .chm-bot__shadow {
+  animation: chm-bot-shadow 0.5s ease-in-out infinite alternate;
+}
+
+/*
+ * The dance routine: GuideBot switches data-move every few seconds while
+ * the helper has nothing to point at. "sway" is the base dance above; each
+ * move restyles the parts it needs. Origins (in the drawing's units):
+ * shoulder 66,50 (arm, pointing right at 0deg), shoulder 22,50 (wave arm,
+ * hanging down-left), hips 35,72 / 52,72, feet 44,91.
+ */
+.chm-bot[data-pose="dance"][data-move="hop"] .chm-bot__float {
+  animation: chm-move-hop 0.55s ease-in-out infinite;
+}
+.chm-bot[data-pose="dance"][data-move="hop"] .chm-bot__arm {
+  animation: none;
+  transform: rotate(-105deg);
+}
+.chm-bot[data-pose="dance"][data-move="hop"] .chm-bot__wave {
+  animation: none;
+  transform: rotate(110deg);
+}
+.chm-bot[data-pose="dance"][data-move="hop"] .chm-bot__leg--a,
+.chm-bot[data-pose="dance"][data-move="hop"] .chm-bot__leg--b {
+  animation: chm-move-tuck 0.55s ease-in-out infinite;
+}
+.chm-bot[data-pose="dance"][data-move="spin"] .chm-bot__float {
+  transform-origin: 44px 60px;
+  animation: chm-move-spin 1.3s ease-in-out infinite;
+}
+.chm-bot[data-pose="dance"][data-move="spin"] .chm-bot__arm {
+  animation: none;
+  transform: rotate(-95deg);
+}
+.chm-bot[data-pose="dance"][data-move="spin"] .chm-bot__wave {
+  animation: none;
+  transform: rotate(100deg);
+}
+.chm-bot[data-pose="dance"][data-move="hello"] .chm-bot__float {
+  animation: chm-move-tilt 1.3s ease-in-out infinite alternate;
+}
+.chm-bot[data-pose="dance"][data-move="hello"] .chm-bot__wave {
+  animation: chm-move-hello 0.32s ease-in-out infinite alternate;
+}
+.chm-bot[data-pose="dance"][data-move="hello"] .chm-bot__arm {
+  animation: none;
+  transform: rotate(75deg);
+}
+.chm-bot[data-pose="dance"][data-move="hello"] .chm-bot__leg--a,
+.chm-bot[data-pose="dance"][data-move="hello"] .chm-bot__leg--b {
+  animation: none;
+}
+.chm-bot[data-pose="dance"][data-move="heart"] .chm-bot__arm {
+  animation: none;
+  transform: rotate(-78deg);
+}
+.chm-bot[data-pose="dance"][data-move="heart"] .chm-bot__wave {
+  animation: none;
+  transform: rotate(118deg);
+}
+.chm-bot[data-pose="dance"][data-move="heart"] .chm-bot__heart {
+  animation: chm-move-heart 0.6s ease-in-out infinite;
+}
+.chm-bot[data-pose="dance"][data-move="heart"] .chm-bot__float {
+  animation: chm-move-tilt 1.2s ease-in-out infinite alternate;
+}
+.chm-bot[data-pose="dance"][data-move="twist"] .chm-bot__float {
+  animation: chm-move-twist 0.3s ease-in-out infinite alternate;
+}
+.chm-bot[data-pose="dance"][data-move="twist"] .chm-bot__arm {
+  animation: chm-move-twist-arm 0.3s ease-in-out infinite alternate;
+}
+.chm-bot[data-pose="dance"][data-move="twist"] .chm-bot__wave {
+  animation: chm-move-twist-wave 0.3s ease-in-out infinite alternate;
+}
+.chm-bot[data-pose="dance"][data-move="twist"] .chm-bot__leg--a,
+.chm-bot[data-pose="dance"][data-move="twist"] .chm-bot__leg--b {
+  animation-duration: 0.3s;
+}
+.chm-bot[data-pose="dance"][data-move="robot"] .chm-bot__float {
+  animation: chm-move-robot 1.2s steps(1, end) infinite;
+}
+.chm-bot[data-pose="dance"][data-move="robot"] .chm-bot__arm {
+  animation: chm-move-robot-arm 1.2s steps(1, end) infinite;
+}
+.chm-bot[data-pose="dance"][data-move="robot"] .chm-bot__wave {
+  animation: chm-move-robot-wave 1.2s steps(1, end) infinite;
+}
+.chm-bot[data-pose="dance"][data-move="robot"] .chm-bot__eyes {
+  animation: chm-move-robot-eyes 1.2s steps(1, end) infinite;
+}
+.chm-bot[data-pose="dance"][data-move="robot"] .chm-bot__leg--a,
+.chm-bot[data-pose="dance"][data-move="robot"] .chm-bot__leg--b {
+  animation: none;
+}
+.chm-bot[data-pose="dance"][data-move="squish"] .chm-bot__float {
+  animation: chm-move-squish 0.42s ease-in-out infinite alternate;
+}
+.chm-bot[data-pose="dance"][data-move="squish"] .chm-bot__arm {
+  animation: none;
+  transform: rotate(-35deg);
+}
+.chm-bot[data-pose="dance"][data-move="squish"] .chm-bot__wave {
+  animation: none;
+  transform: rotate(45deg);
+}
+.chm-bot[data-pose="dance"][data-move="squish"] .chm-bot__leg--a,
+.chm-bot[data-pose="dance"][data-move="squish"] .chm-bot__leg--b {
+  animation: none;
+}
+.chm-bot[data-pose="dance"][data-move="moonwalk"] .chm-bot__float {
+  animation: chm-move-slide 1.3s ease-in-out infinite;
+}
+.chm-bot[data-pose="dance"][data-move="moonwalk"] .chm-bot__arm {
+  animation: chm-move-swing 0.65s ease-in-out infinite alternate;
+}
+.chm-bot[data-pose="dance"][data-move="moonwalk"] .chm-bot__wave {
+  animation: chm-move-swing-back 0.65s ease-in-out infinite alternate;
+}
+.chm-bot[data-pose="dance"][data-move="moonwalk"] .chm-bot__leg--a,
+.chm-bot[data-pose="dance"][data-move="moonwalk"] .chm-bot__leg--b {
+  animation: chm-move-glide 0.65s ease-in-out infinite alternate;
+}
+.chm-bot[data-pose="dance"][data-move="moonwalk"] .chm-bot__leg--b {
+  animation-delay: -0.65s;
+}
+.chm-bot[data-pose="dance"][data-move="peekaboo"] .chm-bot__arm {
+  animation: chm-move-peek-arm 1.4s ease-in-out infinite;
+}
+.chm-bot[data-pose="dance"][data-move="peekaboo"] .chm-bot__wave {
+  animation: chm-move-peek-wave 1.4s ease-in-out infinite;
+}
+.chm-bot[data-pose="dance"][data-move="peekaboo"] .chm-bot__eyes {
+  animation: chm-move-peek-eyes 1.4s ease-in-out infinite;
+}
+.chm-bot[data-pose="dance"][data-move="peekaboo"] .chm-bot__float {
+  animation: chm-move-peek-jump 1.4s ease-in-out infinite;
+}
+.chm-bot[data-pose="dance"][data-move="peekaboo"] .chm-bot__leg--a,
+.chm-bot[data-pose="dance"][data-move="peekaboo"] .chm-bot__leg--b {
+  animation: none;
+}
+.chm-bot[data-pose="dance"][data-move="clap"] .chm-bot__arm {
+  animation: chm-move-clap-arm 0.26s ease-in-out infinite alternate;
+}
+.chm-bot[data-pose="dance"][data-move="clap"] .chm-bot__wave {
+  animation: chm-move-clap-wave 0.26s ease-in-out infinite alternate;
+}
+.chm-bot[data-pose="dance"][data-move="clap"] .chm-bot__float {
+  animation: chm-move-bounce 0.52s ease-in-out infinite;
+}
+.chm-bot[data-pose="dance"][data-move="clap"] .chm-bot__heart {
+  animation: chm-move-heart 0.52s ease-in-out infinite;
+}
+.chm-bot[data-pose="dance"][data-move="flip"] .chm-bot__float {
+  transform-origin: 44px 52px;
+  animation: chm-move-flip 1.6s ease-in-out infinite;
+}
+.chm-bot[data-pose="dance"][data-move="flip"] .chm-bot__arm {
+  animation: none;
+  transform: rotate(-100deg);
+}
+.chm-bot[data-pose="dance"][data-move="flip"] .chm-bot__wave {
+  animation: none;
+  transform: rotate(105deg);
+}
+.chm-bot[data-pose="dance"][data-move="flip"] .chm-bot__leg--a,
+.chm-bot[data-pose="dance"][data-move="flip"] .chm-bot__leg--b {
+  animation: none;
+}
+.chm-bot[data-pose="dance"][data-move="shy"] .chm-bot__float {
+  animation: chm-move-shy 1.6s ease-in-out infinite alternate;
+}
+.chm-bot[data-pose="dance"][data-move="shy"] .chm-bot__arm {
+  animation: none;
+  transform: rotate(125deg);
+}
+.chm-bot[data-pose="dance"][data-move="shy"] .chm-bot__wave {
+  animation: none;
+  transform: rotate(-35deg);
+}
+.chm-bot[data-pose="dance"][data-move="shy"] .chm-bot__eyes {
+  animation: none;
+  translate: 0 2px;
+}
+.chm-bot[data-pose="dance"][data-move="shy"] .chm-bot__blush {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: chm-move-blush 0.8s ease-in-out infinite alternate;
+}
+.chm-bot[data-pose="dance"][data-move="shy"] .chm-bot__leg--a {
+  animation: chm-move-kick 0.8s ease-in-out infinite alternate;
+}
+.chm-bot[data-pose="dance"][data-move="shy"] .chm-bot__leg--b {
+  animation: none;
+}
+.chm-bot[data-pose="dance"][data-move="disco"] .chm-bot__float {
+  animation: chm-move-disco 1s steps(1, end) infinite;
+}
+.chm-bot[data-pose="dance"][data-move="disco"] .chm-bot__arm {
+  animation: chm-move-disco-arm 1s steps(1, end) infinite;
+}
+.chm-bot[data-pose="dance"][data-move="disco"] .chm-bot__wave {
+  animation: none;
+  transform: rotate(25deg);
+}
+.chm-bot[data-pose="dance"][data-move="disco"] .chm-bot__leg--b {
+  animation: chm-move-kick 0.5s ease-in-out infinite alternate;
+}
+.chm-bot[data-pose="dance"][data-move="disco"] .chm-bot__leg--a {
+  animation: none;
+}
+
+/* Dancing switched off: it just floats, arm resting, feet still. */
+.chm-bot.is-still[data-pose] .chm-bot__float {
+  animation: chm-bot-rest 2.8s ease-in-out infinite alternate;
+}
+.chm-bot.is-still[data-pose] .chm-bot__shadow {
+  animation: none;
+}
+.chm-bot.is-still[data-pose="dance"] .chm-bot__arm {
+  animation: none;
+  transform: rotate(70deg);
+}
+.chm-bot.is-still[data-pose="dance"] .chm-bot__wave,
+.chm-bot.is-still[data-pose="dance"] .chm-bot__leg--a,
+.chm-bot.is-still[data-pose="dance"] .chm-bot__leg--b {
+  animation: none;
+}
+
+.chm-bot__bubble {
+  position: absolute;
+  z-index: 1;
+  bottom: calc(100% + 2px);
+  /* Never past the robot's left edge (the preview card clips there): it
+     grows to the right, over the phone. */
+  left: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: max-content;
+  min-width: 128px;
+  max-width: 250px;
+  padding: 8px 11px 9px;
+  border-radius: 14px 14px 14px 4px;
+  background: #fff;
+  color: #1d2a14;
+  text-align: left;
+  font:
+    500 11px/1.25 -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  box-shadow:
+    0 0 0 1.5px #22401a,
+    0 10px 24px -6px rgba(34, 64, 26, 0.3);
+  transform-origin: 12px 100%;
+  animation: chm-bot-pop 0.38s cubic-bezier(0.34, 1.5, 0.5, 1);
+  pointer-events: none;
+}
+/* The tail, pointing down at the helper's head. */
+.chm-bot__bubble::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 30px;
+  width: 9px;
+  height: 9px;
+  margin-top: -5px;
+  background: #fff;
+  box-shadow: 1.5px 1.5px 0 #22401a;
+  transform: rotate(45deg);
+}
+.chm-bot__caption {
+  overflow: hidden;
+  color: #4f8a2e;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+/* A short sentence: up to two lines. */
+.chm-bot__text {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 12.5px;
+  font-weight: 650;
+  line-height: 1.3;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.chm-bot__change {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+.chm-bot__value {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 120px;
+  overflow: hidden;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #4f8a2e;
+  color: #fff;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+}
+.chm-bot__value--before {
+  background: #eef5e6;
+  color: #5d6b52;
+  font-weight: 550;
+  text-decoration: line-through;
+  text-decoration-color: rgba(93, 107, 82, 0.6);
+}
+.chm-bot__dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+}
+.chm-bot__arrow {
+  color: #4f8a2e;
+  font-weight: 700;
+}
+/* The mouth chatters from here (GuideBot plays it on each new line). */
+.chm-bot__mouth {
+  transform-origin: 43.5px 55px;
+}
+
+/* Clicked away: a quick wave, then it drops out of sight. */
+.chm-bot.is-leaving {
+  pointer-events: none;
+}
+.chm-bot.is-leaving svg {
+  animation: chm-bot-leave 0.7s ease-in forwards;
+}
+.chm-bot.is-leaving .chm-bot__wave {
+  animation: chm-bot-goodbye 0.16s ease-in-out 4 alternate;
+}
+
+@keyframes chm-bot-bob {
+  from {
+    transform: rotate(-2deg);
+  }
+  to {
+    transform: translateY(-3px) rotate(2deg);
+  }
+}
+@keyframes chm-bot-groove {
+  from {
+    transform: rotate(-7deg);
+  }
+  to {
+    transform: translateY(-6px) rotate(7deg);
+  }
+}
+@keyframes chm-bot-raise {
+  from {
+    transform: rotate(-125deg);
+  }
+  to {
+    transform: rotate(-80deg);
+  }
+}
+@keyframes chm-bot-wave-up {
+  from {
+    transform: rotate(50deg);
+  }
+  to {
+    transform: rotate(115deg);
+  }
+}
+@keyframes chm-bot-step {
+  from {
+    transform: rotate(-16deg);
+  }
+  to {
+    transform: rotate(16deg);
+  }
+}
+@keyframes chm-bot-rest {
+  to {
+    transform: translateY(-3px);
+  }
+}
+@keyframes chm-bot-shadow {
+  to {
+    transform: scaleX(0.8);
+    opacity: 0.08;
+  }
+}
+@keyframes chm-bot-heartbeat {
+  0%,
+  40%,
+  100% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.22);
+  }
+  28% {
+    transform: scale(1.08);
+  }
+}
+@keyframes chm-bot-blink {
+  0%,
+  90%,
+  100% {
+    transform: scaleY(1);
+  }
+  93% {
+    transform: scaleY(0.1);
+  }
+}
+@keyframes chm-bot-poke {
+  to {
+    transform: translateX(3px);
+  }
+}
+@keyframes chm-bot-sway {
+  from {
+    transform: rotate(-6deg);
+  }
+  to {
+    transform: rotate(8deg);
+  }
+}
+@keyframes chm-bot-dangle {
+  from {
+    transform: rotate(-7deg);
+  }
+  to {
+    transform: rotate(7deg);
+  }
+}
+@keyframes chm-bot-kick {
+  from {
+    transform: rotate(-22deg);
+  }
+  to {
+    transform: rotate(22deg);
+  }
+}
+@keyframes chm-bot-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.5) translateY(8px);
+  }
+}
+@keyframes chm-bot-goodbye {
+  from {
+    transform: rotate(-30deg);
+  }
+  to {
+    transform: rotate(40deg);
+  }
+}
+@keyframes chm-bot-leave {
+  0%,
+  55% {
+    transform: none;
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(24px) scale(0.5);
+    opacity: 0;
+  }
+}
+@keyframes chm-move-hop {
+  0%,
+  100% {
+    transform: none;
+  }
+  25% {
+    transform: translateY(2px) scale(1.1, 0.88);
+  }
+  60% {
+    transform: translateY(-15px) scale(0.94, 1.06);
+  }
+}
+@keyframes chm-move-tuck {
+  0%,
+  35%,
+  100% {
+    transform: none;
+  }
+  60% {
+    transform: translateY(-3px) rotate(-20deg);
+  }
+}
+@keyframes chm-move-spin {
+  0%,
+  100% {
+    transform: scaleX(1);
+  }
+  50% {
+    transform: translateY(-6px) scaleX(-1);
+  }
+}
+@keyframes chm-move-tilt {
+  from {
+    transform: rotate(-6deg);
+  }
+  to {
+    transform: rotate(4deg) translateY(-2px);
+  }
+}
+@keyframes chm-move-hello {
+  from {
+    transform: rotate(95deg);
+  }
+  to {
+    transform: rotate(140deg);
+  }
+}
+@keyframes chm-move-heart {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: translateY(-3px) scale(1.7);
+  }
+}
+@keyframes chm-move-twist {
+  from {
+    transform: skewX(-7deg) rotate(-3deg);
+  }
+  to {
+    transform: skewX(7deg) rotate(3deg);
+  }
+}
+@keyframes chm-move-twist-arm {
+  from {
+    transform: rotate(-45deg);
+  }
+  to {
+    transform: rotate(25deg);
+  }
+}
+@keyframes chm-move-twist-wave {
+  from {
+    transform: rotate(20deg);
+  }
+  to {
+    transform: rotate(90deg);
+  }
+}
+@keyframes chm-move-robot {
+  0% {
+    transform: none;
+  }
+  25% {
+    transform: translateX(-3px) rotate(-5deg);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+  75% {
+    transform: translateX(3px) rotate(5deg);
+  }
+}
+@keyframes chm-move-robot-arm {
+  0% {
+    transform: rotate(-90deg);
+  }
+  25% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(90deg);
+  }
+  75% {
+    transform: rotate(0deg);
+  }
+}
+@keyframes chm-move-robot-wave {
+  0% {
+    transform: rotate(40deg);
+  }
+  25% {
+    transform: rotate(130deg);
+  }
+  50% {
+    transform: rotate(40deg);
+  }
+  75% {
+    transform: rotate(-30deg);
+  }
+}
+@keyframes chm-move-robot-eyes {
+  0%,
+  50% {
+    translate: -1.5px 0;
+  }
+  25%,
+  75% {
+    translate: 1.5px 0;
+  }
+}
+@keyframes chm-move-squish {
+  from {
+    transform: scale(1.13, 0.85);
+  }
+  to {
+    transform: translateY(-5px) scale(0.92, 1.1);
+  }
+}
+@keyframes chm-move-slide {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-12px);
+  }
+}
+@keyframes chm-move-swing {
+  from {
+    transform: rotate(35deg);
+  }
+  to {
+    transform: rotate(-25deg);
+  }
+}
+@keyframes chm-move-swing-back {
+  from {
+    transform: rotate(-10deg);
+  }
+  to {
+    transform: rotate(50deg);
+  }
+}
+@keyframes chm-move-glide {
+  from {
+    transform: rotate(-24deg);
+  }
+  to {
+    transform: rotate(18deg);
+  }
+}
+@keyframes chm-move-peek-arm {
+  0%,
+  45% {
+    transform: rotate(178deg);
+  }
+  60%,
+  100% {
+    transform: rotate(-115deg);
+  }
+}
+@keyframes chm-move-peek-wave {
+  0%,
+  45% {
+    transform: rotate(-125deg);
+  }
+  60%,
+  100% {
+    transform: rotate(125deg);
+  }
+}
+@keyframes chm-move-peek-eyes {
+  0%,
+  45% {
+    transform: scaleY(0.12);
+  }
+  60%,
+  100% {
+    transform: scale(1.18);
+  }
+}
+@keyframes chm-move-peek-jump {
+  0%,
+  45%,
+  100% {
+    transform: none;
+  }
+  60% {
+    transform: translateY(-9px) scale(1.04);
+  }
+}
+@keyframes chm-move-clap-arm {
+  from {
+    transform: rotate(-100deg);
+  }
+  to {
+    transform: rotate(-55deg);
+  }
+}
+@keyframes chm-move-clap-wave {
+  from {
+    transform: rotate(130deg);
+  }
+  to {
+    transform: rotate(85deg);
+  }
+}
+@keyframes chm-move-bounce {
+  0%,
+  100% {
+    transform: none;
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+@keyframes chm-move-flip {
+  0%,
+  15% {
+    transform: none;
+  }
+  25% {
+    transform: translateY(3px) scale(1.08, 0.88);
+  }
+  60% {
+    transform: translateY(-20px) rotate(-360deg);
+  }
+  78% {
+    transform: translateY(2px) rotate(-360deg) scale(1.08, 0.9);
+  }
+  90%,
+  100% {
+    transform: rotate(-360deg);
+  }
+}
+@keyframes chm-move-shy {
+  from {
+    transform: rotate(-9deg);
+  }
+  to {
+    transform: rotate(-3deg) translateY(-1px);
+  }
+}
+@keyframes chm-move-blush {
+  to {
+    transform: scale(1.35);
+    opacity: 1;
+  }
+}
+@keyframes chm-move-kick {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-28deg);
+  }
+}
+@keyframes chm-move-disco {
+  0% {
+    transform: translateX(-3px) rotate(-7deg);
+  }
+  50% {
+    transform: translateX(3px) rotate(7deg) translateY(-2px);
+  }
+}
+@keyframes chm-move-disco-arm {
+  0% {
+    transform: rotate(-65deg);
+  }
+  50% {
+    transform: rotate(55deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chm-bot,
+  .chm-bot * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

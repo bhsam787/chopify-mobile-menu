@@ -1,5 +1,5 @@
-import type { BoxStyle, Spacing, TextStyle } from "@chopify/menu-core";
-import { richToHtml } from "@chopify/menu-core";
+import type { BoxStyle, Spacing, TextStyle } from "@chopi/menu-core";
+import { richToHtml } from "@chopi/menu-core";
 
 export function esc(value: unknown): string {
   return String(value ?? "")

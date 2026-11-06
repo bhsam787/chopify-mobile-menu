@@ -1,11 +1,11 @@
-import type { CanvasNode, Frame, Node, ShapeNode } from "@chopify/menu-core";
+import type { CanvasNode, Frame, Node, ShapeNode } from "@chopi/menu-core";
 import {
   CANVAS_WIDTH,
   canvasLayout,
   childNodes,
   isFreeTabs,
-  tabPanelOffset,
-} from "@chopify/menu-core";
+  tabPanelArea,
+} from "@chopi/menu-core";
 
 /**
  * Font for "theme font" texts in the editor (the storefront uses the theme's
@@ -95,12 +95,12 @@ export function flattenLayers(
           node.tabs.find(
             (candidate) => candidate.id === view.activeTabs[node.id],
           ) ?? node.tabs[0];
-        const offset = tabPanelOffset(node);
+        const area = tabPanelArea(node, abs);
         const panelAbs = {
-          x: abs.x,
-          y: abs.y + offset,
-          w: abs.w,
-          h: Math.max(0, abs.h - offset),
+          x: abs.x + area.x,
+          y: abs.y + area.y,
+          w: area.w,
+          h: area.h,
         };
         const panelClip = intersect(panelAbs, clip);
         entries.push({

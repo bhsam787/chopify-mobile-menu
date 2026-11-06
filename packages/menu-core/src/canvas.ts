@@ -10,9 +10,27 @@ export const TAB_BAR_HEIGHT = 36;
 /** Space between the tab bar and the panel (matches `.chm-tabs` gap). */
 export const TAB_GAP = 14;
 
-/** Where a free tab panel starts, below the tab bar. */
-export function tabPanelOffset(node: TabsNode): number {
-  return (node.barHeight ?? TAB_BAR_HEIGHT) + TAB_GAP;
+/** Default width of the column of side tabs. */
+export const TAB_RAIL_WIDTH = 104;
+/** Default height of each side tab. */
+export const SIDE_TAB_HEIGHT = 44;
+/** Space between side tabs (matches `.chm-tabs--side` list gap). */
+export const SIDE_TAB_GAP = 4;
+
+/**
+ * Where a free tab panel sits inside its tabs, relative to them: below the
+ * tab bar, or right of the column of side tabs.
+ */
+export function tabPanelArea(
+  node: TabsNode,
+  size: { w: number; h: number },
+): Frame {
+  if (node.placement === "side") {
+    const x = (node.railWidth ?? TAB_RAIL_WIDTH) + TAB_GAP;
+    return { x, y: 0, w: Math.max(0, size.w - x), h: size.h };
+  }
+  const y = (node.barHeight ?? TAB_BAR_HEIGHT) + TAB_GAP;
+  return { x: 0, y, w: size.w, h: Math.max(0, size.h - y) };
 }
 
 /** Whether tabs keep their panels as free canvases (shapes) instead of sections. */

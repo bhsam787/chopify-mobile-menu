@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { morphChildren } from "./morph";
-import type { Design } from "@chopify/menu-core";
+import type { Design } from "@chopi/menu-core";
+import { cleanCustomCss } from "@chopi/menu-core";
 import {
   attachBehavior,
   MENU_CSS,
@@ -8,7 +9,14 @@ import {
   renderMenu,
   type MenuController,
   type RenderContext,
-} from "@chopify/menu-renderer";
+} from "@chopi/menu-renderer";
+import { previewSearch } from "../editor/searchPreview";
+import {
+  followTarget,
+  GuideBot,
+  useGuidePrefs,
+  type GuideLine,
+} from "./GuideBot";
 
 export type PreviewContext = Omit<RenderContext, "editor">;
 
@@ -42,9 +50,41 @@ interface MenuPreviewProps {
   focusLabel?: string;
   /** Design dialogs: more items designed together with the selected one. */
   alsoSelectedIds?: string[];
+  /**
+   * CSS editor: picking parts. Hovering outlines a part and a click hands
+   * the clicked element to `onPick` instead of working like the store.
+   */
+  picking?: boolean;
+  onPick?: (element: Element) => void;
+  /** CSS editor: every element this selector matches is outlined. */
+  matchSelector?: string | null;
+  /**
+   * The helper robot beside the phone, pointing at the part being worked on.
+   * Leave it out where there's no helper; `false` keeps its lane (hidden).
+   */
+  guide?: boolean;
+  /** What the helper says (a new line pops a speech bubble). */
+  guideLine?: GuideLine | null;
+}
+
+/**
+ * The part a design dialog works on: the focused part of the selected item
+ * (the first one shown), else the item itself.
+ */
+function designAnchor(mount: HTMLElement, selectedId: string) {
+  const selected = mount.querySelector<HTMLElement>(
+    `[data-chm-node="${CSS.escape(selectedId)}"]`,
+  );
+  if (!selected) return null;
+  const focused = [...selected.querySelectorAll<HTMLElement>(".is-focus")]
+    .concat(selected.classList.contains("is-focus") ? [selected] : [])
+    .find((part) => part.getBoundingClientRect().width > 0);
+  return { selected, focused: focused ?? null, anchor: focused ?? selected };
 }
 
 /** The name tag on the part being designed, and a soft glow around it. */
+const PICK_CSS = `.chm-pick, .chm-pick * { cursor: crosshair !important; } .chm-pick .chm-pick-hover { outline: 2px solid #2c6ecb !important; outline-offset: -2px; background-color: rgba(44,110,203,.08); } .chm-pick-match { outline: 2px dashed #e8890c !important; outline-offset: -2px; }`;
+
 const HIGHLIGHT_CSS = `.chm-editor .is-selected{box-shadow:0 0 0 4px rgba(44,110,203,.22)} .chm-has-tag .chm-body{position:relative} .chm-editor .is-focus{outline:2px dashed #E8890C!important;outline-offset:2px;box-shadow:0 0 0 5px rgba(232,137,12,.18)!important;transition:outline-color .15s} .chm-design-tag--focus{background:#E8890C!important} .chm-design-tag{position:absolute;z-index:20;transform:translateY(-100%);padding:3px 8px;border-radius:6px 6px 6px 0;background:#2C6ECB;color:#fff;font:600 11px/1.3 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;white-space:nowrap;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.2)}`;
 
 /** In "Preview" mode: hidden sections are hidden and nothing looks selectable. */
@@ -183,10 +223,21 @@ export function MenuPreview({
   focusSelector,
   focusLabel,
   alsoSelectedIds,
+  picking = false,
+  onPick,
+  matchSelector,
+  guide,
+  guideLine = null,
 }: MenuPreviewProps) {
   // A stable key, so a new array with the same ids doesn't re-run effects.
   const alsoKey = (alsoSelectedIds ?? []).join(",");
   const hostRef = useRef<HTMLDivElement>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const botRef = useRef<HTMLDivElement>(null);
+  // The helper shows where this preview offers it and the merchant hasn't
+  // hidden it.
+  const guidePrefs = useGuidePrefs();
+  const showGuide = Boolean(guide) && guidePrefs.shown;
   const mountRef = useRef<HTMLDivElement | null>(null);
   const controllerRef = useRef<MenuController | null>(null);
   /** The selection last scrolled into view (null: nothing yet). */
@@ -198,19 +249,94 @@ export function MenuPreview({
     onSelect,
     onScreenChange,
     routes: context.routes,
+    context,
   });
-  callbacks.current = { onSelect, onScreenChange, routes: context.routes };
+  callbacks.current = {
+    onSelect,
+    onScreenChange,
+    routes: context.routes,
+    context,
+  };
+
+  const pickRef = useRef(onPick);
+  pickRef.current = onPick;
+
+  // Picking parts (CSS editor): hover outlines, a click picks instead of
+  // tapping. Listeners sit on the mount in the capture phase, so the menu's
+  // own behavior never sees the click.
+  useEffect(() => {
+    const mount = mountRef.current;
+    if (!mount || !picking) return;
+    mount.classList.add("chm-pick");
+    let hovered: Element | null = null;
+    const onOver = (event: Event) => {
+      const target = event.target as Element;
+      if (target === hovered) return;
+      hovered?.classList.remove("chm-pick-hover");
+      hovered = target === mount ? null : target;
+      hovered?.classList.add("chm-pick-hover");
+    };
+    const onLeave = () => {
+      hovered?.classList.remove("chm-pick-hover");
+      hovered = null;
+    };
+    const onClick = (event: Event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const target = event.target as Element;
+      if (target !== mount) pickRef.current?.(target);
+    };
+    mount.addEventListener("pointerover", onOver);
+    mount.addEventListener("pointerleave", onLeave);
+    mount.addEventListener("click", onClick, true);
+    return () => {
+      onLeave();
+      mount.classList.remove("chm-pick");
+      mount.removeEventListener("pointerover", onOver);
+      mount.removeEventListener("pointerleave", onLeave);
+      mount.removeEventListener("click", onClick, true);
+    };
+  }, [picking]);
+
+  // Everything the chosen selector matches, outlined (again after redraws).
+  useEffect(() => {
+    const mount = mountRef.current;
+    if (!mount) return;
+    mount
+      .querySelectorAll(".chm-pick-match")
+      .forEach((element) => element.classList.remove("chm-pick-match"));
+    if (!matchSelector) return;
+    try {
+      mount
+        .querySelectorAll(matchSelector)
+        .forEach((element) => element.classList.add("chm-pick-match"));
+    } catch {
+      // A selector that's still being typed: nothing to outline.
+    }
+  });
+
+  // Custom CSS updates in place (no re-render of the menu).
+  const customCss = design.customCss;
+  useEffect(() => {
+    const style = hostRef.current?.shadowRoot?.querySelector<HTMLStyleElement>(
+      "style[data-chm-custom]",
+    );
+    if (style) style.textContent = cleanCustomCss(customCss);
+  });
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host || mountRef.current) return;
     const shadow = host.shadowRoot ?? host.attachShadow({ mode: "open" });
     const style = document.createElement("style");
-    style.textContent = MENU_CSS + TRY_CSS + HIGHLIGHT_CSS;
+    style.textContent = MENU_CSS + TRY_CSS + HIGHLIGHT_CSS + PICK_CSS;
+    // The menu's own custom CSS, kept current by the effect below.
+    const custom = document.createElement("style");
+    custom.dataset.chmCustom = "";
     const mount = document.createElement("div");
     mount.style.height = "100%";
     if (interactive) mount.className = "chm-try";
-    shadow.replaceChildren(style, mount);
+    shadow.replaceChildren(style, custom, mount);
     mountRef.current = mount;
     // Design dialogs show the phone once the highlighted part is centered
     // (no frame of the menu's top before it jumps).
@@ -219,7 +345,13 @@ export function MenuPreview({
     controllerRef.current = attachBehavior(
       mount,
       interactive
-        ? { sandbox: true, onScreenChange: onScreen }
+        ? {
+            sandbox: true,
+            onScreenChange: onScreen,
+            // Live search answers from the products the editor knows.
+            searchSource: async (query, limit) =>
+              previewSearch(callbacks.current.context, query, limit),
+          }
         : {
             editor: true,
             onSelect: (id) => callbacks.current.onSelect?.(id),
@@ -285,7 +417,9 @@ export function MenuPreview({
     // slider re-renders many times a second).
     const body = mount.querySelector(".chm-body");
     if (body && body !== previousBody) body.scrollTop = scroll;
-    if (interactive) controllerRef.current?.open();
+    // Redraws keep the menu open without taking keyboard focus away from the
+    // settings being typed into.
+    if (interactive) controllerRef.current?.open({ focus: false });
   }, [design, context, screenId, interactive]);
 
   useEffect(() => {
@@ -413,10 +547,7 @@ export function MenuPreview({
     );
     if (!selected) return;
     // On the part being worked on (the first one that's shown), else the item.
-    const focused = [...selected.querySelectorAll<HTMLElement>(".is-focus")]
-      .concat(selected.classList.contains("is-focus") ? [selected] : [])
-      .find((part) => part.getBoundingClientRect().width > 0);
-    const anchor = focused ?? selected;
+    const { focused, anchor } = designAnchor(mount, selectedId)!;
     // The scroll area is the tag's positioning box (set by .chm-has-tag, so
     // it survives re-renders, which replace the menu's markup).
     mount.classList.add("chm-has-tag");
@@ -458,6 +589,28 @@ export function MenuPreview({
     focusLabel,
   ]);
 
+  // The helper follows the part being worked on: the selected item (and
+  // its focused part). With nothing to point at, it dances beside the phone.
+  useEffect(() => {
+    const bot = botRef.current;
+    const frame = frameRef.current;
+    const mount = mountRef.current;
+    if (!showGuide || !bot || !frame || !mount) return;
+    const anchor =
+      selectedId && !interactive
+        ? (designAnchor(mount, selectedId)?.anchor ?? null)
+        : null;
+    const view = anchor?.closest<HTMLElement>(".chm-body") ?? mount;
+    return followTarget(bot, frame, view, anchor);
+  }, [
+    showGuide,
+    selectedId,
+    focusSelector,
+    design,
+    screenId,
+    interactive,
+  ]);
+
   // Design dialogs: when a setting changes and the part it changes has been
   // scrolled out of sight in the phone, bring it back (down/up, and sideways
   // inside a swipe row). Scrolling the phone by hand alone never triggers it.
@@ -496,9 +649,12 @@ export function MenuPreview({
     }
   }, [design, highlightLabel, selectedId, interactive]);
 
-  return (
+  const phone = (
     <div
+      ref={frameRef}
+      className="chm-phone-frame"
       style={{
+        position: "relative",
         width: width * scale,
         height: height * scale,
         // The bezel (padding) is inside the size, so it's even on all sides.
@@ -525,6 +681,16 @@ export function MenuPreview({
       >
         <div ref={hostRef} style={{ height: "100%" }} />
       </div>
+      {showGuide && <GuideBot ref={botRef} line={guideLine} />}
     </div>
+  );
+  // The helper gets its own lane left of the phone, so nothing around the
+  // preview (a card's edge) can cut it or its speech bubble off.
+  // The lane is kept even while the helper is hidden (or before the choice
+  // is read): the phone never shifts sideways when it comes and goes.
+  return guide === undefined ? (
+    phone
+  ) : (
+    <div className="chm-guide-lane">{phone}</div>
   );
 }

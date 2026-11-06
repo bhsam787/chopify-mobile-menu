@@ -1,4 +1,4 @@
-import type { Frame } from "@chopify/menu-core";
+import type { Frame } from "@chopi/menu-core";
 
 export type Handle = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
 export const HANDLES: Handle[] = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];

@@ -1,6 +1,13 @@
+import { cleanCustomCss } from "./customCss";
 import { isResourceLink, resourceKey } from "./links";
 import { walkDesign, withoutHidden } from "./tree";
-import type { Design, LinkRef, Node, ResourceType } from "./types";
+import type {
+  Design,
+  LinkRef,
+  Node,
+  ResourceLink,
+  ResourceType,
+} from "./types";
 
 /** Shopify's limit for JSON metafields written by new apps. */
 export const METAFIELD_LIMIT_BYTES = 128 * 1024;
@@ -110,9 +117,23 @@ function linksOf(node: Node): LinkRef[] {
           ? [node.collection]
           : []),
       ];
+    case "products":
+      return node.collection ? [node.collection] : [];
+    case "contact":
+      return node.items.flatMap((item) =>
+        item.kind === "link" && item.link ? [item.link] : [],
+      );
     default:
       return [];
   }
+}
+
+/** The collection whose products a node shows (story circles, product cards). */
+function productsCollectionOf(node: Node): ResourceLink | undefined {
+  if (node.type === "stories" && node.source === "collection")
+    return node.collection;
+  if (node.type === "products") return node.collection;
+  return undefined;
 }
 
 function compactTranslations(design: Design): Design["translations"] {
@@ -141,6 +162,7 @@ export function compile(design: Design): CompileResult {
       root: withoutHidden(screen.root),
     })),
     translations: {},
+    customCss: cleanCustomCss(design.customCss) || undefined,
   };
   const translations = compactTranslations(design);
 
@@ -148,13 +170,12 @@ export function compile(design: Design): CompileResult {
   let localization = design.header.showLanguage === true;
   walkDesign(menu, (node) => {
     if (node.type === "localization") localization = true;
+    // Stand-in products are for the editor only (nodes here are copies).
+    if (node.type === "products") delete node.sample;
     for (const link of linksOf(node)) {
       if (!isResourceLink(link) || !link.id) continue;
       const key = resourceKey(link.type, link.id);
-      const withProducts =
-        node.type === "stories" &&
-        node.source === "collection" &&
-        node.collection?.id === link.id;
+      const withProducts = productsCollectionOf(node)?.id === link.id;
       const existing = resources.get(key);
       if (existing) {
         existing.withProducts ||= withProducts;
@@ -183,8 +204,11 @@ export function compile(design: Design): CompileResult {
   }
   let productLimit = 0;
   walkDesign(menu, (node) => {
-    if (node.type === "stories" && node.source === "collection")
-      productLimit = Math.max(productLimit, node.limit ?? 8);
+    if (productsCollectionOf(node))
+      productLimit = Math.max(
+        productLimit,
+        (node as { limit?: number }).limit ?? 8,
+      );
   });
   menu.meta = { localization, ...(productLimit ? { productLimit } : {}) };
 

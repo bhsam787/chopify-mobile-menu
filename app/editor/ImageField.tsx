@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { ImageRef } from "@chopify/menu-core";
+import type { ImageRef } from "@chopi/menu-core";
 
 interface ImageFieldProps {
   label: string;

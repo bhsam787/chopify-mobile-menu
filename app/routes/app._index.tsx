@@ -5,29 +5,32 @@ import type {
   LoaderFunctionArgs,
 } from "react-router";
 import { useFetcher, useLoaderData } from "react-router";
-import type { Design } from "@chopify/menu-core";
-import { findTemplate } from "@chopify/menu-core";
+import type { Design } from "@chopi/menu-core";
+import { findTemplate } from "@chopi/menu-core";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 import { unpublishMenu } from "../services/publish.server";
 import { menuStats } from "../services/menu-stats.server";
 import { buildPreviewContext } from "../services/preview-context.server";
 import galleryStyles from "../components/gallery.css?url";
+import showcaseStyles from "../components/showcase.css?url";
+import { FEATURE_LABELS, TEMPLATE_COPY } from "../components/templateCopy";
 import {
   FeaturedMenu,
   FooterHelp,
   MenusTable,
-  MetricsRow,
   TemplateTeaser,
   WelcomeCard,
   type HomeMenu,
   type TemplatePreview,
 } from "../home/HomeCards";
+import { HomeHero } from "../home/HomeHero";
 import { SetupGuide } from "../home/SetupGuide";
 import { embedEditorUrl, useEmbedStatus } from "../home/useEmbedStatus";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: galleryStyles },
+  { rel: "stylesheet", href: showcaseStyles },
 ];
 
 /** Shown on an empty home (phone fan), then as "Try another look" tiles. */
@@ -43,6 +46,12 @@ function templatePreviews(ids: string[]): TemplatePreview[] {
             id: template.id,
             name: template.name,
             description: template.description,
+            tagline: TEMPLATE_COPY[template.id]?.tagline ?? null,
+            bestFor: TEMPLATE_COPY[template.id]?.bestFor[0] ?? null,
+            features: template.features.map(
+              (feature) => FEATURE_LABELS[feature],
+            ),
+            isNew: Boolean(template.isNew),
             design: template.build(),
           },
         ]
@@ -167,7 +176,7 @@ export default function Home() {
   );
 
   return (
-    <s-page heading="Chopify Menu">
+    <s-page heading="Chopi - Menu">
       <s-button slot="primary-action" variant="primary" href="/app/templates">
         Create menu
       </s-button>
@@ -178,7 +187,7 @@ export default function Home() {
             tone="warning"
             heading="Your menu is published but the app embed is off"
           >
-            Shoppers still see your theme&apos;s menu. Turn on the Chopify Menu
+            Shoppers still see your theme&apos;s menu. Turn on the Chopi - Menu
             app embed in your theme editor to show yours.
             <s-button slot="secondary-actions" href={embedUrl} target="_blank">
               Turn on app embed
@@ -186,24 +195,20 @@ export default function Home() {
           </s-banner>
         )}
 
+        <HomeHero shopName={context.shopName} menus={menus} />
+
         {!hasMenu && <WelcomeCard templates={welcome} context={context} />}
         {/* Until the menu is live the guide leads; afterwards it folds away at the bottom. */}
         {!published && guide}
 
         {featured && featuredMenu && (
           <>
-            <MetricsRow
-              menus={menus}
-              featured={featuredMenu}
-              stats={featured.stats}
-              embed={embed}
-              embedUrl={embedUrl}
-            />
             <FeaturedMenu
               menu={featuredMenu}
               design={featured.design}
               context={context}
               publishedAt={featured.publishedAt}
+              unlinked={featured.stats.unlinked}
               embed={embed}
               shop={shop}
             />

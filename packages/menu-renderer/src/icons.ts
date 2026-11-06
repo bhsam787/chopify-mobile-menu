@@ -1,4 +1,4 @@
-import type { IconName, ShapeIcon, SocialNetwork } from "@chopify/menu-core";
+import type { IconName, ShapeIcon, SocialNetwork } from "@chopi/menu-core";
 
 const svg = (body: string, size = 20) =>
   `<svg class="chm-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
@@ -43,6 +43,14 @@ const NAMED: Record<IconName, string> = {
   bag: '<path d="M5 8h14l-1 12H6zM9 8V6a3 3 0 016 0v2"/>',
   home: '<path d="M4 11l8-7 8 7M6 9.5V20h12V9.5"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  chat: '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/>',
+  whatsapp:
+    '<path d="M4 20l1.2-4A8 8 0 1 1 8.4 19z"/><path d="M9 8.5c0 3.5 3 6.5 6.5 6.5l1-1.6-2-1-1 .9c-1-.4-2.3-1.6-2.8-2.8l.9-1-1-2z"/>',
+  lock: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
+  return: '<path d="M9 7L5 11l4 4"/><path d="M5 11h9a5 5 0 0 1 0 10h-3"/>',
+  clock: '<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
+  shield:
+    '<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>',
 };
 
 export function icon(name: IconName): string {
@@ -54,7 +62,6 @@ const UI_ICONS: Partial<Record<ShapeIcon, string>> = {
   chevron: ICONS.chevron,
   back: ICONS.back,
   close: ICONS.close,
-  clock: ICONS.clock,
   quote: ICONS.quote,
   verified: ICONS.verified,
   "star-filled": ICONS.star,

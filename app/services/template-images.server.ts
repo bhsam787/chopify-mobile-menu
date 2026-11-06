@@ -1,5 +1,5 @@
-import type { Design } from "@chopify/menu-core";
-import { isTemplateImage } from "@chopify/menu-core";
+import type { Design } from "@chopi/menu-core";
+import { isTemplateImage } from "@chopi/menu-core";
 import { assertNoUserErrors, gql, type Admin } from "./admin-graphql.server";
 
 /**

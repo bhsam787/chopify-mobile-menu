@@ -4,10 +4,11 @@ import {
   type ContainerNode,
   type LinkRef,
   type Node,
+  type ResourceLink,
   type ResourceType,
   type WidgetDefinition,
-} from "@chopify/menu-core";
-import type { RenderContext, ResolvedResource } from "@chopify/menu-renderer";
+} from "@chopi/menu-core";
+import type { RenderContext, ResolvedResource } from "@chopi/menu-renderer";
 
 export interface Sample {
   title: string;
@@ -184,6 +185,15 @@ export function widgetSample(
           link: sample(index).link,
         })),
       };
+    case "products": {
+      // The store's first collection, so the preview shows real products.
+      const collection = samples.find(
+        (candidate) => candidate.link.type === "collection",
+      )?.link;
+      return collection?.type === "collection"
+        ? { ...node, collection: collection as ResourceLink<"collection"> }
+        : node;
+    }
     case "image":
       return {
         ...node,

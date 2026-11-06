@@ -1,5 +1,5 @@
-import type { Design, ListLayout } from "@chopify/menu-core";
-import { describeLink, mapNode } from "@chopify/menu-core";
+import type { Design, IconName, ListLayout, RowNode } from "@chopi/menu-core";
+import { describeLink, isInSideTabs, mapNode } from "@chopi/menu-core";
 import {
   ColorField,
   FieldRow,
@@ -55,6 +55,12 @@ export function ListPanel({
   onAddSubMenu: (itemId: string) => void;
 }) {
   const items = list.children ?? [];
+  // Side tabs are the second level already: their items get no sub-menus.
+  const inSideTabs = isInSideTabs(design, list.id);
+  /** List rows (title, arrow, optional icon): their icons can be turned off together. */
+  const rows = items.filter(
+    (item): item is RowNode => item.type === "row" && item.variant !== "thumb",
+  );
   const selectedItem = items.find((item) => item.id === selectedId);
   const screenTitle = (screenId: string) =>
     design.screens.find((screen) => screen.id === screenId)?.title ||
@@ -65,8 +71,9 @@ export function ListPanel({
       <s-stack gap="small-200">
         <s-heading>Items ({items.length})</s-heading>
         <s-text color="subdued">
-          Each item is a link. Give it a sub-menu to show more items when
-          it&apos;s tapped; sub-menus can have sub-menus too.
+          {inSideTabs
+            ? "Each item is a link. These items already sit inside a tab, so they open pages directly."
+            : "Each item is a link. Give it a sub-menu to show more items when it's tapped; sub-menus can have sub-menus too."}
         </s-text>
       </s-stack>
 
@@ -127,7 +134,7 @@ export function ListPanel({
                             : "No link"}
                       </button>
                       <span className="cve-item__actions">
-                        {opensScreen ? (
+                        {inSideTabs && !opensScreen ? null : opensScreen ? (
                           <s-button
                             variant="tertiary"
                             icon="arrow-right"
@@ -197,6 +204,15 @@ export function ListPanel({
           </s-button>
         )}
       </s-stack>
+
+      {rows.length === items.length && rows.length > 0 && (
+        <SwitchField
+          label="Icons in front of the items"
+          details="Each item's icon can be changed when it's selected"
+          checked={rows.some((row) => row.variant === "icon")}
+          onChange={(on) => onChange(setRowIcons(design, rows, on))}
+        />
+      )}
 
       <s-stack gap="small-300">
         <s-text type="strong">Layout</s-text>
@@ -271,5 +287,29 @@ export function ListPanel({
         </s-text>
       </s-stack>
     </s-stack>
+  );
+}
+
+/** Icons a row gets when icons are turned on and it never had one. */
+const DEFAULT_ROW_ICONS: IconName[] = ["sparkle", "star", "gift", "percent"];
+
+/** Icons on or off for every row; each row keeps its icon for next time. */
+function setRowIcons(design: Design, rows: RowNode[], on: boolean): Design {
+  return rows.reduce(
+    (next, row, index) =>
+      mapNode(next, row.id, (node) =>
+        node.type === "row"
+          ? {
+              ...node,
+              variant: on ? "icon" : "plain",
+              icon:
+                node.icon ??
+                (on
+                  ? DEFAULT_ROW_ICONS[index % DEFAULT_ROW_ICONS.length]
+                  : undefined),
+            }
+          : node,
+      ),
+    design,
   );
 }

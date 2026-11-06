@@ -7,19 +7,19 @@ import type {
   ShapeIcon,
   ShapeNode,
   TextStyle,
-} from "@chopify/menu-core";
+} from "@chopi/menu-core";
 import {
   CANVAS_WIDTH,
   newId,
   nodeLabel,
   SHAPE_ICONS,
-} from "@chopify/menu-core";
+} from "@chopi/menu-core";
 import {
   MENU_CSS,
   renderFragment,
   shapeIcon,
   type RenderContext,
-} from "@chopify/menu-renderer";
+} from "@chopi/menu-renderer";
 import { toMarkup } from "../editor/RichTextField";
 import { PREVIEW_FONT } from "./layers";
 

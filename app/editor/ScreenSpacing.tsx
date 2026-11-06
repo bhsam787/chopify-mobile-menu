@@ -1,4 +1,4 @@
-import type { Design, Spacing } from "@chopify/menu-core";
+import type { Design, Spacing } from "@chopi/menu-core";
 import { DESIGN_ICONS, DesignGroup, SliderField } from "./designControls";
 
 /** [top/bottom, sides] of a padding value. */

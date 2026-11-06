@@ -4,13 +4,13 @@ import { build } from "esbuild";
 import { gzipSync } from "node:zlib";
 import { readFileSync } from "node:fs";
 
-const outdir = "extensions/chopify-menu/assets";
+const outdir = "extensions/chopi-menu/assets";
 const watch = process.argv.includes("--watch");
 
 const options = {
   entryPoints: {
-    "chopify-menu": "packages/menu-renderer/src/storefront.ts",
-    "chopify-menu-app": "packages/menu-renderer/src/menu-app.ts",
+    "chopi-menu": "packages/menu-renderer/src/storefront.ts",
+    "chopi-menu-app": "packages/menu-renderer/src/menu-app.ts",
   },
   bundle: true,
   minify: true,
@@ -27,7 +27,7 @@ if (watch) {
   await ctx.watch();
 } else {
   await build(options);
-  for (const name of ["chopify-menu.js", "chopify-menu-app.js"]) {
+  for (const name of ["chopi-menu.js", "chopi-menu-app.js"]) {
     const size = gzipSync(readFileSync(`${outdir}/${name}`)).length;
     console.log(`${name}: ${(size / 1024).toFixed(1)} KB gzipped`);
   }

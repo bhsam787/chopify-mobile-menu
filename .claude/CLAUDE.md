@@ -1,4 +1,4 @@
-# Chopify Menu — project notes
+# Chopi - Menu — project notes
 
 - **Product and technical plan: [docs/PLAN.md](../docs/PLAN.md).** Read it before starting any feature; update it when a decision changes.
 
@@ -6,11 +6,14 @@
 - Workspaces:
   - `packages/menu-core`: design types, templates, widgets, edit ops, `compile()` (storefront payload + 128 KB check), `parseDesign()`.
   - `packages/menu-renderer`: `renderMenu()` HTML + `attachBehavior()` + `MENU_CSS`. One renderer for the editor preview AND the storefront (shadow DOM). Theme burger adapters in `adapters.ts`.
-  - `extensions/chopify-menu`: app embed `blocks/menu-embed.liquid`. Its `assets/chopify-menu*.js` are BUILT by `npm run build:storefront` (gitignored) — rerun after renderer changes.
-- Storefront data: app-data metafields `chopify.menu` + `chopify.entitlement` on the AppInstallation (`app/services/publish.server.ts`), plus the reference metafields below.
-- Links on the storefront resolve by ID: on publish, linked collections/products/pages/posts are written as reference-list metafields (`shop.metafields["$app:chopify"]`, keys `<type>_1..4`, 50 each + `product_collections`; `app/services/references.server.ts`). Liquid resolves current URL/title/image per render, so handle changes need no republish; deleted resources drop out (renderer `liveResources` hides their items). The app does NOT create Shopify navigation menus and never touches merchant menus. Never look resources up by handle in Liquid (`collections[handle]`).
-- Translations: keys `"<id>.<field>"` in `design.translations[locale]`; built-in words are `ui.*`. Every new user-visible text must go through the renderer's `t()` AND be listed in `collectTexts()` (`packages/menu-core/src/translations.ts`), or it can't be translated. They're published as one metafield per language (`chopify.t_<locale>`).
+  - `extensions/chopi-menu`: app embed `blocks/menu-embed.liquid`. Its `assets/chopi-menu*.js` are BUILT by `npm run build:storefront` (gitignored) — rerun after renderer changes.
+- Storefront data: app-data metafields `chopi.menu` + `chopi.entitlement` on the AppInstallation (`app/services/publish.server.ts`), plus the reference metafields below.
+- Links on the storefront resolve by ID: on publish, linked collections/products/pages/posts are written as reference-list metafields (`shop.metafields["$app:chopi"]`, keys `<type>_1..4`, 50 each + `product_collections`; `app/services/references.server.ts`). Liquid resolves current URL/title/image per render, so handle changes need no republish; deleted resources drop out (renderer `liveResources` hides their items). The app does NOT create Shopify navigation menus and never touches merchant menus. Never look resources up by handle in Liquid (`collections[handle]`).
+- Translations: keys `"<id>.<field>"` in `design.translations[locale]`; built-in words are `ui.*`. Every new user-visible text must go through the renderer's `t()` AND be listed in `collectTexts()` (`packages/menu-core/src/translations.ts`), or it can't be translated. They're published as one metafield per language (`chopi.t_<locale>`).
 - Templates are pre-filled sample designs (`packages/menu-core/src/templates/*`, after the Figma frames). Sample images live in `public/templates/` (manifest + prompts: `templates/images.json`); on first publish they're copied to the merchant's Shopify Files (`app/services/template-images.server.ts`).
+- Renderer widgets for store/promo elements (products, perks, contact, discount, ticker) live in `packages/menu-renderer/src/widgets.ts`; shared render helpers in `state.ts`.
+- Custom CSS: `design.customCss`, edited at `app/routes/app_.css.$menuId.tsx` (CodeMirror in `app/editor/css/`); always pass it through `cleanCustomCss` (menu-core) before injecting. Code editors can't live in Polaris `s-modal` (selection breaks): use a max-modal `src` route.
+- Header: one per menu, shared by every screen. Ready-made styles live in `packages/menu-core/src/headerStyles.ts`; editor UI in `app/editor/HeaderFields.tsx`. The canvas editor shows the header and footer around the canvas (read-only).
 - Editor: `app/routes/app.menus.$id.tsx` + `app/editor/*`. Polaris form fields go through `app/editor/controls.tsx` (React 18 doesn't wire custom-element change events).
 - Shopify auth/client: `app/shopify.server.ts`. Prisma client: `app/db.server.ts`. Shop rows: `app/models/shop.server.ts`.
 - Database: PostgreSQL (Neon). `DATABASE_URL` (pooled) and `DIRECT_URL` (direct, used by migrations) live in `.env` — never commit or print them.
@@ -52,7 +55,7 @@ But many of their choices were workarounds for extension limits we don't have:
 
 ## This is a public App Store app
 
-Chopify Menu will be listed on the Shopify App Store and installed by many merchants. Write production code: clean, multi-tenant, secure and ready for App Store review. Don't write throwaway or demo code.
+Chopi - Menu will be listed on the Shopify App Store and installed by many merchants. Write production code: clean, multi-tenant, secure and ready for App Store review. Don't write throwaway or demo code.
 
 ### Multi-tenancy
 - Every row you store must belong to a shop: give it a `shop` column, index it, and filter every query by the session's shop. Never read or write data across shops.

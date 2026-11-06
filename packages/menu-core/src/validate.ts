@@ -26,6 +26,11 @@ const NODE_TYPES = new Set<string>([
   "spacer",
   "canvas",
   "shape",
+  "products",
+  "perks",
+  "contact",
+  "discount",
+  "ticker",
 ]);
 
 export class InvalidDesignError extends Error {
@@ -57,6 +62,8 @@ export function parseDesign(value: unknown): Design {
     throw new InvalidDesignError("no screens");
   if (!isObject(value.header) || value.header.type !== "header")
     throw new InvalidDesignError("missing header");
+  if (value.customCss !== undefined && typeof value.customCss !== "string")
+    throw new InvalidDesignError("custom CSS must be text");
 
   const design = value as unknown as Design;
   const ids = new Set<string>();

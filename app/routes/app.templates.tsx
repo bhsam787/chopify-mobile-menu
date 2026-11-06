@@ -18,7 +18,7 @@ import {
   TEMPLATE_FEATURES,
   TEMPLATES,
   type TemplateFeature,
-} from "@chopify/menu-core";
+} from "@chopi/menu-core";
 import { authenticate } from "../shopify.server";
 import { cleanMenuName, MENU_NAME_MAX } from "../models/menu-name";
 import { uniqueMenuName } from "../models/menu.server";
@@ -26,24 +26,17 @@ import prisma from "../db.server";
 import { MenuPreview } from "../components/MenuPreview";
 import { PhoneStage } from "../components/PhoneStage";
 import { TemplateDetails } from "../components/TemplateDetails";
-import { TEMPLATE_COPY } from "../components/templateCopy";
-import { menuStats } from "../services/menu-stats.server";
+import { FEATURE_LABELS, TEMPLATE_COPY } from "../components/templateCopy";
 import galleryStyles from "../components/gallery.css?url";
+import showcaseStyles from "../components/showcase.css?url";
+import { ChopiStage } from "../home/HomeHero";
 import { TextField } from "../editor/controls";
 import { buildPreviewContext } from "../services/preview-context.server";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: galleryStyles },
+  { rel: "stylesheet", href: showcaseStyles },
 ];
-
-const FEATURE_LABELS: Record<TemplateFeature, string> = {
-  tabs: "Tabs",
-  "image-cards": "Image cards",
-  "fold-outs": "Fold-out links",
-  "story-circles": "Story circles",
-  banners: "Promo banners",
-  sliding: "Sliding sub-menus",
-};
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
@@ -54,23 +47,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       select: { name: true },
     })
   ).map((menu) => menu.name);
-  const templates = TEMPLATES.map((template) => {
-    const design = template.build();
-    const { links, subMenus } = menuStats(design);
-    return {
-      id: template.id,
-      name: template.name,
-      description: template.description,
-      features: template.features,
-      isNew: Boolean(template.isNew),
-      numbers: {
-        sections: design.screens[0].root.children.length,
-        subMenus,
-        links,
-      },
-      design,
-    };
-  });
+  const templates = TEMPLATES.map((template) => ({
+    id: template.id,
+    name: template.name,
+    description: template.description,
+    features: template.features,
+    isNew: Boolean(template.isNew),
+    design: template.build(),
+  }));
   const { context } = await buildPreviewContext(
     admin,
     templates.map((template) => template.design),
@@ -190,92 +174,108 @@ export default function Templates() {
         Home
       </s-link>
       <s-stack gap="base">
-        <s-section>
-          <s-query-container>
-            <s-grid
-              gridTemplateColumns="@container (inline-size <= 520px) 1fr, auto 1fr auto"
-              gap="base"
-              alignItems="center"
+        <section className="chm-hero" aria-labelledby="chm-gallery-title">
+          <div className="chm-hero__main">
+            <div className="chm-hero__copy">
+              <span className="chm-hero__eyebrow">
+                Template gallery · {templates.length} designs
+              </span>
+              <h2 id="chm-gallery-title" className="chm-hero__title">
+                Find your <span className="chm-hero__brand">perfect look</span>
+              </h2>
+              <p className="chm-hero__lead">
+                Every template comes filled in with sample content and works
+                just like on your store. Try the tabs, sub-menus and swiping
+                right here, then make it yours: every text, photo, link and
+                color can change.
+              </p>
+            </div>
+            <ChopiStage>
+              Every phone below works. Tap around, then pick your favorite!
+            </ChopiStage>
+          </div>
+          {/* A blank page, for merchants who'd rather design their own. */}
+          <div className="chm-hero__blank">
+            <div className="chm-sketch" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
+            <div className="chm-hero__blank-copy">
+              <span className="chm-hero__blank-title">
+                Prefer a blank page?
+                <s-badge tone="info" icon="layout-block">
+                  Canvas
+                </s-badge>
+              </span>
+              <span className="chm-hero__blank-text">
+                Design freely in a full-screen editor: place text, images,
+                shapes and widgets anywhere. It scales to every phone size.
+              </span>
+            </div>
+            <s-button
+              icon="plus"
+              loading={pending === "blank"}
+              disabled={Boolean(pending)}
+              onClick={() => startNaming("blank", "Canvas menu")}
             >
-              <div className="chm-sketch" aria-hidden="true">
-                <span />
-                <span />
-                <span />
-                <span />
-              </div>
-              <s-stack gap="small-200">
-                <s-stack direction="inline" gap="small-200" alignItems="center">
-                  <s-heading>Start with a blank canvas</s-heading>
-                  <s-badge tone="info" icon="layout-block">
-                    Canvas
-                  </s-badge>
-                </s-stack>
-                <s-paragraph color="subdued">
-                  Design your menu freely in a full-screen editor: place text,
-                  images, shapes and widgets anywhere, like in Figma. It scales
-                  to every phone size.
-                </s-paragraph>
-              </s-stack>
-              <s-button
-                icon="plus"
-                loading={pending === "blank"}
-                disabled={Boolean(pending)}
-                onClick={() => startNaming("blank", "Canvas menu")}
-              >
-                Start from scratch
-              </s-button>
-            </s-grid>
-          </s-query-container>
-        </s-section>
+              Start from scratch
+            </s-button>
+          </div>
+        </section>
 
         <s-section
           heading="Choose a template"
-          subheading="Each one is filled in with sample content and works like on your store: try the tabs, sub-menus and swiping. Change anything afterwards."
+          subheading="Filter by what you need, try the phone, then use it as your starting point."
         >
           <s-text slot="supplemental" color="subdued">
             {shown.length} of {templates.length}
           </s-text>
-          <s-stack gap="base">
-            <s-stack direction="inline" gap="small-200">
-              <s-clickable-chip
-                color={filter === null ? "strong" : "base"}
-                accessibilityLabel="Show all templates"
+          <div className="chm-looks">
+            <div
+              className="chm-filters"
+              role="group"
+              aria-label="Filter templates"
+            >
+              <button
+                type="button"
+                className="chm-filter"
+                aria-pressed={filter === null}
                 onClick={() => setFilter(null)}
               >
-                {filter === null && <s-icon slot="graphic" type="check" />}
                 All
-              </s-clickable-chip>
+                <span className="chm-filter__count">{templates.length}</span>
+              </button>
               {usedFeatures.map((feature) => (
-                <s-clickable-chip
+                <button
                   key={feature}
-                  color={filter === feature ? "strong" : "base"}
-                  accessibilityLabel={`Show templates with ${FEATURE_LABELS[feature].toLowerCase()}`}
+                  type="button"
+                  className="chm-filter"
+                  aria-pressed={filter === feature}
                   onClick={() =>
                     setFilter((current) =>
                       current === feature ? null : feature,
                     )
                   }
                 >
-                  {filter === feature && <s-icon slot="graphic" type="check" />}
                   {FEATURE_LABELS[feature]}
-                </s-clickable-chip>
+                  <span className="chm-filter__count">
+                    {
+                      templates.filter((template) =>
+                        template.features.includes(feature),
+                      ).length
+                    }
+                  </span>
+                </button>
               ))}
-            </s-stack>
-            <s-grid
-              gridTemplateColumns="repeat(auto-fill, minmax(260px, 1fr))"
-              gap="base"
-            >
-              {shown.map((template) => (
-                <div key={template.id} className="chm-tile">
-                  <s-box
-                    border="base"
-                    borderRadius="large"
-                    padding="small"
-                    background="base"
-                    blockSize="100%"
-                  >
-                    {/* A column whose buttons sit at the bottom, so tiles in a row line up. */}
-                    <div className="chm-tile__body">
+            </div>
+            <div className="chm-looks__grid chm-looks__grid--gallery">
+              {shown.map((template) => {
+                const copy = TEMPLATE_COPY[template.id];
+                return (
+                  <div key={template.id} className="chm-look chm-look--live">
+                    <div className="chm-look__stage">
                       <PhoneStage
                         design={template.design}
                         context={context}
@@ -283,60 +283,59 @@ export default function Templates() {
                         size="large"
                         interactive
                       />
-                      <s-stack gap="small-300">
-                        <s-stack
-                          direction="inline"
-                          gap="small-200"
-                          alignItems="center"
+                      {(template.isNew || copy?.bestFor[0]) && (
+                        <span
+                          className={`chm-look__ribbon${template.isNew ? " is-new" : ""}`}
                         >
-                          <s-heading>{template.name}</s-heading>
-                          {template.isNew && <s-badge tone="info">New</s-badge>}
-                        </s-stack>
-                        <s-paragraph color="subdued" lineClamp={2}>
-                          {TEMPLATE_COPY[template.id]?.tagline ??
-                            template.description}
-                        </s-paragraph>
-                        {TEMPLATE_COPY[template.id] && (
-                          <s-text color="subdued">
-                            Best for{" "}
-                            {TEMPLATE_COPY[template.id].bestFor.join(" · ")}
-                          </s-text>
-                        )}
-                        <s-stack direction="inline" gap="small-200">
-                          {template.features.map((feature) => (
-                            <s-badge key={feature} tone="neutral">
-                              {FEATURE_LABELS[feature]}
-                            </s-badge>
-                          ))}
-                        </s-stack>
-                      </s-stack>
-                      <div className="chm-tile__actions">
-                        <s-grid gridTemplateColumns="1fr auto" gap="small-200">
-                          <s-button
-                            variant="primary"
-                            loading={pending === template.id}
-                            disabled={Boolean(pending)}
-                            onClick={() =>
-                              startNaming(template.id, `${template.name} menu`)
-                            }
-                          >
-                            Use template
-                          </s-button>
-                          <s-button
-                            icon="maximize"
-                            accessibilityLabel={`Preview ${template.name} larger`}
-                            onClick={() => openPreview(template.id)}
-                          >
-                            Preview
-                          </s-button>
-                        </s-grid>
+                          {template.isNew
+                            ? "✦ New"
+                            : `Great for ${copy?.bestFor[0]}`}
+                        </span>
+                      )}
+                    </div>
+                    <div className="chm-look__info">
+                      <span className="chm-look__name">{template.name}</span>
+                      <span className="chm-look__tagline">
+                        {copy?.tagline ?? template.description}
+                      </span>
+                      {copy && (
+                        <span className="chm-look__best">
+                          Best for {copy.bestFor.join(" · ")}
+                        </span>
+                      )}
+                      <span className="chm-look__chips">
+                        {template.features.map((feature) => (
+                          <span key={feature} className="chm-look__chip">
+                            {FEATURE_LABELS[feature]}
+                          </span>
+                        ))}
+                      </span>
+                      <div className="chm-look__actions">
+                        <s-button
+                          variant="primary"
+                          inlineSize="fill"
+                          loading={pending === template.id}
+                          disabled={Boolean(pending)}
+                          onClick={() =>
+                            startNaming(template.id, `${template.name} menu`)
+                          }
+                        >
+                          Use template
+                        </s-button>
+                        <s-button
+                          icon="maximize"
+                          accessibilityLabel={`Preview ${template.name} larger`}
+                          onClick={() => openPreview(template.id)}
+                        >
+                          Preview
+                        </s-button>
                       </div>
                     </div>
-                  </s-box>
-                </div>
-              ))}
-            </s-grid>
-          </s-stack>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </s-section>
       </s-stack>
 
@@ -354,22 +353,34 @@ export default function Templates() {
               gap="large"
               alignItems="start"
             >
-              {/* The phone stays in view while the details scroll. */}
+              {/* The phone stays in view while the details scroll, on a
+                  stage in the template's own colors. */}
               <div className="chm-sticky">
-                <MenuPreview
-                  design={previewing.design}
-                  context={context}
-                  scale={0.8}
-                  interactive
-                />
+                <div
+                  className="chm-pv__stage"
+                  style={
+                    {
+                      "--chm-stage-tint":
+                        previewing.design.tokens.accent || "#8a8a8a",
+                    } as React.CSSProperties
+                  }
+                >
+                  <MenuPreview
+                    design={previewing.design}
+                    context={context}
+                    scale={0.78}
+                    interactive
+                    guide
+                  />
+                </div>
               </div>
               <TemplateDetails
                 description={previewing.description}
                 copy={TEMPLATE_COPY[previewing.id]}
-                numbers={previewing.numbers}
                 featureLabels={previewing.features.map(
                   (feature) => FEATURE_LABELS[feature],
                 )}
+                isNew={previewing.isNew}
               />
             </s-grid>
           </s-query-container>

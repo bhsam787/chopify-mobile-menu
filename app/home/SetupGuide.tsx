@@ -64,7 +64,7 @@ export function SetupGuide({
       label: "Turn on the app embed",
       description:
         embed === "unknown"
-          ? "In your theme editor, open App embeds and turn on Chopify Menu. It replaces your theme's mobile menu with yours."
+          ? "In your theme editor, open App embeds and turn on Chopi - Menu. It replaces your theme's mobile menu with yours."
           : "One switch in your theme editor replaces your theme's mobile menu with yours. Your theme files aren't changed.",
       done: embed === "active",
       checking: embed === "loading",

@@ -1,20 +1,20 @@
-import type { Design } from "@chopify/menu-core";
-import { compile } from "@chopify/menu-core";
-import { DEFAULT_ROUTES } from "@chopify/menu-renderer";
+import type { Design } from "@chopi/menu-core";
+import { compile } from "@chopi/menu-core";
+import { DEFAULT_ROUTES } from "@chopi/menu-renderer";
 import type { PreviewContext } from "../components/MenuPreview";
 import { gql, type Admin } from "./admin-graphql.server";
 import { resolvePreviewResources } from "./resources.server";
 
 const SHOP_LOCALES = `#graphql
   query PreviewShop {
-    shop { name }
+    shop { name currencyCode }
     shopLocales(published: true) { locale name primary }
   }
 `;
 
 const SHOP_NAME = `#graphql
   query PreviewShopName {
-    shop { name }
+    shop { name currencyCode }
   }
 `;
 
@@ -24,19 +24,35 @@ export interface ShopLocale {
   primary: boolean;
 }
 
-/** Shop name and published languages. Languages need `read_locales`; without it we fall back to none. */
-export async function fetchShopBasics(
-  admin: Admin,
-): Promise<{ shopName: string; locales: ShopLocale[] }> {
+/**
+ * Shop name, currency and published languages. Languages need
+ * `read_locales`; without it we fall back to none.
+ */
+export async function fetchShopBasics(admin: Admin): Promise<{
+  shopName: string;
+  currency: string;
+  locales: ShopLocale[];
+}> {
   try {
     const data = await gql<{
-      shop: { name: string };
+      shop: { name: string; currencyCode: string };
       shopLocales: ShopLocale[];
     }>(admin, SHOP_LOCALES);
-    return { shopName: data.shop.name, locales: data.shopLocales };
+    return {
+      shopName: data.shop.name,
+      currency: data.shop.currencyCode,
+      locales: data.shopLocales,
+    };
   } catch {
-    const data = await gql<{ shop: { name: string } }>(admin, SHOP_NAME);
-    return { shopName: data.shop.name, locales: [] };
+    const data = await gql<{ shop: { name: string; currencyCode: string } }>(
+      admin,
+      SHOP_NAME,
+    );
+    return {
+      shopName: data.shop.name,
+      currency: data.shop.currencyCode,
+      locales: [],
+    };
   }
 }
 
@@ -50,7 +66,7 @@ export async function buildPreviewContext(
       .flatMap((design) => compile(design).resources)
       .map((need) => [need.key, need]),
   );
-  const [{ shopName, locales }, resources] = await Promise.all([
+  const [{ shopName, currency, locales }, resources] = await Promise.all([
     fetchShopBasics(admin),
     resolvePreviewResources(admin, [...needs.values()]),
   ]);
@@ -60,6 +76,7 @@ export async function buildPreviewContext(
     context: {
       locale: primary,
       shopName,
+      currency,
       resources,
       routes: DEFAULT_ROUTES,
       customerLoggedIn: false,

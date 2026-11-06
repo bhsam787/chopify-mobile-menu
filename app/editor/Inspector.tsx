@@ -9,16 +9,25 @@ import type {
   Screen,
   ShapeIcon,
   SocialNetwork,
-} from "@chopify/menu-core";
+  TabsLook,
+  ContactKind,
+  ContactNode,
+} from "@chopi/menu-core";
 import {
+  applyTabsLook,
+  childNodes,
+  isInSideTabs,
+  contactHref,
+  NO_LINK,
   ICON_NAMES,
   NODE_LABELS,
   SHAPE_ICONS,
   SOCIAL_NETWORKS,
   newId,
   richToPlain,
-} from "@chopify/menu-core";
-import type { ResolvedResource } from "@chopify/menu-renderer";
+  tabsLook,
+} from "@chopi/menu-core";
+import type { ResolvedResource } from "@chopi/menu-renderer";
 import {
   ColorField,
   FieldRow,
@@ -43,6 +52,12 @@ import {
 import { BadgeFields, BoxFields, TextStyleFields } from "./StyleFields";
 import { isPanel } from "./sections";
 import { ScreenSpacingFields } from "./ScreenSpacing";
+import { HeaderFields } from "./HeaderFields";
+import { SearchDesignFields } from "./LiveSearchFields";
+import { ItemList } from "./ItemList";
+import { CollectionField } from "./CollectionField";
+import { addTab, fillLikeFirstTab, placeTabs } from "../canvas/tabPlacement";
+import type { PreviewContext } from "../components/MenuPreview";
 
 export interface InspectorContext {
   design: Design;
@@ -56,6 +71,8 @@ export interface InspectorContext {
   /** Opens the full-screen canvas editor for a canvas node. */
   onOpenCanvas?: (canvasId: string) => void;
   onResource: (key: string, resource: ResolvedResource) => void;
+  /** Store data for live previews inside the panel (e.g. header styles). */
+  preview?: PreviewContext;
 }
 
 /**
@@ -109,6 +126,88 @@ const SOCIAL_OPTIONS = SOCIAL_NETWORKS.map((network) => ({
   value: network,
   label: network === "x" ? "X" : network[0].toUpperCase() + network.slice(1),
 }));
+/** The tab bar styles, each with a small picture of it. */
+const TAB_LOOKS: { value: TabsLook; label: string; picture: ReactNode }[] = [
+  {
+    value: "pills",
+    label: "Separate pills",
+    picture: (
+      <svg viewBox="0 0 48 36" width="48" height="36">
+        <rect x="4" y="12" width="19" height="12" rx="6" fill="currentColor" />
+        <rect
+          x="25"
+          y="12"
+          width="19"
+          height="12"
+          rx="6"
+          fill="currentColor"
+          opacity=".25"
+        />
+      </svg>
+    ),
+  },
+  {
+    value: "track",
+    label: "Pill track",
+    picture: (
+      <svg viewBox="0 0 48 36" width="48" height="36">
+        <rect
+          x="3"
+          y="10"
+          width="42"
+          height="16"
+          rx="8"
+          fill="currentColor"
+          opacity=".2"
+        />
+        <rect x="5" y="12" width="20" height="12" rx="6" fill="currentColor" />
+      </svg>
+    ),
+  },
+  {
+    value: "underline",
+    label: "Underline",
+    picture: (
+      <svg viewBox="0 0 48 36" width="48" height="36">
+        <rect x="7" y="14" width="12" height="4" rx="2" fill="currentColor" />
+        <rect
+          x="29"
+          y="14"
+          width="12"
+          height="4"
+          rx="2"
+          fill="currentColor"
+          opacity=".35"
+        />
+        <rect x="4" y="23" width="18" height="2" fill="currentColor" />
+        <rect
+          x="4"
+          y="25"
+          width="40"
+          height="1"
+          fill="currentColor"
+          opacity=".25"
+        />
+      </svg>
+    ),
+  },
+];
+const CONTACT_OPTIONS: { value: ContactKind; label: string }[] = [
+  { value: "email", label: "Email" },
+  { value: "phone", label: "Phone call" },
+  { value: "whatsapp", label: "WhatsApp chat" },
+  { value: "link", label: "A page (help, FAQ, contact…)" },
+];
+const CONTACT_VALUE_LABELS: Record<Exclude<ContactKind, "link">, string> = {
+  email: "Email address",
+  phone: "Phone number",
+  whatsapp: "WhatsApp number",
+};
+const CONTACT_PLACEHOLDERS: Record<Exclude<ContactKind, "link">, string> = {
+  email: "help@yourstore.com",
+  phone: "Number with country code, e.g. +44 20 7946 0000",
+  whatsapp: "Number with country code, e.g. +49 151 2345 6789",
+};
 const ARROW_OPTIONS = [
   { value: "none", label: "No arrow" },
   { value: "light", label: "White circle" },
@@ -206,6 +305,7 @@ export function Inspector({
       onCreateScreen={context.createScreen}
       onOpenScreen={context.onOpenScreen}
       onResource={context.onResource}
+      allowSubMenu={!inSideTabs}
     />
   );
 
@@ -222,6 +322,22 @@ export function Inspector({
     />
   );
 
+  /**
+   * A just-picked collection's products, so the preview shows them right
+   * away (they're otherwise loaded with the page).
+   */
+  const loadProducts = (collectionId: string) => {
+    fetch(`/app/api/collection-products?id=${encodeURIComponent(collectionId)}`)
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: { key: string; resource: ResolvedResource } | null) => {
+        if (data) context.onResource(data.key, data.resource);
+      })
+      .catch(() => {
+        // The preview fills in when the page next loads; nothing is lost.
+      });
+  };
+
+  const inSideTabs = isInSideTabs(design, node.id);
   const content: ReactNode[] = [];
   const style: ReactNode[] = [];
 
@@ -400,6 +516,17 @@ export function Inspector({
                   }),
               })}
             </s-box>
+            {index > 0 && childNodes(tab.child).length === 0 && (
+              <s-button
+                variant="tertiary"
+                icon="duplicate"
+                onClick={() =>
+                  context.update(node.id, fillLikeFirstTab(node, tab.id))
+                }
+              >
+                Start like Tab 1
+              </s-button>
+            )}
             {node.tabs.length > 2 && (
               <s-button
                 variant="tertiary"
@@ -419,57 +546,71 @@ export function Inspector({
         <s-button
           key="add"
           icon="plus"
-          onClick={() =>
-            set({
-              tabs: [
-                ...node.tabs,
-                {
-                  id: newId("tab"),
-                  label: `Tab ${node.tabs.length + 1}`,
-                  // Tabs on a canvas get a free panel, like their other tabs.
-                  child:
-                    node.tabs[0]?.child.type === "shape"
-                      ? {
-                          id: newId("sh"),
-                          type: "shape",
-                          name: `Tab ${node.tabs.length + 1}`,
-                          link: { type: "none" },
-                          children: [],
-                        }
-                      : {
-                          id: newId("c"),
-                          type: "container",
-                          layout: "grid",
-                          columns: 2,
-                          gap: 12,
-                          children: [],
-                        },
-                },
-              ],
-            })
-          }
+          onClick={() => context.update(node.id, addTab(node))}
         >
           Add tab
         </s-button>,
       );
+      const look = tabsLook(node);
+      const underline = look === "underline";
       style.push(
+        <DesignGroup
+          key="look"
+          title="Style"
+          icon={DESIGN_ICONS.layout}
+          target=".chm-tabs__list"
+          help="How the tab buttons look. Your colors carry over when you switch."
+        >
+          <Segmented
+            label="Tabs position"
+            value={node.placement ?? "top"}
+            options={[
+              { value: "top", label: "On top" },
+              { value: "side", label: "On the side" },
+            ]}
+            onChange={(placement) =>
+              context.update(node.id, placeTabs(node, placement))
+            }
+          />
+          <ChoiceTiles
+            label="Tab style"
+            value={look}
+            options={TAB_LOOKS}
+            onChange={(next) => set({ style: applyTabsLook(node, next) })}
+          />
+          {node.placement === "side" && (
+            <SliderField
+              label="Width of the tab column"
+              value={node.railWidth}
+              min={56}
+              max={200}
+              onChange={(railWidth) => set({ railWidth })}
+            />
+          )}
+        </DesignGroup>,
         <DesignGroup
           key="active"
           title="Selected tab"
           icon={DESIGN_ICONS.look}
           target='[data-chm-tab][aria-selected="true"]'
-          help="The tab shoppers are on: its background and text color."
+          help={
+            underline
+              ? "The tab shoppers are on: its text and underline color."
+              : "The tab shoppers are on: its background and text color."
+          }
         >
           <FieldRow>
+            {!underline && (
+              <ColorField
+                label="Background"
+                value={node.style?.activeBackground}
+                onChange={(activeBackground) =>
+                  set({ style: { ...node.style, activeBackground } })
+                }
+              />
+            )}
             <ColorField
-              label="Background"
-              value={node.style?.activeBackground}
-              onChange={(activeBackground) =>
-                set({ style: { ...node.style, activeBackground } })
-              }
-            />
-            <ColorField
-              label="Text"
+              label={underline ? "Text and underline" : "Text"}
               value={node.style?.activeColor}
               onChange={(activeColor) =>
                 set({ style: { ...node.style, activeColor } })
@@ -482,16 +623,22 @@ export function Inspector({
           title="Other tabs"
           icon={DESIGN_ICONS.look}
           target='[data-chm-tab][aria-selected="false"]'
-          help="The tabs shoppers can switch to: their background and text color."
+          help={
+            underline
+              ? "The tabs shoppers can switch to: their text color."
+              : "The tabs shoppers can switch to: their background and text color."
+          }
         >
           <FieldRow>
-            <ColorField
-              label="Background"
-              value={node.style?.inactiveBackground}
-              onChange={(inactiveBackground) =>
-                set({ style: { ...node.style, inactiveBackground } })
-              }
-            />
+            {look === "pills" && (
+              <ColorField
+                label="Background"
+                value={node.style?.inactiveBackground}
+                onChange={(inactiveBackground) =>
+                  set({ style: { ...node.style, inactiveBackground } })
+                }
+              />
+            )}
             <ColorField
               label="Text"
               value={node.style?.inactiveColor}
@@ -508,11 +655,13 @@ export function Inspector({
           target=".chm-tabs__list"
           help="The strip the tab buttons sit on: its color and the space at its sides."
         >
-          <ColorPicker
-            label="Track behind the tabs"
-            value={node.style?.track}
-            onChange={(track) => set({ style: { ...node.style, track } })}
-          />
+          {look === "track" && (
+            <ColorPicker
+              label="Track behind the tabs"
+              value={node.style?.track}
+              onChange={(track) => set({ style: { ...node.style, track } })}
+            />
+          )}
           <SliderField
             label="Side spacing"
             value={node.style?.inset}
@@ -532,49 +681,452 @@ export function Inspector({
       break;
     }
 
+    case "products":
+      content.push(
+        <CollectionField
+          key="collection"
+          value={node.collection}
+          details="Its products show with their current photo, title and price, in each shopper's currency."
+          onChange={(collection) => {
+            // Real products replace the sample ones for good.
+            set({
+              collection,
+              ...(collection ? { sample: undefined } : {}),
+            });
+            if (collection) loadProducts(collection.id);
+          }}
+        />,
+        <NumberField
+          key="limit"
+          label="Number of products"
+          value={node.limit ?? 6}
+          min={1}
+          max={12}
+          onChange={(limit) => set({ limit })}
+        />,
+        <Segmented
+          key="layout"
+          label="Layout"
+          value={node.layout}
+          options={[
+            { value: "row", label: "Swipe sideways" },
+            { value: "grid", label: "Two columns" },
+          ]}
+          onChange={(layout) => set({ layout })}
+        />,
+        <SwitchField
+          key="price"
+          label="Show prices"
+          checked={node.showPrice !== false}
+          onChange={(showPrice) => set({ showPrice })}
+        />,
+      );
+      style.push(
+        <DesignGroup
+          key="cards"
+          title="Cards"
+          icon={DESIGN_ICONS.layout}
+          target=".chm-product"
+          help="The size of each product card and the color behind its photo."
+        >
+          {node.layout !== "grid" && (
+            <SliderField
+              label="Card width"
+              value={node.cardWidth}
+              min={90}
+              max={260}
+              onChange={(cardWidth) => set({ cardWidth })}
+            />
+          )}
+          <Segmented
+            label="Photo shape"
+            value={node.ratio ?? 1.2}
+            options={[
+              { value: 1, label: "Square" },
+              { value: 1.2, label: "Portrait" },
+              { value: 1.5, label: "Tall" },
+            ]}
+            onChange={(ratio) => set({ ratio })}
+          />
+          <ColorPicker
+            label="Behind the photo"
+            value={node.imageBackground}
+            onChange={(imageBackground) => set({ imageBackground })}
+          />
+          <ColorPicker
+            label="Sale price"
+            value={node.saleColor}
+            onChange={(saleColor) => set({ saleColor })}
+          />
+        </DesignGroup>,
+        <BoxFields
+          key="box"
+          value={node.box}
+          onChange={(box) => set({ box })}
+        />,
+        <TextStyleFields
+          key="title"
+          value={node.titleStyle}
+          part="productTitleStyle"
+          onChange={(titleStyle) => set({ titleStyle })}
+        />,
+        <TextStyleFields
+          key="price"
+          value={node.priceStyle}
+          part="priceStyle"
+          onChange={(priceStyle) => set({ priceStyle })}
+        />,
+      );
+      break;
+
+    case "perks":
+      content.push(
+        <ItemList
+          key="items"
+          label="Perks"
+          items={node.items}
+          max={6}
+          addLabel="Add perk"
+          create={() => ({ id: newId("pi"), icon: "check", text: "Perk" })}
+          onChange={(items) => set({ items })}
+        >
+          {(item) => (
+            <>
+              <SelectField
+                label="Icon"
+                value={item.icon}
+                options={ICON_OPTIONS.filter((option) => option.value)}
+                onChange={(icon) =>
+                  set({
+                    items: node.items.map((candidate) =>
+                      candidate.id === item.id
+                        ? { ...candidate, icon: icon as IconName }
+                        : candidate,
+                    ),
+                  })
+                }
+              />
+              {text("text", "Text", {
+                key: `${item.id}.text`,
+                value: item.text,
+                onChange: (value) =>
+                  set({
+                    items: node.items.map((candidate) =>
+                      candidate.id === item.id
+                        ? { ...candidate, text: value }
+                        : candidate,
+                    ),
+                  }),
+              })}
+            </>
+          )}
+        </ItemList>,
+      );
+      style.push(
+        <DesignGroup
+          key="layout"
+          title="Layout"
+          icon={DESIGN_ICONS.layout}
+          target=".chm-perk"
+          help="How many perks sit side by side, and where the icon goes."
+        >
+          <Segmented
+            label="Per line"
+            value={node.columns ?? 3}
+            options={[2, 3, 4].map((value) => ({
+              value,
+              label: String(value),
+            }))}
+            onChange={(columns) => set({ columns })}
+          />
+          <Segmented
+            label="Icon"
+            value={node.variant ?? "stacked"}
+            options={[
+              { value: "stacked", label: "Above the text" },
+              { value: "inline", label: "Next to the text" },
+            ]}
+            onChange={(variant) => set({ variant })}
+          />
+          <ColorPicker
+            label="Icon color"
+            value={node.iconColor}
+            onChange={(iconColor) => set({ iconColor })}
+          />
+        </DesignGroup>,
+        <BoxFields
+          key="box"
+          value={node.box}
+          onChange={(box) => set({ box })}
+        />,
+        <TextStyleFields
+          key="style"
+          value={node.style}
+          part="style"
+          onChange={(value) => set({ style: value })}
+        />,
+      );
+      break;
+
+    case "contact": {
+      const setItem = (
+        id: string,
+        patch: Partial<ContactNode["items"][number]>,
+      ) =>
+        set({
+          items: node.items.map((candidate) =>
+            candidate.id === id ? { ...candidate, ...patch } : candidate,
+          ),
+        });
+      content.push(
+        text("title", "Title"),
+        <ItemList
+          key="items"
+          label="Buttons"
+          items={node.items}
+          max={4}
+          addLabel="Add button"
+          create={(): ContactNode["items"][number] => ({
+            id: newId("ci"),
+            kind: "email",
+            label: "Email us",
+            value: "",
+          })}
+          onChange={(items) => set({ items })}
+        >
+          {(item) => (
+            <>
+              <SelectField
+                label="Opens"
+                value={item.kind}
+                options={CONTACT_OPTIONS}
+                onChange={(kind) =>
+                  setItem(item.id, {
+                    kind: kind as ContactKind,
+                    link: kind === "link" ? (item.link ?? NO_LINK) : undefined,
+                  })
+                }
+              />
+              {text("label", "Button text", {
+                key: `${item.id}.label`,
+                value: item.label,
+                onChange: (label) => setItem(item.id, { label }),
+              })}
+              {item.kind === "link" ? (
+                link(item.link ?? NO_LINK, (next) =>
+                  setItem(item.id, { link: next }),
+                )
+              ) : (
+                <TextField
+                  label={CONTACT_VALUE_LABELS[item.kind]}
+                  value={item.value ?? ""}
+                  placeholder={CONTACT_PLACEHOLDERS[item.kind]}
+                  details={
+                    contactHref(item.kind, item.value)
+                      ? undefined
+                      : "Hidden on your store until this is filled in correctly"
+                  }
+                  onChange={(value) => setItem(item.id, { value })}
+                />
+              )}
+            </>
+          )}
+        </ItemList>,
+      );
+      style.push(
+        <DesignGroup
+          key="layout"
+          title="Layout"
+          icon={DESIGN_ICONS.layout}
+          target=".chm-contact__items"
+          help="Buttons side by side, or rows one under the other."
+        >
+          <Segmented
+            label="Show as"
+            value={node.variant ?? "buttons"}
+            options={[
+              { value: "buttons", label: "Buttons" },
+              { value: "rows", label: "Rows" },
+            ]}
+            onChange={(variant) => set({ variant })}
+          />
+          <ColorPicker
+            label="Icon color"
+            value={node.iconColor}
+            onChange={(iconColor) => set({ iconColor })}
+          />
+        </DesignGroup>,
+        <BoxFields
+          key="box"
+          value={node.box}
+          onChange={(box) => set({ box })}
+        />,
+        <TextStyleFields
+          key="title"
+          value={node.titleStyle}
+          part="titleStyle"
+          onChange={(titleStyle) => set({ titleStyle })}
+        />,
+        <TextStyleFields
+          key="style"
+          value={node.style}
+          part="contactStyle"
+          onChange={(value) => set({ style: value })}
+        />,
+      );
+      break;
+    }
+
+    case "discount":
+      content.push(
+        text("title", "Title"),
+        text("text", "Text"),
+        <TextField
+          key="code"
+          label="Discount code"
+          value={node.code}
+          details="Create the code in Shopify under Discounts first. It's the same in every language."
+          onChange={(code) => set({ code: code.replace(/\s+/g, "") })}
+        />,
+        <SwitchField
+          key="apply"
+          label="Show an Apply button"
+          details="Puts the code on the shopper's cart for them"
+          checked={Boolean(node.applyLink)}
+          onChange={(applyLink) => set({ applyLink })}
+        />,
+      );
+      style.push(
+        <DesignGroup
+          key="code"
+          title="Code and button"
+          icon={DESIGN_ICONS.look}
+          target=".chm-discount__row"
+          help="The colors of the code box and the Copy button."
+        >
+          <FieldRow>
+            <ColorField
+              label="Code background"
+              value={node.codeBackground}
+              onChange={(codeBackground) => set({ codeBackground })}
+            />
+            <ColorField
+              label="Code text"
+              value={node.codeColor}
+              onChange={(codeColor) => set({ codeColor })}
+            />
+          </FieldRow>
+          <FieldRow>
+            <ColorField
+              label="Button background"
+              value={node.buttonBackground}
+              onChange={(buttonBackground) => set({ buttonBackground })}
+            />
+            <ColorField
+              label="Button text"
+              value={node.buttonColor}
+              onChange={(buttonColor) => set({ buttonColor })}
+            />
+          </FieldRow>
+        </DesignGroup>,
+        <BoxFields
+          key="box"
+          value={node.box}
+          onChange={(box) => set({ box })}
+        />,
+        <TextStyleFields
+          key="title"
+          value={node.titleStyle}
+          part="titleStyle"
+          onChange={(titleStyle) => set({ titleStyle })}
+        />,
+        <TextStyleFields
+          key="text"
+          value={node.textStyle}
+          part="textStyle"
+          onChange={(textStyle) => set({ textStyle })}
+        />,
+      );
+      break;
+
+    case "ticker":
+      content.push(
+        <ItemList
+          key="items"
+          label="Messages"
+          items={node.items}
+          max={8}
+          addLabel="Add message"
+          create={() => ({ id: newId("ti"), text: "New message" })}
+          onChange={(items) => set({ items })}
+        >
+          {(item, index) =>
+            text("text", `Message ${index + 1}`, {
+              key: `${item.id}.text`,
+              value: item.text,
+              onChange: (value) =>
+                set({
+                  items: node.items.map((candidate) =>
+                    candidate.id === item.id
+                      ? { ...candidate, text: value }
+                      : candidate,
+                  ),
+                }),
+            })
+          }
+        </ItemList>,
+        <TextField
+          key="separator"
+          label="Between messages"
+          value={node.separator ?? ""}
+          details="A symbol such as • or ✦. Empty = just space."
+          onChange={(separator) => set({ separator: separator.slice(0, 3) })}
+        />,
+      );
+      style.push(
+        <DesignGroup
+          key="motion"
+          title="Motion"
+          icon={DESIGN_ICONS.spacing}
+          target=":scope"
+          help="How fast the messages move. Shoppers who turn off motion on their phone see them still, and can swipe instead."
+        >
+          <SliderField
+            label="Speed"
+            value={node.speed}
+            min={10}
+            max={120}
+            unit=" px/s"
+            onChange={(speed) => set({ speed })}
+          />
+        </DesignGroup>,
+        <BoxFields
+          key="box"
+          value={node.box}
+          onChange={(box) => set({ box })}
+        />,
+        <TextStyleFields
+          key="style"
+          value={node.style}
+          part="style"
+          onChange={(value) => set({ style: value })}
+        />,
+      );
+      break;
+
     case "header":
       content.push(
-        <ImageField
-          key="logo"
-          label="Logo"
-          value={node.logo}
-          details="Empty = your store's logo or name"
-          onChange={(logo) => set({ logo })}
-        />,
-        <FieldRow key="logo-row">
-          <NumberField
-            label="Logo width"
-            value={node.logoWidth}
-            min={40}
-            max={240}
-            suffix="px"
-            onChange={(logoWidth) => set({ logoWidth })}
-          />
-          <SelectField
-            label="Logo position"
-            value={node.logoAlign ?? "center"}
-            options={[
-              { value: "start", label: "Left" },
-              { value: "center", label: "Center" },
-            ]}
-            onChange={(logoAlign) => set({ logoAlign })}
-          />
-        </FieldRow>,
-        <SwitchField
-          key="language"
-          label="Language switcher"
-          checked={Boolean(node.showLanguage)}
-          onChange={(showLanguage) => set({ showLanguage })}
-        />,
-        <SelectField
-          key="close"
-          label="Close button"
-          value={node.close ?? "plain"}
-          options={[
-            { value: "plain", label: "Plain ✕" },
-            { value: "circle", label: "In a circle" },
-          ]}
-          onChange={(close) => set({ close })}
+        <HeaderFields
+          key="header"
+          design={design}
+          node={node}
+          context={context.preview}
+          set={set}
+          replace={(header) => context.update(node.id, header)}
+          text={(field, label) => text(field, label)}
+          termText={(id, value, label, onChange) =>
+            text("text", label, { key: `${id}.text`, value, onChange })
+          }
         />,
       );
       style.push(
@@ -584,6 +1136,7 @@ export function Inspector({
           value={node.iconColor}
           onChange={(iconColor) => set({ iconColor })}
         />,
+        <SearchDesignFields key="search" node={node} set={set} />,
         <BoxFields
           key="box"
           value={node.box}
@@ -1113,9 +1666,15 @@ export function Inspector({
       );
       if (node.source === "collection") {
         content.push(
-          link(node.collection ?? { type: "none" }, (next) =>
-            set({ collection: next.type === "collection" ? next : undefined }),
-          ),
+          <CollectionField
+            key="collection"
+            value={node.collection}
+            details="Its products show as circles, always current."
+            onChange={(collection) => {
+              set({ collection });
+              if (collection) loadProducts(collection.id);
+            }}
+          />,
           <NumberField
             key="limit"
             label="Number of products"

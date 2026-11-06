@@ -1,4 +1,4 @@
-import type { Design } from "@chopify/menu-core";
+import type { Design } from "@chopi/menu-core";
 import type { PreviewContext } from "../components/MenuPreview";
 import { MenuPreview } from "../components/MenuPreview";
 import { PhoneStage } from "../components/PhoneStage";
@@ -16,98 +16,14 @@ export interface TemplatePreview {
   id: string;
   name: string;
   description: string;
+  /** One selling line (falls back to the description). */
+  tagline: string | null;
+  /** The kind of store it suits best, e.g. "Fashion". */
+  bestFor: string | null;
+  /** What it has, in words ("Tabs", "Image cards"…). */
+  features: string[];
+  isNew: boolean;
   design: Design;
-}
-
-const EMBED_LABEL: Record<
-  EmbedStatus,
-  [string, "success" | "warning" | "neutral"]
-> = {
-  loading: ["Checking…", "neutral"],
-  active: ["On", "success"],
-  inactive: ["Off", "warning"],
-  unknown: ["Check in theme", "neutral"],
-};
-
-function Metric({
-  label,
-  href,
-  target,
-  children,
-}: {
-  label: string;
-  href: string;
-  target?: "_blank";
-  children: React.ReactNode;
-}) {
-  return (
-    <s-clickable
-      href={href}
-      target={target}
-      paddingBlock="small-400"
-      paddingInline="small-100"
-      borderRadius="base"
-    >
-      <s-grid gap="small-300">
-        <s-heading>{label}</s-heading>
-        <s-stack direction="inline" gap="small-200" alignItems="center">
-          {children}
-        </s-stack>
-      </s-grid>
-    </s-clickable>
-  );
-}
-
-/** Numbers at a glance (Shopify's metrics card): only what the app knows for sure. */
-export function MetricsRow({
-  menus,
-  featured,
-  stats,
-  embed,
-  embedUrl,
-}: {
-  menus: HomeMenu[];
-  featured: HomeMenu;
-  stats: { links: number; subMenus: number };
-  embed: EmbedStatus;
-  embedUrl: string;
-}) {
-  const live = menus.find((menu) => menu.published);
-  const [embedLabel, embedTone] = EMBED_LABEL[embed];
-  const editUrl = `/app/menus/${featured.id}`;
-  return (
-    <s-section accessibilityLabel="Menu at a glance">
-      <s-query-container>
-        <s-grid
-          gridTemplateColumns="@container (inline-size <= 480px) 1fr, 1fr auto 1fr auto 1fr auto 1fr"
-          gap="small"
-        >
-          <Metric
-            label="Live menu"
-            href={live ? `/app/menus/${live.id}` : editUrl}
-          >
-            {live ? (
-              <s-text>{live.name}</s-text>
-            ) : (
-              <s-badge tone="neutral">Not published</s-badge>
-            )}
-          </Metric>
-          <s-divider direction="block" />
-          <Metric label="Links" href={editUrl}>
-            <s-text>{stats.links.toLocaleString()}</s-text>
-          </Metric>
-          <s-divider direction="block" />
-          <Metric label="Sub-menus" href={editUrl}>
-            <s-text>{stats.subMenus.toLocaleString()}</s-text>
-          </Metric>
-          <s-divider direction="block" />
-          <Metric label="App embed" href={embedUrl} target="_blank">
-            <s-badge tone={embedTone}>{embedLabel}</s-badge>
-          </Metric>
-        </s-grid>
-      </s-query-container>
-    </s-section>
-  );
 }
 
 function StatusLine({
@@ -136,6 +52,7 @@ export function FeaturedMenu({
   design,
   context,
   publishedAt,
+  unlinked,
   embed,
   shop,
 }: {
@@ -143,6 +60,8 @@ export function FeaturedMenu({
   design: Design;
   context: PreviewContext;
   publishedAt: string | null;
+  /** Items that look tappable but go nowhere yet. */
+  unlinked: number;
   embed: EmbedStatus;
   shop: string;
 }) {
@@ -178,21 +97,26 @@ export function FeaturedMenu({
             size="large"
             interactive
           />
-          <s-stack gap="base">
-            <s-stack gap="small-200">
-              <s-stack direction="inline" gap="small-200" alignItems="center">
-                <s-heading>{menu.name}</s-heading>
+          <div className="chm-featured">
+            <div className="chm-featured__head">
+              <span
+                className={`chm-featured__kicker${menu.published ? " is-live" : ""}`}
+              >
+                {menu.published ? "Live now" : "Draft"}
+              </span>
+              <h3 className="chm-featured__name">
+                {menu.name}
                 {menu.usesCanvas && (
                   <s-badge tone="info" icon="layout-block">
                     Canvas
                   </s-badge>
                 )}
-              </s-stack>
-              <s-text color="subdued">
+              </h3>
+              <span className="chm-featured__meta">
                 Last edited {dateFormat.format(new Date(menu.updatedAt))}
-              </s-text>
-            </s-stack>
-            <s-stack gap="small-200">
+              </span>
+            </div>
+            <div className="chm-featured__checks">
               {publishedAt ? (
                 <StatusLine icon="check-circle" tone="success">
                   Published {dateFormat.format(new Date(publishedAt))}
@@ -209,11 +133,19 @@ export function FeaturedMenu({
                   App embed is off: shoppers still see your theme&apos;s menu
                 </StatusLine>
               ) : null}
+              {/* Easy to miss, and shoppers tap them: say it here. */}
+              {unlinked > 0 && (
+                <StatusLine icon="alert-circle" tone="warning">
+                  {unlinked === 1
+                    ? "1 item doesn't link anywhere yet"
+                    : `${unlinked.toLocaleString()} items don't link anywhere yet`}
+                </StatusLine>
+              )}
               <StatusLine icon="link">
                 Links stay up to date by themselves: renamed collections and
                 products need no republish
               </StatusLine>
-            </s-stack>
+            </div>
             <s-stack direction="inline" gap="small-200">
               <s-button variant="primary" href={`/app/menus/${menu.id}`}>
                 {menu.published ? "Edit menu" : "Edit and publish"}
@@ -222,7 +154,7 @@ export function FeaturedMenu({
                 View store
               </s-button>
             </s-stack>
-          </s-stack>
+          </div>
         </s-grid>
       </s-query-container>
     </s-section>
@@ -247,11 +179,11 @@ export function WelcomeCard({
         >
           <s-stack gap="base">
             <s-stack gap="small-200">
-              <s-heading>Give shoppers an app-like mobile menu</s-heading>
+              <s-heading>Everything a great mobile menu needs</s-heading>
               <s-paragraph color="subdued">
-                Most shoppers browse on their phone. Replace your theme&apos;s
-                plain mobile menu with tabs, image cards, sub-menus and
-                promotions, without touching your theme code.
+                Most shoppers browse on their phone. Your menu replaces the
+                theme&apos;s plain one on mobile, and your theme&apos;s code
+                stays untouched.
               </s-paragraph>
             </s-stack>
             <s-unordered-list>
@@ -260,17 +192,9 @@ export function WelcomeCard({
               </s-list-item>
               <s-list-item>A live editor with a real phone preview</s-list-item>
               <s-list-item>
-                A Figma-like canvas to design your own from scratch
+                A free-form canvas to design your own from scratch
               </s-list-item>
             </s-unordered-list>
-            <s-stack direction="inline" gap="small-200">
-              <s-button variant="primary" href="/app/templates">
-                Choose a template
-              </s-button>
-              <s-button href="/app/templates#blank">
-                Start from scratch
-              </s-button>
-            </s-stack>
           </s-stack>
           <div className="chm-fan" aria-hidden="true">
             {templates.slice(0, 3).map((template) => (
@@ -293,7 +217,24 @@ export function WelcomeCard({
   );
 }
 
-/** Three templates as tiles; each opens its preview in the gallery. */
+const ARROW = (
+  <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+    <path
+      d="M3.5 8h9m-3.5-3.5L12.5 8 9 11.5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+/**
+ * Three templates as showcase tiles: the phone on a stage in the
+ * template's colors, what it's great for, what it has. Each opens its
+ * preview in the gallery.
+ */
 export function TemplateTeaser({
   templates,
   context,
@@ -311,11 +252,8 @@ export function TemplateTeaser({
       <s-button slot="secondary-actions" href="/app/templates">
         See all templates
       </s-button>
-      <s-query-container>
-        <s-grid
-          gridTemplateColumns="@container (inline-size <= 640px) 1fr, 1fr 1fr 1fr"
-          gap="base"
-        >
+      <div className="chm-looks">
+        <div className="chm-looks__grid">
           {templates.map((template) => (
             <s-clickable
               key={template.id}
@@ -323,27 +261,47 @@ export function TemplateTeaser({
               accessibilityLabel={`Preview the ${template.name} template`}
               borderRadius="large"
             >
-              <div className="chm-tile">
-                <s-box border="base" borderRadius="large" padding="small">
-                  <s-stack gap="small">
-                    <PhoneStage
-                      design={template.design}
-                      context={context}
-                      scale={0.5}
-                    />
-                    <s-stack gap="small-500">
-                      <s-text type="strong">{template.name}</s-text>
-                      <s-paragraph color="subdued" lineClamp={2}>
-                        {template.description}
-                      </s-paragraph>
-                    </s-stack>
-                  </s-stack>
-                </s-box>
+              <div className="chm-look">
+                <div className="chm-look__stage">
+                  <PhoneStage
+                    design={template.design}
+                    context={context}
+                    scale={0.5}
+                  />
+                  {(template.isNew || template.bestFor) && (
+                    <span
+                      className={`chm-look__ribbon${template.isNew ? " is-new" : ""}`}
+                    >
+                      {template.isNew
+                        ? "✦ New"
+                        : `Great for ${template.bestFor}`}
+                    </span>
+                  )}
+                  <span className="chm-look__cta" aria-hidden="true">
+                    Preview {ARROW}
+                  </span>
+                </div>
+                <div className="chm-look__info">
+                  <span className="chm-look__name">
+                    {template.name}
+                    <span className="chm-look__arrow">{ARROW}</span>
+                  </span>
+                  <span className="chm-look__tagline">
+                    {template.tagline ?? template.description}
+                  </span>
+                  <span className="chm-look__chips">
+                    {template.features.map((feature) => (
+                      <span key={feature} className="chm-look__chip">
+                        {feature}
+                      </span>
+                    ))}
+                  </span>
+                </div>
               </div>
             </s-clickable>
           ))}
-        </s-grid>
-      </s-query-container>
+        </div>
+      </div>
     </s-section>
   );
 }

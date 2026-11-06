@@ -1,20 +1,20 @@
-import type { MenuReferences, ReferenceType } from "@chopify/menu-core";
+import type { MenuReferences, ReferenceType } from "@chopi/menu-core";
 import {
   assertReferenceLimits,
   REFERENCE_CHUNK,
   REFERENCE_CHUNKS,
   REFERENCE_TYPES,
-} from "@chopify/menu-core";
+} from "@chopi/menu-core";
 import { assertNoUserErrors, gql, type Admin } from "./admin-graphql.server";
 
 /**
  * The live menu's linked resources, stored by ID in app-owned shop
  * metafields. The theme embed reads them as
- * `shop.metafields["$app:chopify"]` and Shopify resolves each ID when the page
+ * `shop.metafields["$app:chopi"]` and Shopify resolves each ID when the page
  * renders, so URLs, titles and images are always current: a renamed handle
  * needs no republish, and a deleted resource simply drops out.
  */
-export const REFERENCE_NAMESPACE = "$app:chopify";
+export const REFERENCE_NAMESPACE = "$app:chopi";
 
 /** "collection_1" … "collection_4": Liquid reads 50 references per list. */
 const chunkKey = (type: ReferenceType, index: number) => `${type}_${index + 1}`;

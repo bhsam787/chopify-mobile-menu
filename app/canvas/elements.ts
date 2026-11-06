@@ -6,13 +6,17 @@ import type {
   ShapeIcon,
   ShapeNode,
   TextStyle,
-} from "@chopify/menu-core";
+} from "@chopi/menu-core";
+import { layoutList, type ListFrame } from "./items";
 import {
   CANVAS_WIDTH,
   newId,
+  SIDE_TAB_HEIGHT,
+  TAB_GAP,
+  TAB_RAIL_WIDTH,
   templateImage,
   WIDGETS,
-} from "@chopify/menu-core";
+} from "@chopi/menu-core";
 
 /** An element merchants can drag onto the canvas. */
 export interface CanvasElement {
@@ -390,8 +394,7 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
     key: "shape",
     label: "Frame",
     icon: "blank",
-    description:
-      "A colored box. Drop layers into it to group them, like a Figma frame.",
+    description: "A colored box. Drop layers into it to group them.",
     group: "Shapes",
     size: { w: 160, h: 100 },
     create: () => ({
@@ -490,10 +493,10 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   ]),
   {
     key: "icon-list",
-    label: "Icon list",
+    label: "Menu list",
     icon: "list-bulleted",
     description:
-      "Full-width rows with a line icon, arrow and thin lines between, like Sliding Menu and Botanical.",
+      "Rows with an arrow and thin lines between, like Sliding Menu and Mono. Icons can be turned off in its settings.",
     group: "Layouts",
     size: { w: 390, h: 4 * 57 - 1 },
     ready: true,
@@ -507,27 +510,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
           ["Sale", "percent"],
         ],
         56,
-      ),
-  },
-  {
-    key: "text-list",
-    label: "Text list",
-    icon: "list-bulleted",
-    description:
-      "Simple text rows with arrows and thin lines between, like Mono and the sub-menus.",
-    group: "Layouts",
-    size: { w: 390, h: 4 * 53 - 1 },
-    ready: true,
-    create: () =>
-      linedList(
-        "Text list",
-        [
-          ["Shop all", null],
-          ["New in", null],
-          ["Bestsellers", null],
-          ["Sale", null],
-        ],
-        52,
       ),
   },
   {
@@ -559,34 +541,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
           frame: { x: 15, y: 16, w: 375, h: 118 },
         },
       ]),
-  },
-  {
-    key: "pill-tabs",
-    label: "Pill tabs",
-    icon: "tab-horizontal",
-    description:
-      "Tabs on a soft pill track where the active tab slides, like Sliding Menu. Each tab is its own free area.",
-    group: "Layouts",
-    size: { w: 350, h: 430 },
-    ready: true,
-    create: () => {
-      // The Tabs element with the pill-track look (looked up when added).
-      const tabs = CANVAS_ELEMENTS.find(
-        (element) => element.key === "tabs",
-      )!.create();
-      return {
-        ...tabs,
-        style: {
-          ...(tabs.type === "tabs" ? tabs.style : {}),
-          activeBackground: INK,
-          activeColor: "#FFFFFF",
-          inactiveBackground: "transparent",
-          inactiveColor: INK,
-          track: "#ECECEC",
-          inset: 0,
-        },
-      } as Node;
-    },
   },
   // Layouts: the building blocks of the templates, made of editable layers.
   {
@@ -883,6 +837,127 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
       titleStyle: { size: 16, weight: 600, color: INK },
       textStyle: { size: 13 },
     }),
+  },
+  {
+    key: "side-tabs",
+    label: "Side tabs",
+    icon: "layout-sidebar-left",
+    description:
+      "Categories in a column on the left, their content on the right: the way big stores organise a phone menu.",
+    group: "Layouts",
+    size: { w: 350, h: 272 },
+    ready: true,
+    create: () => {
+      const panelWidth = 350 - TAB_RAIL_WIDTH - TAB_GAP;
+      const panel = (
+        label: string,
+        items: [string, ImageName][],
+      ): ShapeNode => ({
+        id: newId("sh"),
+        type: "shape",
+        name: label,
+        link: NO_LINK,
+        children: [
+          {
+            ...frameLayer(
+              `${label} cards`,
+              { clip: false, list: { direction: "grid", gap: 12, columns: 2 } },
+              cardGrid(items, panelWidth, 130),
+            ),
+            frame: { x: 0, y: 0, w: panelWidth, h: 272 },
+          },
+        ],
+      });
+      const tab = (label: string, items: [string, ImageName][]) => ({
+        id: newId("tab"),
+        label,
+        child: panel(label, items),
+      });
+      return {
+        id: newId("t"),
+        type: "tabs",
+        placement: "side",
+        railWidth: TAB_RAIL_WIDTH,
+        barHeight: SIDE_TAB_HEIGHT,
+        style: {
+          look: "pills",
+          activeBackground: "#F1F1F1",
+          activeColor: INK,
+          inactiveBackground: "transparent",
+          inactiveColor: "#6B6B6B",
+          text: { size: 13, weight: 600 },
+        },
+        tabs: [
+          tab("Suits", CATEGORIES.slice(0, 4)),
+          tab("Casual", CATEGORIES.slice(2, 6)),
+          tab("Looks", [
+            ["Wedding", "fashion/look-wedding-guest"],
+            ["Business", "fashion/look-business"],
+            ["Gala", "fashion/look-gala"],
+            ["Summer", "fashion/look-summer"],
+          ]),
+          tab("Sale", [
+            CATEGORIES[5],
+            CATEGORIES[1],
+            CATEGORIES[3],
+            CATEGORIES[0],
+          ]),
+        ],
+      };
+    },
+  },
+  {
+    key: "products",
+    label: "Product cards",
+    icon: "product",
+    description:
+      "Products from a collection with photo, title and price, always current and in the shopper's currency.",
+    group: "Store",
+    size: { w: 350, h: 236 },
+    ready: true,
+    create: fromLibrary("products"),
+  },
+  {
+    key: "perks",
+    label: "Perks",
+    icon: "shield-check-mark",
+    description: "Shipping, returns and secure checkout, each with an icon.",
+    group: "Promotion",
+    size: { w: 350, h: 84 },
+    ready: true,
+    create: fromLibrary("perks"),
+  },
+  {
+    key: "contact",
+    label: "Contact & help",
+    icon: "chat",
+    description:
+      "Buttons to call, email or message the store, or open a help page.",
+    group: "Store",
+    size: { w: 350, h: 92 },
+    ready: true,
+    create: fromLibrary("contact"),
+  },
+  {
+    key: "discount",
+    label: "Discount code",
+    icon: "discount-code",
+    description: "A code shoppers copy with one tap, or apply to their cart.",
+    group: "Promotion",
+    size: { w: 350, h: 150 },
+    ready: true,
+    create: fromLibrary("discount"),
+  },
+  {
+    key: "ticker",
+    label: "Ticker",
+    icon: "text-in-rows",
+    description:
+      "A thin strip of short messages that scrolls sideways in a loop.",
+    group: "Promotion",
+    size: { w: 350, h: 38 },
+    ready: true,
+    create: fromLibrary("ticker"),
   },
   {
     key: "countdown",
@@ -1362,7 +1437,7 @@ const SEARCH_WORDS: Record<string, string> = {
   image: "photo picture media",
   button: "cta call to action",
   divider: "separator rule hr",
-  tabs: "switch segment toggle panels",
+  tabs: "switch segment toggle panels track pill underline",
   accordion: "collapse expand dropdown faq toggle",
   "chip-row": "pills tags quick links scroll",
   carousel: "slider swipe scroll gallery",
@@ -1399,10 +1474,14 @@ const SEARCH_WORDS: Record<string, string> = {
   "grid-label": "cards categories style",
   "grid-circle": "cards round categories style",
   "grid-tile": "cards categories style",
-  "icon-list": "menu rows links lines dividers navigation",
-  "text-list": "menu rows links lines dividers navigation",
+  "icon-list": "menu rows links lines dividers navigation text icons",
+  "side-tabs": "vertical categories sidebar column departments",
+  products: "bestsellers new arrivals shop items price collection",
+  perks: "trust shipping returns guarantee usp benefits",
+  contact: "help support whatsapp phone email call chat",
+  discount: "coupon promo code voucher copy",
+  ticker: "marquee announcement scrolling running text",
   "story-band": "stories circles bubbles swipe",
-  "pill-tabs": "segment switch toggle track",
   "banner-highlight": "deal promo hero dark",
   "banner-split": "promo half photo",
   "banner-feature": "promo look editorial",
@@ -1422,26 +1501,80 @@ export function searchElements(query: string): CanvasElement[] {
   });
 }
 
+/** Space kept between the phone's edges and what's placed on the canvas. */
+export const SIDE_MARGIN = 20;
+
 /**
  * A new layer of `element`, centered on (cx, cy) inside its parent (the
- * canvas or a frame of `bounds.w` width), shrunk to fit narrow frames.
+ * canvas or a frame of `bounds.w` width). It keeps `margin` from both
+ * edges, shrinking to fit: a list lays its rows out again at the new width
+ * (rows keep their height), anything else scales with its layers.
  */
 export function placeElement(
   element: CanvasElement,
   cx: number,
   cy: number,
   bounds: { w: number } = { w: CANVAS_WIDTH },
+  margin = 0,
 ): Node {
-  const scale = Math.min(1, bounds.w / element.size.w);
+  const side = Math.min(margin, bounds.w / 4);
+  const room = bounds.w - side * 2;
+  const scale = Math.min(1, room / element.size.w);
+  const node = elementSample(element);
   const w = Math.round(element.size.w * scale);
+  const x = Math.round(
+    Math.min(Math.max(side, cx - w / 2), Math.max(side, bounds.w - side - w)),
+  );
+
+  if (node.type === "shape" && node.list && scale < 1) {
+    const row = node.list.direction === "row";
+    const children = (node.children ?? []).map((child, index) =>
+      // A narrowed row starts at its own edge (the margin is outside it now).
+      row && index === 0 && child.frame
+        ? { ...child, frame: { ...child.frame, x: 0 } }
+        : child,
+    );
+    const laid = layoutList({
+      ...node,
+      children,
+      frame: { x, y: 0, w, h: element.size.h },
+    } as ListFrame);
+    const h = laid.frame?.h ?? element.size.h;
+    return {
+      ...laid,
+      frame: { x, y: Math.round(Math.max(0, cy - h / 2)), w, h },
+    };
+  }
+
   const h = Math.round(element.size.h * scale);
-  const frame: Frame = {
-    x: Math.round(Math.min(Math.max(0, cx - w / 2), Math.max(0, bounds.w - w))),
-    y: Math.round(Math.max(0, cy - h / 2)),
-    w,
-    h,
+  const frame: Frame = { x, y: Math.round(Math.max(0, cy - h / 2)), w, h };
+  return scale < 1
+    ? { ...scaleLayers(node, scale), frame }
+    : { ...node, frame };
+}
+
+/** A frame's layers scaled with it (positions and sizes), at every depth. */
+function scaleLayers(node: Node, scale: number): Node {
+  if (node.type !== "shape" || !node.children?.length) return node;
+  return {
+    ...node,
+    children: node.children.map((child) =>
+      scaleLayers(
+        child.frame
+          ? {
+              ...child,
+              frame: {
+                x: Math.round(child.frame.x * scale),
+                y: Math.round(child.frame.y * scale),
+                w: Math.round(child.frame.w * scale),
+                h: Math.round(child.frame.h * scale),
+              },
+            }
+          : child,
+        scale,
+      ),
+    ),
   };
-  return { ...elementSample(element), frame };
 }
 
 const sample = (name: Parameters<typeof templateImage>[0]) =>

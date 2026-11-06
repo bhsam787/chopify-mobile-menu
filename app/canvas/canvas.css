@@ -67,10 +67,17 @@ body {
   border-left: 1px solid #e3e3e3;
   padding: 16px;
 }
-.cve__tabs {
+.cve__left-head {
   position: sticky;
   top: 0;
   z-index: 1;
+  background: #fff;
+}
+.cve__search {
+  padding: 12px 14px;
+  border-bottom: 1px solid #ebebeb;
+}
+.cve__tabs {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   background: #fff;
@@ -233,13 +240,25 @@ body {
     #f1f1f1;
 }
 /* The phone screen: fixed to the chosen device, the canvas scrolls inside. */
+.cve__device {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 20px;
+  background: #fff;
+}
 .cve__screen {
+  flex: 1;
+  min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  border-radius: 20px;
-  background: #fff;
   scrollbar-width: thin;
+}
+/* The menu's header and footer: shown for context, edited in the menu editor. */
+.cve__chrome {
+  flex: none;
+  cursor: default;
 }
 .cve__phone {
   flex: none;

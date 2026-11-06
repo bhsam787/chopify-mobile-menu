@@ -1,4 +1,4 @@
-import type { LayerBox, Spacing } from "@chopify/menu-core";
+import type { LayerBox, Spacing } from "@chopi/menu-core";
 import { ColorField, FieldRow, NumberField } from "../editor/controls";
 import { ALIGN_PATHS } from "./AlignBar";
 

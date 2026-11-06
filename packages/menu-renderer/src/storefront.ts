@@ -1,10 +1,10 @@
 /**
- * Storefront loader, bundled as extensions/chopify-menu/assets/chopify-menu.js.
+ * Storefront loader, bundled as extensions/chopi-menu/assets/chopi-menu.js.
  * Kept tiny: reads the JSON the app embed prints, takes over the theme's burger
- * button below the breakpoint and loads the full menu (chopify-menu-app.js)
+ * button below the breakpoint and loads the full menu (chopi-menu-app.js)
  * when the page is idle or on the first tap.
  */
-import type { Design } from "@chopify/menu-core";
+import type { Design } from "@chopi/menu-core";
 import { triggerSelector } from "./adapters";
 import type { MenuController } from "./behavior";
 import type { RenderContext } from "./context";
@@ -24,13 +24,13 @@ interface EmbedData {
 declare global {
   interface Window {
     Shopify?: { theme?: { role?: string; schema_name?: string } };
-    ChopifyMenu?: { open: () => void; close: () => void };
-    __chopifyMenuApp?: MenuApp;
+    ChopiMenu?: { open: () => void; close: () => void };
+    __chopiMenuApp?: MenuApp;
   }
 }
 
 function readData(): EmbedData | null {
-  const element = document.getElementById("chopify-menu-data");
+  const element = document.getElementById("chopi-menu-data");
   if (!element?.textContent) return null;
   try {
     return JSON.parse(element.textContent) as EmbedData;
@@ -43,13 +43,13 @@ let appPromise: Promise<MenuApp> | null = null;
 
 function loadApp(url: string): Promise<MenuApp> {
   appPromise ??= new Promise((resolve, reject) => {
-    if (window.__chopifyMenuApp) return resolve(window.__chopifyMenuApp);
+    if (window.__chopiMenuApp) return resolve(window.__chopiMenuApp);
     const script = document.createElement("script");
     script.src = url;
     script.async = true;
     script.onload = () =>
-      window.__chopifyMenuApp
-        ? resolve(window.__chopifyMenuApp)
+      window.__chopiMenuApp
+        ? resolve(window.__chopiMenuApp)
         : reject(new Error("Menu failed to load"));
     script.onerror = () => {
       appPromise = null;
@@ -136,7 +136,7 @@ function start() {
     idle(() => loadApp(data.appUrl).catch(() => undefined));
   }
 
-  window.ChopifyMenu = {
+  window.ChopiMenu = {
     open: () => void open(),
     close: () => controller?.close(),
   };

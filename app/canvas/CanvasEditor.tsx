@@ -11,17 +11,19 @@ import {
   duplicateNode,
   insertNode,
   isFreeTabs,
+  isInSideTabs,
   locate,
   mapNode,
   moveNode,
   nodeLabel,
+  NODE_LABELS,
   removeNode,
   TEMPLATES,
   findTemplate,
   updateNode,
   type Template,
-} from "@chopify/menu-core";
-import type { RenderContext, ResolvedResource } from "@chopify/menu-renderer";
+} from "@chopi/menu-core";
+import type { RenderContext, ResolvedResource } from "@chopi/menu-renderer";
 import { Inspector, type InspectorContext } from "../editor/Inspector";
 import {
   ColorField,
@@ -37,6 +39,7 @@ import {
   CANVAS_ELEMENTS,
   elementPreview,
   placeElement,
+  SIDE_MARGIN,
   searchElements,
 } from "./elements";
 import { canDetach, detachToLayers } from "./detach";
@@ -74,7 +77,6 @@ import { ContextMenu, type MenuEntry } from "./ContextMenu";
 import { ModeSwitch, type PreviewMode } from "../components/ModeSwitch";
 import {
   DEFAULT_DEVICE,
-  deviceViewport,
   deviceScale,
   DEVICES,
   type Device,
@@ -85,6 +87,14 @@ import { LayerBoxFields } from "./LayerBoxFields";
 import { convertScreenToCanvas, isCanvasScreen } from "./convert";
 import { FragmentPreview } from "../components/FragmentPreview";
 import { MenuPreview } from "../components/MenuPreview";
+import {
+  followTarget,
+  GuideBot,
+  GuideRestore,
+  useGuidePrefs,
+  type GuideLine,
+} from "../components/GuideBot";
+import { lowerFirst } from "../editor/DesignWorkspace";
 import { SAMPLE_LOCALIZATION } from "../editor/widgetSamples";
 
 export interface CanvasEditorProps {
@@ -107,7 +117,7 @@ function isEmptyCanvas(design: Design, canvasId: string): boolean {
 
 /** Tells the main editor (which opened us in a full-screen modal) to close and reload. */
 function notifyDone() {
-  const message = { type: "chopify:canvas-done" };
+  const message = { type: "chopi:canvas-done" };
   window.opener?.postMessage(message, window.location.origin);
   window.parent?.postMessage(message, window.location.origin);
 }
@@ -235,34 +245,25 @@ export function CanvasEditor({
     currentScreenId && currentScreenId !== design.screens[0]?.id,
   );
 
-  /** A new sub-menu whose content is a canvas. */
-  const openScreen = (value: string) => {
-    if (value === "new") {
-      const result = addCanvasScreen(
-        design,
-        `Sub-menu ${design.screens.length}`,
-      );
-      history.set(result.design);
-      setCanvasId(result.canvasId);
+  /** Opens a screen's canvas; a sub-menu built from sections is converted first. */
+  const openScreen = (screenId: string) => {
+    const existing = canvasOfScreen(screenId);
+    if (existing) {
+      setCanvasId(existing.id);
     } else {
-      const existing = canvasOfScreen(value);
-      if (existing) {
-        setCanvasId(existing.id);
-      } else {
-        // A sub-menu built from sections: turn it into a canvas that looks the same.
-        try {
-          const converted = convertScreenToCanvas(design, value, context);
-          history.set(converted.design);
-          setCanvasId(converted.canvasId);
-        } catch (error) {
-          shopify.toast.show(
-            error instanceof Error
-              ? error.message
-              : "Couldn't open this sub-menu",
-            { isError: true },
-          );
-          return;
-        }
+      // A sub-menu built from sections: turn it into a canvas that looks the same.
+      try {
+        const converted = convertScreenToCanvas(design, screenId, context);
+        history.set(converted.design);
+        setCanvasId(converted.canvasId);
+      } catch (error) {
+        shopify.toast.show(
+          error instanceof Error
+            ? error.message
+            : "Couldn't open this sub-menu",
+          { isError: true },
+        );
+        return;
       }
     }
     setSelectedIds([]);
@@ -338,6 +339,23 @@ export function CanvasEditor({
     [history, canvasId],
   );
 
+  /**
+   * The canvas height (in design px) that fills the chosen phone's screen
+   * below the header, back bar and footer, so nothing scrolls.
+   */
+  const screenFitHeight = () => {
+    const scroller = document.querySelector<HTMLElement>("[data-cve-scroller]");
+    if (!scroller) return null;
+    const unit = zoom * deviceScale(device);
+    // The back bar and footer scroll with the canvas: leave room for them.
+    const others = [
+      ...scroller.querySelectorAll<HTMLElement>(
+        ":scope > .cve-backbar, :scope > .cve__chrome",
+      ),
+    ].reduce((sum, child) => sum + child.getBoundingClientRect().height, 0);
+    return Math.max(80, Math.floor((scroller.clientHeight - others) / unit));
+  };
+
   const detachContext = useMemo(
     () => ({
       ...baseContext,
@@ -377,7 +395,14 @@ export function CanvasEditor({
         x: bounds.w / 2,
         y: lowest + 16 + element.size.h / 2,
       };
-      let node = placeElement(element, point.x, point.y, bounds);
+      // On the canvas itself, keep the usual side margins.
+      let node = placeElement(
+        element,
+        point.x,
+        point.y,
+        bounds,
+        parent ? 0 : SIDE_MARGIN,
+      );
       if (element.layers)
         node = detachToLayers(design, node, detachContext) ?? node;
       history.set((current) => {
@@ -648,6 +673,39 @@ export function CanvasEditor({
     )
     .map((location) => location!.node);
 
+  // The helper beside the phone points at the selected layer (its
+  // selection box) and says what it is; with nothing selected it dances.
+  const phoneRef = useRef<HTMLDivElement>(null);
+  const guideRef = useRef<HTMLDivElement>(null);
+  const showGuide = useGuidePrefs().shown && !templatePreview;
+  const [guideLine, setGuideLine] = useState<GuideLine | null>(null);
+  const guideLineId = useRef(0);
+  const guideKey = selectedNodes.map((node) => node.id).join(",");
+  useEffect(() => {
+    if (!selectedNodes.length) return;
+    const [first] = selectedNodes;
+    setGuideLine({
+      id: ++guideLineId.current,
+      caption:
+        selectedNodes.length === 1 ? nodeLabel(first) || undefined : undefined,
+      text:
+        selectedNodes.length === 1
+          ? `You're editing the ${lowerFirst(NODE_LABELS[first.type])}`
+          : `You picked ${selectedNodes.length} layers`,
+    });
+    // Only when the selection changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guideKey]);
+  useEffect(() => {
+    const bot = guideRef.current;
+    const phone = phoneRef.current;
+    if (!showGuide || !bot || !phone) return;
+    const view =
+      phone.querySelector<HTMLElement>("[data-cve-scroller]") ?? phone;
+    const anchor = phone.querySelector<HTMLElement>(".cve-box.is-selected");
+    return followTarget(bot, phone, view, anchor);
+  });
+
   const removeSelected = () => {
     history.set(
       selectedNodes.reduce((next, node) => removeNode(next, node.id), design),
@@ -917,6 +975,7 @@ export function CanvasEditor({
 
   /** "Add sub-menu" on a list item: creates it (pre-filled) and links the item. */
   const addSubMenu = (itemId: string) => {
+    if (isInSideTabs(design, itemId)) return;
     const result = createSubMenu(design, itemId);
     if (!result) return;
     history.set(result.design);
@@ -1054,6 +1113,7 @@ export function CanvasEditor({
   };
 
   const inspectorContext: InspectorContext = {
+    preview: previewContext,
     design,
     locale,
     primaryLocale,
@@ -1190,23 +1250,6 @@ export function CanvasEditor({
             }
           />
           <span className="cve__sep" />
-          <s-box inlineSize="200px">
-            <SelectField
-              label="Screen"
-              labelAccessibilityVisibility="exclusive"
-              value={currentScreenId ?? ""}
-              options={[
-                ...design.screens.map((screen, index) => ({
-                  value: screen.id,
-                  label: `${index === 0 ? "Main menu" : `Sub-menu: ${screen.title}`}${
-                    canvasOfScreen(screen.id) ? "" : " (convert to canvas)"
-                  }`,
-                })),
-                { value: "new", label: "+ New sub-menu" },
-              ]}
-              onChange={openScreen}
-            />
-          </s-box>
           <s-box inlineSize="270px">
             <SelectField
               label="Phone"
@@ -1287,39 +1330,59 @@ export function CanvasEditor({
       </header>
 
       <aside className="cve__left" onScroll={hideHover}>
-        <div className="cve__tabs" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "elements"}
-            onClick={() => setTab("elements")}
-          >
-            Elements
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "layers"}
-            onClick={() => setTab("layers")}
-          >
-            Layers
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "menu"}
-            onClick={() => setTab("menu")}
-          >
-            Menu
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "templates"}
-            onClick={() => setTab("templates")}
-          >
-            Templates
-          </button>
+        {/* Tabs and the element search stay in view while the list scrolls. */}
+        <div className="cve__left-head">
+          <div className="cve__tabs" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "elements"}
+              onClick={() => setTab("elements")}
+            >
+              Elements
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "layers"}
+              onClick={() => setTab("layers")}
+            >
+              Layers
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "menu"}
+              onClick={() => setTab("menu")}
+            >
+              Menu
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "templates"}
+              onClick={() => setTab("templates")}
+            >
+              Templates
+            </button>
+          </div>
+          {tab === "elements" && (
+            <div className="cve__search">
+              <SearchField
+                label="Search elements"
+                placeholder="Search elements, e.g. tabs, slider, badge"
+                value={elementQuery}
+                onChange={setElementQuery}
+                onKeyDown={(event) => {
+                  // Enter adds the best match, so search + Enter is a quick insert.
+                  if (event.key === "Enter" && found[0]) {
+                    event.preventDefault();
+                    addElement(found[0].key);
+                  }
+                }}
+              />
+            </div>
+          )}
         </div>
         {tab === "menu" ? (
           <div className="cve__panel">
@@ -1391,19 +1454,6 @@ export function CanvasEditor({
           </div>
         ) : tab === "elements" ? (
           <div className="cve__panel">
-            <SearchField
-              label="Search elements"
-              placeholder="Search elements, e.g. tabs, slider, badge"
-              value={elementQuery}
-              onChange={setElementQuery}
-              onKeyDown={(event) => {
-                // Enter adds the best match, so search + Enter is a quick insert.
-                if (event.key === "Enter" && found[0]) {
-                  event.preventDefault();
-                  addElement(found[0].key);
-                }
-              }}
-            />
             {found.length === 0 ? (
               <s-stack gap="small-200">
                 <s-text color="subdued">
@@ -1617,94 +1667,122 @@ export function CanvasEditor({
             screenId={previewScreen ?? currentScreenId ?? design.screens[0].id}
             onScreenChange={setPreviewScreen}
             interactive
+            guide
           />
         ) : (
-          <div className="cve__phone">
-            {/* The chosen phone's screen below the menu header: the canvas scrolls inside it. */}
+          // The helper's lane is kept even while it's hidden: the phone
+          // never shifts sideways.
+          <div className="chm-guide-lane">
             <div
-              className="cve__screen"
-              data-cve-scroller
-              style={{
-                width: device.width * zoom,
-                height: deviceViewport(device) * zoom,
-              }}
+              className="cve__phone"
+              ref={phoneRef}
+              style={{ position: "relative" }}
             >
-              {!templatePreview && isSubMenu && currentScreenId && (
-                // The sub-menu's way back, as shoppers see it; click to restyle it.
-                <button
-                  type="button"
-                  className={`cve-backbar${backSelected ? " is-selected" : ""}`}
-                  title="Back to the level above: click to change its style"
-                  onClick={() => {
-                    setSelectedIds([]);
-                    setBackSelected(true);
-                  }}
-                >
-                  <span
-                    style={{
-                      display: "block",
-                      width: CANVAS_WIDTH,
-                      zoom: zoom * deviceScale(device),
-                    }}
-                  >
-                    <BackBarPreview
-                      design={design}
-                      screenId={currentScreenId}
-                      context={previewContext}
-                    />
-                  </span>
-                </button>
-              )}
-              {templatePreview ? (
-                // A picture of the template at the phone's size (CSS zoom keeps the scroll height right).
-                <div
-                  style={{
-                    width: CANVAS_WIDTH,
-                    zoom: zoom * deviceScale(device),
-                  }}
-                >
-                  <FragmentPreview
-                    bare
-                    design={templatePreview.source}
-                    node={templatePreview.canvas}
-                    context={previewContext}
-                  />
-                </div>
-              ) : (
-                <CanvasStage
+              {/* The chosen phone's screen: the menu's header pinned on top, the canvas scrolling below it. */}
+              <div
+                className="cve__device"
+                style={{
+                  width: device.width * zoom,
+                  height: device.height * zoom,
+                }}
+              >
+                <MenuChrome
                   design={design}
-                  canvas={canvas}
-                  context={context}
+                  node={design.header}
+                  context={previewContext}
                   zoom={zoom * deviceScale(device)}
-                  selectedIds={selectedIds}
-                  canEditText={!translating}
-                  view={view}
-                  onTab={(tabsId, tabId) => {
-                    setChosenTabs((current) => ({
-                      ...current,
-                      [tabsId]: tabId,
-                    }));
-                    // Leave a layer of the other tab: select the tabs themselves.
-                    if (selectedLocation?.path.includes(tabsId))
-                      setSelectedIds([tabsId]);
-                  }}
-                  onSelect={setSelectedIds}
-                  onFrames={updateFrames}
-                  onReparent={reparent}
-                  onHeight={setHeight}
-                  onDropElement={(key, parentId, x, y) =>
-                    addElement(key, { parentId, x, y })
-                  }
-                  onContextMenu={setMenu}
-                  onGestureEnd={onGestureEnd}
-                  onText={(id, text) =>
-                    history.set((current) => updateNode(current, id, { text }))
-                  }
                 />
-              )}
+                <div className="cve__screen" data-cve-scroller>
+                  {!templatePreview && isSubMenu && currentScreenId && (
+                    // The sub-menu's way back, as shoppers see it; click to restyle it.
+                    <button
+                      type="button"
+                      className={`cve-backbar${backSelected ? " is-selected" : ""}`}
+                      title="Back to the level above: click to change its style"
+                      onClick={() => {
+                        setSelectedIds([]);
+                        setBackSelected(true);
+                      }}
+                    >
+                      <span
+                        style={{
+                          display: "block",
+                          width: CANVAS_WIDTH,
+                          zoom: zoom * deviceScale(device),
+                        }}
+                      >
+                        <BackBarPreview
+                          design={design}
+                          screenId={currentScreenId}
+                          context={previewContext}
+                        />
+                      </span>
+                    </button>
+                  )}
+                  {templatePreview ? (
+                    // A picture of the template at the phone's size (CSS zoom keeps the scroll height right).
+                    <div
+                      style={{
+                        width: CANVAS_WIDTH,
+                        zoom: zoom * deviceScale(device),
+                      }}
+                    >
+                      <FragmentPreview
+                        bare
+                        design={templatePreview.source}
+                        node={templatePreview.canvas}
+                        context={previewContext}
+                      />
+                    </div>
+                  ) : (
+                    <CanvasStage
+                      design={design}
+                      canvas={canvas}
+                      context={context}
+                      zoom={zoom * deviceScale(device)}
+                      selectedIds={selectedIds}
+                      canEditText={!translating}
+                      view={view}
+                      onTab={(tabsId, tabId) => {
+                        setChosenTabs((current) => ({
+                          ...current,
+                          [tabsId]: tabId,
+                        }));
+                        // Leave a layer of the other tab: select the tabs themselves.
+                        if (selectedLocation?.path.includes(tabsId))
+                          setSelectedIds([tabsId]);
+                      }}
+                      onSelect={setSelectedIds}
+                      onFrames={updateFrames}
+                      onReparent={reparent}
+                      onHeight={setHeight}
+                      onDropElement={(key, parentId, x, y) =>
+                        addElement(key, { parentId, x, y })
+                      }
+                      onContextMenu={setMenu}
+                      onGestureEnd={onGestureEnd}
+                      onText={(id, text) =>
+                        history.set((current) =>
+                          updateNode(current, id, { text }),
+                        )
+                      }
+                    />
+                  )}
+                  {design.footer && (
+                    <MenuChrome
+                      design={design}
+                      node={design.footer}
+                      context={previewContext}
+                      zoom={zoom * deviceScale(device)}
+                    />
+                  )}
+                </div>
+              </div>
+              {showGuide && <GuideBot ref={guideRef} line={guideLine} />}
             </div>
           </div>
         )}
+        <GuideRestore />
         <p className="cve__hint">
           {previewMode === "preview"
             ? "Preview: tap tabs, open accordions and sub-menus, drag rows to swipe. Links stay here. Switch to Edit to change things."
@@ -1910,8 +1988,8 @@ export function CanvasEditor({
                 </s-stack>
                 {canDetach(selected) && (
                   <s-banner tone="info">
-                    Want to change its parts one by one, like in Figma? Split it
-                    into layers: image, texts and shapes inside a frame.
+                    Want to change its parts one by one? Split it into layers:
+                    image, texts and shapes inside a frame.
                     <s-button slot="secondary-actions" onClick={detach}>
                       Split into layers
                     </s-button>
@@ -1999,7 +2077,7 @@ export function CanvasEditor({
             )}
             <s-text color="subdued">
               Select an element to edit it. The canvas is designed at{" "}
-              {CANVAS_WIDTH}px and scales to every phone.
+              {CANVAS_WIDTH}px wide and scales to every phone.
             </s-text>
             <FieldRow>
               <NumberField
@@ -2008,6 +2086,7 @@ export function CanvasEditor({
                 min={80}
                 max={4000}
                 suffix="px"
+                details={`${Math.round(canvas.height * deviceScale(device))}px on ${device.label}`}
                 onChange={(height) => setHeight(height ?? 360, "canvas-height")}
               />
               <ColorField
@@ -2021,6 +2100,14 @@ export function CanvasEditor({
                 }
               />
             </FieldRow>
+            <s-button
+              onClick={() => {
+                const height = screenFitHeight();
+                if (height) setHeight(height, "canvas-height");
+              }}
+            >
+              Fit to {device.label} screen
+            </s-button>
           </s-stack>
         )}
       </aside>
@@ -2303,6 +2390,34 @@ function HoverCard({
       </div>
       <div className="cve-hover__foot">
         Drag onto the canvas or click to add
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The menu's header or footer around the canvas, as shoppers see it. Both
+ * are shared by every screen of the menu, so they're shown but not edited
+ * here (they're changed in the menu editor).
+ */
+function MenuChrome({
+  design,
+  node,
+  context,
+  zoom,
+}: {
+  design: Design;
+  node: Node;
+  context: Omit<RenderContext, "editor">;
+  zoom: number;
+}) {
+  return (
+    <div
+      className="cve__chrome"
+      title={`The menu's ${node.type === "header" ? "header" : "footer"}: the same on every screen. Change it in the menu editor.`}
+    >
+      <div style={{ width: CANVAS_WIDTH, zoom }}>
+        <FragmentPreview bare design={design} node={node} context={context} />
       </div>
     </div>
   );

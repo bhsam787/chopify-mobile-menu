@@ -230,6 +230,8 @@ export interface ContainerNode extends NodeBase {
   children: Node[];
 }
 
+export type TabsLook = "pills" | "track" | "underline";
+
 export interface TabsNode extends NodeBase {
   type: "tabs";
   /**
@@ -237,14 +239,24 @@ export interface TabsNode extends NodeBase {
    * whose layers are placed freely below the tab bar.
    */
   tabs: { id: string; label: string; child: ContainerNode | ShapeNode }[];
-  /** Free (canvas) tabs: height of the tab bar in canvas units. */
+  /** Free (canvas) tabs: height of the tab bar (side tabs: of each tab) in canvas units. */
   barHeight?: number;
+  /** top: a tab bar above the panels · side: a column of tabs left of the panel. */
+  placement?: "top" | "side";
+  /** Side tabs: width of the column of tabs in px (canvas units on a canvas). */
+  railWidth?: number;
   style?: {
     activeBackground?: Color;
     activeColor?: Color;
     inactiveBackground?: Color;
     inactiveColor?: Color;
     text?: TextStyle;
+    /**
+     * pills: each tab its own pill · track: tabs on one pill-shaped track ·
+     * underline: plain text, the selected tab underlined. Unset: "track"
+     * when there's a track color, else "pills".
+     */
+    look?: TabsLook;
     /** A pill-shaped track behind the tabs (the active tab slides on it). */
     track?: Color;
     /** Space left and right of the tab bar, so panels can run edge to edge. */
@@ -252,12 +264,103 @@ export interface TabsNode extends NodeBase {
   };
 }
 
+/** How live search results look: rows, a two-column grid, or swipeable cards. */
+export const LIVE_SEARCH_LAYOUTS = ["list", "grid", "carousel"] as const;
+export type LiveSearchLayout = (typeof LIVE_SEARCH_LAYOUTS)[number];
+
+/** How the search field looks. */
+export const SEARCH_FIELD_STYLES = ["pill", "box", "underline"] as const;
+export type SearchFieldStyle = (typeof SEARCH_FIELD_STYLES)[number];
+
+/**
+ * Search inside the menu: results appear while the shopper types (links of
+ * the menu itself, then Shopify's suggestions, collections and products).
+ */
+export interface LiveSearch {
+  enabled: boolean;
+  layout: LiveSearchLayout;
+  field?: SearchFieldStyle;
+  /** Products shown (2–8). */
+  productLimit?: number;
+  /** Matching links of this menu, shown first. */
+  menuLinks?: boolean;
+  /** Search terms Shopify suggests ("summer dress", "summer sale"). */
+  suggestions?: boolean;
+  collections?: boolean;
+  /** The shopper's last searches (kept in their own browser only). */
+  recent?: boolean;
+  /** Terms offered before typing, e.g. "Bestsellers", "Gift ideas". */
+  popular?: { id: string; text: string }[];
+  /** Add the store's most searched terms after the merchant's own (default on). */
+  topSearches?: boolean;
+  /** Top searches the merchant chose not to show (lowercase). */
+  hiddenTerms?: string[];
+  /** Color of highlights (completed words, the active field). */
+  accent?: Color;
+  /** Colors and sizes of the field and the results; unset = from the menu. */
+  design?: LiveSearchDesign;
+}
+
+export interface LiveSearchDesign {
+  fieldBackground?: Color;
+  fieldText?: Color;
+  fieldBorder?: Color;
+  /** Corner radius of the field in px (999 = fully rounded). */
+  fieldRadius?: number;
+  /** Height of the field in px. */
+  fieldHeight?: number;
+  panelBackground?: Color;
+  panelText?: Color;
+  /** Section headings ("Products", "Suggestions"…). */
+  headingColor?: Color;
+  /** Corner radius of product photos in px. */
+  imageRadius?: number;
+  /** Photo height ÷ width (grid and swipe cards). */
+  imageRatio?: number;
+  priceColor?: Color;
+  saleColor?: Color;
+  chipBackground?: Color;
+  chipText?: Color;
+  buttonBackground?: Color;
+  buttonText?: Color;
+  /** Size of product names in px. */
+  titleSize?: number;
+}
+
+/** Shortcut buttons a header can show next to the close button. */
+export const HEADER_ICONS = ["search", "account", "cart"] as const;
+export type HeaderIcon = (typeof HEADER_ICONS)[number];
+/** Everything in the header's button area that can be reordered. */
+export const HEADER_BUTTONS = [...HEADER_ICONS, "language"] as const;
+export type HeaderButton = (typeof HEADER_BUTTONS)[number];
+
 export interface HeaderNode extends NodeBase {
   type: "header";
   logo?: ImageRef;
   logoWidth?: number;
   logoAlign?: "start" | "center";
+  /** No logo or store name: a header of buttons only. */
+  hideBrand?: boolean;
   showLanguage?: boolean;
+  /** Shortcut buttons (search, account, cart). */
+  icons?: HeaderIcon[];
+  /** Order of the buttons (shortcuts and language); unset = the usual order. */
+  buttonOrder?: HeaderButton[];
+  /** A search field under the logo row. */
+  searchBar?: boolean;
+  searchPlaceholder?: string;
+  /** Results while typing, inside the menu (needs the search field or button). */
+  liveSearch?: LiveSearch;
+  /** A thin promo line above the logo row; empty = none. */
+  announcement?: string;
+  /** still: one line · ticker: scrolls sideways in a loop with more messages. */
+  announcementMode?: "still" | "ticker";
+  /** Ticker: messages after `announcement`. */
+  announcementItems?: { id: string; text: string }[];
+  /** Ticker: pixels per second. */
+  announcementSpeed?: number;
+  announcementBackground?: Color;
+  announcementColor?: Color;
   close?: "plain" | "circle";
   box?: BoxStyle;
   iconColor?: Color;
@@ -494,8 +597,108 @@ export interface SpacerNode extends NodeBase {
   height: number;
 }
 
+/**
+ * Products of a collection, read from the store when the page renders, so
+ * titles, photos and prices (in the shopper's currency) are always current.
+ */
+export interface ProductsNode extends NodeBase {
+  type: "products";
+  collection?: ResourceLink<"collection">;
+  /** How many products to show (1–12). */
+  limit?: number;
+  /** row: cards that swipe sideways · grid: two columns. */
+  layout: "row" | "grid";
+  showPrice?: boolean;
+  /** Card width in px (row layout). */
+  cardWidth?: number;
+  /** Photo height ÷ width. */
+  ratio?: number;
+  imageBackground?: Color;
+  box?: BoxStyle;
+  titleStyle?: TextStyle;
+  priceStyle?: TextStyle;
+  /** Color of the sale price when a product is discounted. */
+  saleColor?: Color;
+  /**
+   * Editor only: stand-in products shown until a collection is chosen, so a
+   * new section looks finished. Never shown on the store.
+   */
+  sample?: { title: string; image: ImageRef }[];
+}
+
+/** A row of short reassurances, each with an icon: shipping, returns, secure checkout. */
+export interface PerksNode extends NodeBase {
+  type: "perks";
+  items: { id: string; icon: IconName; text: string }[];
+  /** Items per line (2–4); more items wrap. */
+  columns?: number;
+  /** stacked: icon above the text · inline: icon left of the text. */
+  variant?: "stacked" | "inline";
+  iconColor?: Color;
+  box?: BoxStyle;
+  style?: TextStyle;
+}
+
+export const CONTACT_KINDS = ["phone", "email", "whatsapp", "link"] as const;
+export type ContactKind = (typeof CONTACT_KINDS)[number];
+
+/** Ways to reach the store: call, email, WhatsApp, a help page. */
+export interface ContactNode extends NodeBase {
+  type: "contact";
+  title?: string;
+  items: {
+    id: string;
+    kind: ContactKind;
+    label: string;
+    /** Phone number, email address or WhatsApp number (digits). */
+    value?: string;
+    /** For `link`. */
+    link?: LinkRef;
+  }[];
+  /** buttons: side by side · rows: one under the other with an arrow. */
+  variant?: "buttons" | "rows";
+  iconColor?: Color;
+  box?: BoxStyle;
+  titleStyle?: TextStyle;
+  style?: TextStyle;
+}
+
+/** A discount code with a Copy button. */
+export interface DiscountNode extends NodeBase {
+  type: "discount";
+  title: string;
+  text?: string;
+  code: string;
+  /** Also offers "Apply" (Shopify's /discount/CODE link puts it on the cart). */
+  applyLink?: boolean;
+  box?: BoxStyle;
+  titleStyle?: TextStyle;
+  textStyle?: TextStyle;
+  codeBackground?: Color;
+  codeColor?: Color;
+  buttonBackground?: Color;
+  buttonColor?: Color;
+}
+
+/** A thin strip of short messages that scrolls sideways in a loop. */
+export interface TickerNode extends NodeBase {
+  type: "ticker";
+  items: { id: string; text: string }[];
+  /** Pixels per second. */
+  speed?: number;
+  /** Between the messages, e.g. "•" or "✦"; empty = space only. */
+  separator?: string;
+  box?: BoxStyle;
+  style?: TextStyle;
+}
+
 export type WidgetNode =
   | HeadingNode
+  | ProductsNode
+  | PerksNode
+  | ContactNode
+  | DiscountNode
+  | TickerNode
   | TextNode
   | CardNode
   | RowNode
@@ -537,6 +740,12 @@ export const ICON_NAMES = [
   "bag",
   "home",
   "check",
+  "chat",
+  "whatsapp",
+  "lock",
+  "return",
+  "clock",
+  "shield",
 ] as const;
 export type IconName = (typeof ICON_NAMES)[number];
 
@@ -560,7 +769,6 @@ export const SHAPE_ICONS = [
   "chevron",
   "back",
   "close",
-  "clock",
   "quote",
   "verified",
   "star-filled",
@@ -638,6 +846,11 @@ export interface Design {
   screens: Screen[];
   /** locale → text id ("<nodeId>.<field>") → translated text. */
   translations: Record<string, Record<string, string>>;
+  /**
+   * The merchant's own CSS for this menu only. It runs inside the menu's
+   * shadow root, so it can't reach the theme; see `cleanCustomCss`.
+   */
+  customCss?: string;
   /**
    * Set when compiling; tells the theme what to print: the country/language
    * lists (`localization`) and how many products story circles show at most

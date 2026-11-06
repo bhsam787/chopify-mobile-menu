@@ -2,9 +2,9 @@ import type {
   ResourceLink,
   ResourceNeed,
   ResourceType,
-} from "@chopify/menu-core";
-import { resourceKey } from "@chopify/menu-core";
-import type { ResolvedResource } from "@chopify/menu-renderer";
+} from "@chopi/menu-core";
+import { resourceKey } from "@chopi/menu-core";
+import type { ResolvedResource } from "@chopi/menu-renderer";
 import { gql, type Admin } from "./admin-graphql.server";
 
 const RESOLVE_RESOURCES = `#graphql
@@ -21,6 +21,8 @@ const RESOLVE_RESOURCES = `#graphql
             title
             handle
             featuredMedia { preview { image { url } } }
+            priceRangeV2 { minVariantPrice { amount currencyCode } }
+            compareAtPriceRange { minVariantCompareAtPrice { amount currencyCode } }
           }
         }
       }
@@ -60,8 +62,31 @@ interface ResourceNode {
       featuredMedia?: {
         preview?: { image?: { url: string } | null } | null;
       } | null;
+      priceRangeV2?: { minVariantPrice: Money };
+      compareAtPriceRange?: { minVariantCompareAtPrice: Money } | null;
     }[];
   };
+}
+
+interface Money {
+  amount: string;
+  currencyCode: string;
+}
+
+/**
+ * A price as the editor shows it, in the store's currency. The storefront
+ * prints its own, in the shopper's currency (Liquid's `money`).
+ */
+function formatMoney(money: Money | undefined, locale: string) {
+  if (!money) return undefined;
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: money.currencyCode,
+    }).format(Number(money.amount));
+  } catch {
+    return `${money.amount} ${money.currencyCode}`;
+  }
 }
 
 const TYPE_BY_TYPENAME: Record<string, ResourceType> = {
@@ -96,6 +121,7 @@ async function fetchResources(
   admin: Admin,
   ids: string[],
   withProducts = false,
+  locale = "en",
 ): Promise<
   Map<
     string,
@@ -136,11 +162,21 @@ async function fetchResources(
           node.image?.url ??
           node.featuredMedia?.preview?.image?.url ??
           undefined,
-        products: node.products?.nodes.map((product) => ({
-          title: product.title,
-          url: storefrontPath("product", product.handle),
-          image: product.featuredMedia?.preview?.image?.url ?? undefined,
-        })),
+        products: node.products?.nodes.map((product) => {
+          const price = product.priceRangeV2?.minVariantPrice;
+          const compareAt =
+            product.compareAtPriceRange?.minVariantCompareAtPrice;
+          return {
+            title: product.title,
+            url: storefrontPath("product", product.handle),
+            image: product.featuredMedia?.preview?.image?.url ?? undefined,
+            price: formatMoney(price, locale),
+            compareAtPrice:
+              compareAt && price && Number(compareAt.amount) > Number(price.amount)
+                ? formatMoney(compareAt, locale)
+                : undefined,
+          };
+        }),
       });
     }
   }
@@ -154,6 +190,8 @@ async function fetchResources(
 export async function resolvePreviewResources(
   admin: Admin,
   needs: ResourceNeed[],
+  /** The store's default language, for formatting prices. */
+  locale = "en",
 ): Promise<Record<string, ResolvedResource>> {
   const resolved: Record<string, ResolvedResource> = {};
   const withProducts = needs
@@ -164,7 +202,7 @@ export async function resolvePreviewResources(
     .map((need) => need.id);
   const fetched = new Map([
     ...(await fetchResources(admin, plain)),
-    ...(await fetchResources(admin, withProducts, true)),
+    ...(await fetchResources(admin, withProducts, true, locale)),
   ]);
   for (const [, value] of fetched) {
     resolved[resourceKey(value.link.type, value.link.id)] = {

@@ -1,4 +1,4 @@
-import type { BoxStyle, Node, TextStyle } from "@chopify/menu-core";
+import type { BoxStyle, Node, TextStyle } from "@chopi/menu-core";
 import {
   ColorPicker,
   DESIGN_ICONS,

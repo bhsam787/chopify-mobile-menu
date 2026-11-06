@@ -11,6 +11,8 @@ import type {
   ContainerNode,
   CountdownNode,
   Design,
+  HeaderButton,
+  HeaderIcon,
   HeaderNode,
   BackBar,
   ImageNode,
@@ -24,50 +26,30 @@ import type {
   SocialProofNode,
   StoriesNode,
   TabsNode,
-} from "@chopify/menu-core";
+} from "@chopi/menu-core";
 import {
   CANVAS_WIDTH,
   canvasLayout,
   childNodes,
+  headerButtonOrder,
   isFreeTabs,
+  SIDE_TAB_HEIGHT,
+  TAB_BAR_HEIGHT,
+  TAB_RAIL_WIDTH,
   isResourceLink,
   isRtlLocale,
   resolveTexts,
   resourceKey,
+  tabsLook,
   UI_TEXT_DEFAULTS,
-} from "@chopify/menu-core";
+} from "@chopi/menu-core";
 import type { RenderContext } from "./context";
+import { href, isGone, nodeAttr, t, type State } from "./state";
+import { contact, discount, perks, products, ticker } from "./widgets";
+import { liveSearchOn, searchField, searchPanel } from "./search";
 import { countdownText, remaining } from "./countdown";
 import { boxCss, color, css, esc, img, rich, styleAttr, textCss } from "./html";
 import { ICONS, icon, shapeIcon, SOCIAL_LABELS, socialIcon } from "./icons";
-
-interface State {
-  design: Design;
-  ctx: RenderContext;
-  texts: Record<string, string>;
-}
-
-/** Translated text for "<nodeId>.<field>", falling back to the default-language value. */
-function t(state: State, id: string, field: string, fallback: string): string {
-  return state.texts[`${id}.${field}`] || fallback;
-}
-
-function nodeAttr(state: State, node: Node): string {
-  return state.ctx.editor ? ` data-chm-node="${esc(node.id)}"` : "";
-}
-
-/** Whether `link` points to a store resource that no longer exists (storefront only). */
-function isGone(state: State, link: LinkRef | undefined): boolean {
-  return (
-    Boolean(state.ctx.liveResources) &&
-    !state.ctx.editor &&
-    isResourceLink(link) &&
-    // Blogs have no metafield reference type: they keep their stored URL.
-    link.type !== "blog" &&
-    Boolean(link.id) &&
-    !state.ctx.resources[resourceKey(link.type, link.id)]
-  );
-}
 
 /** Items that only exist to link somewhere; left out when their target is gone. */
 const LINK_ITEMS = new Set<Node["type"]>([
@@ -79,25 +61,6 @@ const LINK_ITEMS = new Set<Node["type"]>([
   "banner",
   "image",
 ]);
-
-function href(state: State, link: LinkRef): string | null {
-  if (isGone(state, link)) return null;
-  switch (link.type) {
-    case "none":
-    case "screen":
-      return null;
-    case "url":
-      return link.url || null;
-    case "route":
-      return state.ctx.routes[link.route] ?? null;
-    default:
-      return (
-        state.ctx.resources[resourceKey(link.type, link.id)]?.url ??
-        link.url ??
-        null
-      );
-  }
-}
 
 /** Opening/closing tags for a tappable element: a link, a sub-menu trigger or a plain box. */
 function tappable(
@@ -558,6 +521,7 @@ function imageNode(state: State, node: ImageNode): string {
 function tabs(state: State, node: TabsNode): string {
   const style = node.style ?? {};
   const free = isFreeTabs(node);
+  const look = tabsLook(node);
   const vars = css(
     style.activeBackground &&
       `--chm-tab-active-bg:${color(style.activeBackground)}`,
@@ -569,14 +533,24 @@ function tabs(state: State, node: TabsNode): string {
   const activeId =
     node.tabs.find((tab) => tab.id === state.ctx.activeTabs?.[node.id])?.id ??
     node.tabs[0]?.id;
+  const side = node.placement === "side";
   const listCss = css(
-    free && `height:${Math.max(20, Number(node.barHeight) || 36)}px`,
-    style.track &&
-      `background:${color(style.track)};padding:4px;gap:4px;border-radius:999px`,
-    style.inset !== undefined &&
+    free &&
+      !side &&
+      `height:${Math.max(20, Number(node.barHeight) || TAB_BAR_HEIGHT)}px`,
+    side &&
+      `width:${Math.max(56, Math.min(200, Number(node.railWidth) || TAB_RAIL_WIDTH))}px`,
+    side &&
+      free &&
+      `--chm-side-tab-h:${Math.max(28, Number(node.barHeight) || SIDE_TAB_HEIGHT)}px`,
+    look === "track" &&
+      style.track &&
+      `background:${color(style.track)};padding:4px;gap:4px;border-radius:${side ? 16 : 999}px`,
+    !side &&
+      style.inset !== undefined &&
       `margin-inline:${Math.max(0, Math.min(60, Number(style.inset)))}px`,
   );
-  return `<div class="chm-tabs${free ? " chm-tabs--free" : ""}"${nodeAttr(state, node)}${styleAttr(vars)}><div class="chm-tabs__list" role="tablist"${styleAttr(listCss)}>${node.tabs
+  return `<div class="chm-tabs${free ? " chm-tabs--free" : ""}${side ? " chm-tabs--side" : ""}${look === "underline" ? " chm-tabs--underline" : ""}"${nodeAttr(state, node)}${styleAttr(vars)}><div class="chm-tabs__list" role="tablist"${styleAttr(listCss)}>${node.tabs
     .map(
       (tab) =>
         `<button type="button" role="tab" class="chm-tab" data-chm-tab="${esc(tab.id)}" aria-selected="${tab.id === activeId}"${styleAttr(textCss(style.text))}>${esc(
@@ -606,25 +580,114 @@ function container(state: State, node: ContainerNode): string {
     .join("")}</div>`;
 }
 
+const HEADER_ICON_SVG: Record<HeaderIcon, string> = {
+  search: icon("search"),
+  account: icon("user"),
+  cart: icon("bag"),
+};
+
+function headerIcon(
+  state: State,
+  name: HeaderIcon,
+  searchField = false,
+): string {
+  const { routes } = state.ctx;
+  const href =
+    name === "search"
+      ? routes.search
+      : name === "cart"
+        ? routes.cart
+        : state.ctx.customerLoggedIn
+          ? routes.account
+          : routes.account_login;
+  // With a search field in the header, the search button jumps to it.
+  const jump = name === "search" && searchField ? " data-chm-search-field" : "";
+  return `<a class="chm-header__icon" href="${esc(href)}"${jump} aria-label="${esc(t(state, "ui", name, UI_TEXT_DEFAULTS[name]))}">${HEADER_ICON_SVG[name]}</a>`;
+}
+
 export function renderHeader(state: State, node: HeaderNode): string {
   const logo = node.logo?.url || state.ctx.logo?.url;
-  const brand = logo
-    ? `<a class="chm-header__brand" href="${esc(state.ctx.routes.root)}">${img(
-        logo,
-        (node.logoWidth ?? 96) * 2,
-        state.ctx.shopName,
-        "chm-header__logo",
-      ).replace("<img ", `<img style="width:${node.logoWidth ?? 96}px" `)}</a>`
-    : `<a class="chm-header__brand chm-header__name" href="${esc(state.ctx.routes.root)}">${esc(state.ctx.shopName)}</a>`;
+  const brand = node.hideBrand
+    ? ""
+    : logo
+      ? `<a class="chm-header__brand" href="${esc(state.ctx.routes.root)}">${img(
+          logo,
+          (node.logoWidth ?? 96) * 2,
+          state.ctx.shopName,
+          "chm-header__logo",
+        ).replace(
+          "<img ",
+          `<img style="width:${node.logoWidth ?? 96}px" `,
+        )}</a>`
+      : `<a class="chm-header__brand chm-header__name" href="${esc(state.ctx.routes.root)}">${esc(state.ctx.shopName)}</a>`;
   const language = node.showLanguage
     ? localizationSelects(state, false, true, true)
     : "";
   const close = `<button type="button" class="chm-close chm-close--${node.close ?? "plain"}" data-chm-close aria-label="${esc(t(state, "ui", "close", UI_TEXT_DEFAULTS.close))}">${ICONS.close}</button>`;
+  // The buttons that are on, in the merchant's order.
+  const shown = headerButtonOrder(node).filter((button) =>
+    button === "language"
+      ? Boolean(language)
+      : (node.icons ?? []).includes(button),
+  );
+  const buttons = (list: HeaderButton[]) =>
+    list
+      .map((button) =>
+        button === "language"
+          ? language
+          : headerIcon(
+              state,
+              button,
+              Boolean(node.searchBar) || liveSearchOn(node),
+            ),
+      )
+      .join("");
+
+  // Centered: the cart stays by the close button, the other buttons go left.
+  const row =
+    node.logoAlign === "center" && brand
+      ? `<div class="chm-header chm-header--center"><span class="chm-header__side">${buttons(
+          shown.filter((button) => button !== "cart"),
+        )}</span>${brand}<span class="chm-header__side chm-header__side--end">${buttons(
+          shown.filter((button) => button === "cart"),
+        )}${close}</span></div>`
+      : `<div class="chm-header">${brand}<span class="chm-header__side chm-header__side--end">${buttons(shown)}${close}</span></div>`;
+
+  const announcementText = node.announcement?.trim()
+    ? t(state, node.id, "announcement", node.announcement)
+    : "";
+  const announceColors = styleAttr(
+    node.announcementBackground &&
+      `background:${color(node.announcementBackground)}`,
+    node.announcementColor && `color:${color(node.announcementColor)}`,
+  );
+  // A scrolling announcement is the ticker, in the announcement's colors.
+  const announcement = !announcementText
+    ? ""
+    : node.announcementMode === "ticker"
+      ? `<div class="chm-header__announce chm-header__announce--ticker"${announceColors}>${ticker(
+          // Part of the header: no id of its own (a click selects the header).
+          { ...state, ctx: { ...state.ctx, editor: false } },
+          {
+            id: `${node.id}-announce`,
+            type: "ticker",
+            items: [
+              // Already translated: no text is stored under this id.
+              { id: `${node.id}-announce-0`, text: announcementText },
+              ...(node.announcementItems ?? []),
+            ],
+            speed: node.announcementSpeed ?? 40,
+            separator: "✦",
+            style: { size: 12, weight: 600 },
+          },
+        )}</div>`
+      : `<p class="chm-header__announce"${announceColors}>${esc(announcementText)}</p>`;
   const iconColor = node.iconColor ? `color:${color(node.iconColor)}` : "";
-  if (node.logoAlign === "center") {
-    return `<div class="chm-header chm-header--center"${nodeAttr(state, node)}${styleAttr(boxCss(node.box), iconColor)}><span class="chm-header__side">${language}</span>${brand}<span class="chm-header__side chm-header__side--end">${close}</span></div>`;
-  }
-  return `<div class="chm-header"${nodeAttr(state, node)}${styleAttr(boxCss(node.box), iconColor)}>${brand}<span class="chm-header__side chm-header__side--end">${language}${close}</span></div>`;
+  // Live search with only a search button keeps a folded field to open.
+  const field = node.searchBar || liveSearchOn(node);
+  return `<div class="chm-head"${nodeAttr(state, node)}>${announcement}<div class="chm-head__body"${styleAttr(boxCss(node.box), iconColor)}>${row}${
+    field ? searchField(state, node) : ""
+  }</div></div>`;
 }
 
 export function renderNode(state: State, node: Node): string {
@@ -827,6 +890,11 @@ function shape(state: State, node: ShapeNode): string {
           node.link,
           "chm-shape__hit",
         ).join("");
+  // A frame that opens a sub-menu shows an arrow, unless it has one of its own.
+  const more =
+    node.link.type === "screen" && !hasArrowLayer(children)
+      ? `<span class="chm-shape__more${(node.frame?.h ?? 0) > 72 ? " chm-shape__more--corner" : ""}">${ICONS.chevron}</span>`
+      : "";
   const overflow =
     node.scroll === "x"
       ? " chm-shape--scroll"
@@ -835,7 +903,19 @@ function shape(state: State, node: ShapeNode): string {
         : "";
   return `<div class="chm-shape chm-shape--frame${overflow}"${nodeAttr(state, node)}${styleAttr(fill)}>${hit}${iconHtml}${listLines(node)}${
     placed(state, children).html
-  }</div>`;
+  }${more}</div>`;
+}
+
+const ARROW_ICONS = new Set(["chevron", "arrow"]);
+
+/** Whether a frame's own layers already draw an arrow (no automatic one then). */
+function hasArrowLayer(children: Node[]): boolean {
+  return children.some(
+    (child) =>
+      child.type === "shape" &&
+      ((child.icon && ARROW_ICONS.has(child.icon)) ||
+        hasArrowLayer(child.children ?? [])),
+  );
 }
 
 function renderVisible(state: State, node: Node): string {
@@ -889,6 +969,16 @@ function renderVisible(state: State, node: Node): string {
       )}>`;
     case "spacer":
       return `<div class="chm-spacer"${nodeAttr(state, node)} style="height:${Number(node.height) || 0}px"></div>`;
+    case "products":
+      return products(state, node);
+    case "perks":
+      return perks(state, node);
+    case "contact":
+      return contact(state, node);
+    case "discount":
+      return discount(state, node);
+    case "ticker":
+      return ticker(state, node);
   }
 }
 
@@ -1057,10 +1147,10 @@ export function renderMenu(
     })
     .join("");
 
-  return `<div${isRtlLocale(ctx.locale) ? ' dir="rtl"' : ""} class="chm-root chm-side-${design.behavior.side}${design.behavior.width === "full" ? " chm-full" : ""}${ctx.editor ? " chm-editor" : ""}" style="${esc(
+  return `<div${isRtlLocale(ctx.locale) ? ' dir="rtl"' : ""} class="chm-root chm-side-${design.behavior.side}${design.behavior.width === "full" ? " chm-full" : ""}${ctx.editor ? " chm-editor" : ""}${ctx.editor && ctx.searchSample && liveSearchOn(design.header) ? " chm-searching" : ""}" style="${esc(
     tokenVars(design),
   )}"><div class="chm-overlay" data-chm-close></div><div class="chm-panel" role="dialog" aria-modal="true" aria-label="${esc(t(state, "ui", "menu", UI_TEXT_DEFAULTS.menu))}" tabindex="-1">${renderHeader(
     state,
     design.header,
-  )}<div class="chm-body"><div class="chm-screens">${screens}</div>${design.footer ? `<div class="chm-footer">${renderNode(state, design.footer)}</div>` : ""}</div></div></div>`;
+  )}<div class="chm-body">${searchPanel(state, design.header)}<div class="chm-screens">${screens}</div>${design.footer ? `<div class="chm-footer">${renderNode(state, design.footer)}</div>` : ""}</div></div></div>`;
 }

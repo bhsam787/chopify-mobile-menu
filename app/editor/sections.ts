@@ -1,5 +1,11 @@
-import type { ContainerNode, Node } from "@chopify/menu-core";
-import { NODE_LABELS, describeLink, nodeLabel } from "@chopify/menu-core";
+import type { ContainerNode, Node } from "@chopi/menu-core";
+import {
+  HEADER_STYLES,
+  headerStyleOf,
+  NODE_LABELS,
+  describeLink,
+  nodeLabel,
+} from "@chopi/menu-core";
 
 /**
  * How the editor presents the design: a numbered list of sections in
@@ -9,10 +15,21 @@ import { NODE_LABELS, describeLink, nodeLabel } from "@chopify/menu-core";
  */
 
 /** Node types edited as rows of a section's item list. */
-export const ITEM_TYPES = new Set<Node["type"]>(["card", "row", "chip", "pill", "image", "accordion", "button"]);
+export const ITEM_TYPES = new Set<Node["type"]>([
+  "card",
+  "row",
+  "chip",
+  "pill",
+  "image",
+  "accordion",
+  "button",
+]);
 
 export function isItemList(node: Node): node is ContainerNode {
-  return node.type === "container" && node.children.every((child) => ITEM_TYPES.has(child.type));
+  return (
+    node.type === "container" &&
+    node.children.every((child) => ITEM_TYPES.has(child.type))
+  );
 }
 
 /** A container that groups sections (e.g. a white rounded panel). */
@@ -54,10 +71,16 @@ export const SECTION_ICONS: Record<Node["type"], string> = {
   spacer: "arrows-out-horizontal",
   canvas: "layout-block",
   shape: "blank",
+  products: "product",
+  perks: "shield-check-mark",
+  contact: "chat",
+  discount: "discount-code",
+  ticker: "text-in-rows",
 };
 
 export function sectionIcon(node: Node): string {
-  if (node.type === "container" && node.children[0]) return SECTION_ICONS[node.children[0].type];
+  if (node.type === "container" && node.children[0])
+    return SECTION_ICONS[node.children[0].type];
   return SECTION_ICONS[node.type];
 }
 
@@ -66,9 +89,17 @@ export function sectionTitle(node: Node): string {
   if (node.name) return node.name;
   if (node.type === "container") {
     const first = node.children[0];
-    if (!first) return node.layout === "scroll" ? "Scroll row" : node.layout === "grid" ? "Grid" : "Group";
+    if (!first)
+      return node.layout === "scroll"
+        ? "Scroll row"
+        : node.layout === "grid"
+          ? "Grid"
+          : "Group";
     const types = new Set(node.children.map((child) => child.type));
-    if (types.size === 1 || (types.size === 2 && types.has("row") && types.has("accordion"))) {
+    if (
+      types.size === 1 ||
+      (types.size === 2 && types.has("row") && types.has("accordion"))
+    ) {
       return ITEM_NOUNS[first.type]?.[1] ?? NODE_LABELS[first.type];
     }
     return "Items";
@@ -82,14 +113,36 @@ export function sectionSummary(node: Node): string {
     case "container": {
       const count = node.children.length;
       const noun = ITEM_NOUNS[node.children[0]?.type ?? "card"]?.[0] ?? "item";
-      const layout = node.layout === "grid" ? ` · ${node.columns ?? 2} columns` : node.layout === "scroll" ? " · swipeable row" : "";
+      const layout =
+        node.layout === "grid"
+          ? ` · ${node.columns ?? 2} columns`
+          : node.layout === "scroll"
+            ? " · swipeable row"
+            : "";
       const hidden = node.children.filter((child) => child.hidden).length;
       return `${count} ${noun}${count === 1 ? "" : "s"}${hidden ? ` (${hidden} hidden)` : ""}${layout}`;
     }
     case "tabs":
       return node.tabs.map((tab) => tab.label).join(" · ");
-    case "header":
-      return `Logo ${node.logoAlign === "start" ? "left" : "centered"}${node.showLanguage ? " · language switcher" : ""}`;
+    case "header": {
+      const style = headerStyleOf(node);
+      return `${HEADER_STYLES.find((candidate) => candidate.key === style)?.name ?? "Custom"} style${node.showLanguage ? " · language switcher" : ""}`;
+    }
+    case "products": {
+      const what = node.collection
+        ? `${node.limit ?? 6} products from ${node.collection.title}`
+        : "Choose a collection";
+      return `${what} · ${node.layout === "grid" ? "two columns" : "swipeable row"}`;
+    }
+    case "perks":
+    case "ticker":
+      return node.items.map((item) => item.text).join(" · ");
+    case "contact":
+      return (
+        node.items.map((item) => item.label).join(" · ") || "No buttons yet"
+      );
+    case "discount":
+      return node.code ? `Code ${node.code}` : "No code yet";
     case "stories":
       return node.source === "collection"
         ? node.collection
@@ -105,7 +158,9 @@ export function sectionSummary(node: Node): string {
     case "divider":
       return "Line";
     case "canvas":
-      return node.children.length ? `${node.children.length} element${node.children.length === 1 ? "" : "s"} placed freely` : "Empty — open the canvas editor to design";
+      return node.children.length
+        ? `${node.children.length} element${node.children.length === 1 ? "" : "s"} placed freely`
+        : "Empty — open the canvas editor to design";
     case "spacer":
       return `${node.height}px of space`;
     case "button":

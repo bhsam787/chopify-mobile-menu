@@ -24,3 +24,11 @@ export {
   type ThemeAdapter,
 } from "./adapters";
 export { shapeIcon } from "./icons";
+export type { SearchSource } from "./liveSearch";
+export {
+  popularTerms,
+  searchResultsHtml,
+  searchStart,
+  type SearchResults,
+  type SearchWords,
+} from "./search";

@@ -8,19 +8,22 @@ import {
   type PointerEvent as ReactPointerEvent,
   type WheelEvent as ReactWheelEvent,
 } from "react";
-import type { CanvasNode, Design, Frame } from "@chopify/menu-core";
+import type { CanvasNode, Design, Frame } from "@chopi/menu-core";
 import {
   CANVAS_WIDTH,
   canvasLayout,
   childNodes,
   isFreeTabs,
+  SIDE_TAB_GAP,
+  SIDE_TAB_HEIGHT,
   TAB_BAR_HEIGHT,
-} from "@chopify/menu-core";
+  TAB_RAIL_WIDTH,
+} from "@chopi/menu-core";
 import {
   MENU_CSS,
   renderFragment,
   type RenderContext,
-} from "@chopify/menu-renderer";
+} from "@chopi/menu-renderer";
 import { toMarkup } from "../editor/RichTextField";
 import { HANDLES, resize, snapMove, type Guide, type Handle } from "./geometry";
 import {
@@ -39,7 +42,7 @@ import {
   type LayerEntry,
 } from "./layers";
 
-export const ELEMENT_MIME = "application/x-chopify-element";
+export const ELEMENT_MIME = "application/x-chopi-element";
 
 interface CanvasStageProps {
   design: Design;
@@ -406,8 +409,17 @@ export function CanvasStage({
     for (let index = pickable.length - 1; index >= 0; index--) {
       const { node, abs } = pickable[index];
       if (!isFreeTabs(node) || !hits(pickable[index], x, y)) continue;
-      if (y > abs.y + (node.barHeight ?? TAB_BAR_HEIGHT)) return null;
-      const position = Math.floor(((x - abs.x) / abs.w) * node.tabs.length);
+      let position: number;
+      if (node.placement === "side") {
+        // A column of tabs on the left: which one is under the point.
+        if (x > abs.x + (node.railWidth ?? TAB_RAIL_WIDTH)) return null;
+        const step = (node.barHeight ?? SIDE_TAB_HEIGHT) + SIDE_TAB_GAP;
+        position = Math.floor((y - abs.y) / step);
+        if (position >= node.tabs.length) return null;
+      } else {
+        if (y > abs.y + (node.barHeight ?? TAB_BAR_HEIGHT)) return null;
+        position = Math.floor(((x - abs.x) / abs.w) * node.tabs.length);
+      }
       const tab =
         node.tabs[Math.min(node.tabs.length - 1, Math.max(0, position))];
       return { tabsId: node.id, tabId: tab.id };

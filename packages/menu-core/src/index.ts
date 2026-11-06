@@ -10,3 +10,7 @@ export * from "./richtext";
 export * from "./canvas";
 export * from "./sublinks";
 export * from "./translations";
+export * from "./headerStyles";
+export * from "./tabsLook";
+export * from "./contact";
+export * from "./customCss";

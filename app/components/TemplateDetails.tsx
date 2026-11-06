@@ -1,11 +1,18 @@
-import { Fragment } from "react";
 import { INCLUDED_EVERYWHERE, type TemplateCopy } from "./templateCopy";
 
-export interface TemplateNumbers {
-  sections: number;
-  subMenus: number;
-  links: number;
-}
+/** A small check mark for the "included" chips. */
+const CHECK = (
+  <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+    <path
+      d="m3.5 8.5 3 3 6-7"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 
 /**
  * The sales side of a template preview: the pitch, who it's for, what
@@ -14,128 +21,98 @@ export interface TemplateNumbers {
 export function TemplateDetails({
   description,
   copy,
-  numbers,
   featureLabels,
+  isNew,
 }: {
   description: string;
   copy?: TemplateCopy;
-  numbers: TemplateNumbers;
   featureLabels: string[];
+  isNew?: boolean;
 }) {
-  const facts = (
-    [
-      [numbers.sections, "sections"],
-      [numbers.subMenus, "sub-menus"],
-      [numbers.links, "ready-made links"],
-    ] as const
-  ).filter(([value]) => value > 0);
   return (
-    <s-stack gap="large">
-      <s-stack gap="small-200">
-        {copy && <s-heading>{copy.tagline}</s-heading>}
-        <s-paragraph color="subdued">{description}</s-paragraph>
-        <s-stack direction="inline" gap="small-200">
+    <div className="chm-pv">
+      <div className="chm-pv__head">
+        {isNew && <span className="chm-look__ribbon is-new">✦ New</span>}
+        {copy && <h3 className="chm-pv__title">{copy.tagline}</h3>}
+        <p className="chm-pv__lead">{copy?.pitch ?? description}</p>
+        <span className="chm-look__chips">
           {featureLabels.map((label) => (
-            <s-badge key={label} tone="neutral">
+            <span key={label} className="chm-look__chip">
               {label}
-            </s-badge>
+            </span>
           ))}
-        </s-stack>
-      </s-stack>
-
-      {/* Ready-made, measured from the template itself (zeros left out). */}
-      <s-grid
-        gridTemplateColumns={facts.map(() => "1fr").join(" auto ")}
-        gap="small"
-      >
-        {facts.map(([value, label], index) => (
-          <Fragment key={label}>
-            {index > 0 && <s-divider direction="block" />}
-            <s-stack gap="small-500">
-              <s-text type="strong">{value}</s-text>
-              <s-text color="subdued">{label}</s-text>
-            </s-stack>
-          </Fragment>
-        ))}
-      </s-grid>
+        </span>
+      </div>
 
       {copy && (
         <>
-          <s-stack direction="inline" gap="small-200" alignItems="center">
-            <s-text color="subdued">Best for</s-text>
+          <div className="chm-pv__best">
+            <span className="chm-pv__best-label">Best for</span>
             {copy.bestFor.map((store) => (
-              <s-badge key={store} tone="info">
+              <span key={store} className="chm-pv__best-pill">
                 {store}
-              </s-badge>
+              </span>
             ))}
-          </s-stack>
+          </div>
 
-          <s-divider />
+          <section className="chm-pv__block">
+            <h4 className="chm-pv__heading">What shoppers get</h4>
+            <div className="chm-pv__highlights">
+              {copy.highlights.map((highlight) => (
+                <div key={highlight.title} className="chm-pv__highlight">
+                  <span className="chm-pv__highlight-icon">
+                    <s-icon type={highlight.icon} />
+                  </span>
+                  <span className="chm-pv__highlight-title">
+                    {highlight.title}
+                  </span>
+                  <span className="chm-pv__highlight-text">
+                    {highlight.text}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
 
-          <s-stack gap="base">
-            <s-heading>What shoppers get</s-heading>
-            {copy.highlights.map((highlight) => (
-              <s-grid
-                key={highlight.title}
-                gridTemplateColumns="auto 1fr"
-                gap="base"
-                alignItems="start"
-              >
-                <s-box
-                  padding="small-200"
-                  background="subdued"
-                  borderRadius="base"
-                >
-                  <s-icon type={highlight.icon} />
-                </s-box>
-                <s-stack gap="small-500">
-                  <s-text type="strong">{highlight.title}</s-text>
-                  <s-text color="subdued">{highlight.text}</s-text>
-                </s-stack>
-              </s-grid>
-            ))}
-          </s-stack>
-
-          <s-divider />
-
-          <s-stack gap="small">
-            <s-heading>Why it helps you sell</s-heading>
-            {copy.whyItSells.map((reason) => (
-              <s-grid
-                key={reason}
-                gridTemplateColumns="auto 1fr"
-                gap="small-200"
-                alignItems="start"
-              >
-                <s-icon type="check-circle" tone="success" />
-                <s-text>{reason}</s-text>
-              </s-grid>
-            ))}
-          </s-stack>
+          <section className="chm-pv__block chm-pv__sells">
+            <h4 className="chm-pv__heading">Why it helps you sell</h4>
+            <ul className="chm-pv__reasons">
+              {copy.whyItSells.map((reason) => (
+                <li key={reason}>
+                  <span className="chm-pv__tick" aria-hidden="true">
+                    {CHECK}
+                  </span>
+                  {reason}
+                </li>
+              ))}
+            </ul>
+          </section>
         </>
       )}
 
-      <s-box padding="base" background="subdued" borderRadius="large">
-        <s-stack gap="small-200">
-          <s-stack direction="inline" gap="small-200" alignItems="center">
-            <s-icon type="cursor" />
-            <s-text type="strong">Try it like a shopper</s-text>
-          </s-stack>
-          <s-text color="subdued">
-            Tap the tabs, arrows and rows, and swipe the sideways rows. Links
-            show where they go instead of leaving this page.
-          </s-text>
-        </s-stack>
-      </s-box>
+      <div className="chm-pv__tip">
+        <span className="chm-pv__tip-badge">Chopi&apos;s tip</span>
+        <span className="chm-pv__tip-title">Go ahead, play with it!</span>
+        <span className="chm-pv__tip-text">
+          Tap the tabs, open the rows and swipe the sideways ones. The phone
+          works just like your store will, and links show where they lead
+          instead of leaving this page.
+        </span>
+      </div>
 
-      <s-stack gap="small-200">
-        <s-text type="strong">Included with every template</s-text>
-        <s-unordered-list>
+      <section className="chm-pv__block">
+        <h4 className="chm-pv__heading">Included with every template</h4>
+        <ul className="chm-pv__included">
           {INCLUDED_EVERYWHERE.map((item) => (
-            <s-list-item key={item}>{item}</s-list-item>
+            <li key={item}>
+              <span className="chm-pv__tick" aria-hidden="true">
+                {CHECK}
+              </span>
+              {item}
+            </li>
           ))}
-        </s-unordered-list>
-      </s-stack>
-    </s-stack>
+        </ul>
+      </section>
+    </div>
   );
 }

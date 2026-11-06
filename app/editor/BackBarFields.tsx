@@ -1,11 +1,11 @@
 import { useEffect, useRef } from "react";
-import type { BackBar, Design } from "@chopify/menu-core";
-import { BACK_STYLES } from "@chopify/menu-core";
+import type { BackBar, Design } from "@chopi/menu-core";
+import { BACK_STYLES } from "@chopi/menu-core";
 import {
   MENU_CSS,
   renderBackBar,
   type RenderContext,
-} from "@chopify/menu-renderer";
+} from "@chopi/menu-renderer";
 import { ColorField, FieldRow, SwitchField, TextField } from "./controls";
 
 const STYLE_NAMES: Record<BackBar["style"], string> = {

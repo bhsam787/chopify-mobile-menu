@@ -7,8 +7,8 @@ import type {
   ShapeNode,
   AccordionNode,
   TabsNode,
-} from "@chopify/menu-core";
-import { CANVAS_WIDTH, newId, NODE_LABELS, TAB_GAP } from "@chopify/menu-core";
+} from "@chopi/menu-core";
+import { CANVAS_WIDTH, newId, NODE_LABELS, TAB_GAP } from "@chopi/menu-core";
 
 /** Widgets that, repeated in a grid or stack, make a smart list. */
 const LIST_ITEMS = new Set<Node["type"]>([
@@ -24,7 +24,7 @@ import {
   MENU_CSS,
   renderMenu,
   type RenderContext,
-} from "@chopify/menu-renderer";
+} from "@chopi/menu-renderer";
 
 /**
  * Converts a screen built from sections (stacks, grids, cards, banners…) into a

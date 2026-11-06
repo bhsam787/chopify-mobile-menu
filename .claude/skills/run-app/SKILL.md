@@ -1,6 +1,6 @@
 ---
 name: run-app
-description: Start the Chopify Menu app locally (shopify app dev against a dev store, Postgres via .env). Use when asked to run, start, or preview the app.
+description: Start the Chopi - Menu app locally (shopify app dev against a dev store, Postgres via .env). Use when asked to run, start, or preview the app.
 ---
 
 1. Ensure `.env` has `DATABASE_URL` and `DIRECT_URL`. If migrations are pending (`npx prisma migrate status`), run `npx prisma migrate deploy`.

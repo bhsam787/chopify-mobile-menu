@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Design, Node } from "@chopify/menu-core";
-import type { RenderContext, ResolvedResource } from "@chopify/menu-renderer";
+import type { Design, Node } from "@chopi/menu-core";
+import type { RenderContext, ResolvedResource } from "@chopi/menu-renderer";
 import { FragmentPreview } from "../components/FragmentPreview";
 import { SearchField } from "./controls";
 import {

@@ -1,4 +1,4 @@
-import { CANVAS_WIDTH } from "@chopify/menu-core";
+import { CANVAS_WIDTH } from "@chopi/menu-core";
 
 /** A phone to preview the canvas on: its screen size in CSS pixels. */
 export interface Device {
@@ -30,11 +30,5 @@ export const DEVICES: Device[] = [
 
 export const DEFAULT_DEVICE = DEVICES[1];
 
-/** Space the menu's header (logo, close button) takes above the canvas, in CSS px. */
-const HEADER_HEIGHT = 56;
-
 /** How much bigger or smaller the canvas shows on `device` than at its design width. */
 export const deviceScale = (device: Device) => device.width / CANVAS_WIDTH;
-
-/** Height of the phone's screen below the menu header, in CSS px: what shows without scrolling. */
-export const deviceViewport = (device: Device) => device.height - HEADER_HEIGHT;

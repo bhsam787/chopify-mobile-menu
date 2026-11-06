@@ -1,7 +1,20 @@
+import type { TemplateFeature } from "@chopi/menu-core";
+
 /**
  * Sales copy for each template in the gallery: what it's for, what shoppers
  * get and why it helps them buy. Honest claims only (no made-up numbers).
  */
+
+/** Short names of what a template has (gallery filters, home tiles). */
+export const FEATURE_LABELS: Record<TemplateFeature, string> = {
+  tabs: "Tabs",
+  "image-cards": "Image cards",
+  "fold-outs": "Fold-out links",
+  "story-circles": "Story circles",
+  banners: "Promo banners",
+  sliding: "Sliding sub-menus",
+};
+
 export interface TemplateHighlight {
   icon:
     | "collection"
@@ -28,6 +41,8 @@ export interface TemplateHighlight {
 export interface TemplateCopy {
   /** One line that sells the template. */
   tagline: string;
+  /** A short, friendly paragraph under the tagline in the preview. */
+  pitch: string;
   bestFor: string[];
   highlights: TemplateHighlight[];
   /** Why it helps shoppers buy (conversion reasons). */
@@ -36,122 +51,132 @@ export interface TemplateCopy {
 
 export const TEMPLATE_COPY: Record<string, TemplateCopy> = {
   studio: {
-    tagline: "Shop by category or by complete look, one swipe apart",
+    tagline: "Sell the piece, then sell the whole look",
+    pitch:
+      "Big product photos for every category, plus a Looks tab with outfits you've put together. Shoppers come for one item and discover everything that goes with it.",
     bestFor: ["Fashion", "Apparel", "Footwear"],
     highlights: [
       {
         icon: "collection",
-        title: "Photo category cards",
-        text: "Big product photos make every category recognisable at a glance.",
+        title: "Categories they recognize instantly",
+        text: "Every category shows a real product photo, so shoppers tap what they see instead of reading a list.",
       },
       {
         icon: "menu-horizontal",
-        title: "Categories and Looks tabs",
-        text: "A second tab sells styled outfits, not just single items.",
+        title: "A Looks tab for styled outfits",
+        text: "One swipe from your categories, shoppers browse complete outfits you've styled.",
       },
       {
         icon: "image",
-        title: "Featured look banner",
-        text: "Put a styled look or campaign right inside the menu.",
+        title: "A campaign banner inside the menu",
+        text: "Spotlight a new collection or seasonal look right where shoppers start browsing.",
       },
     ],
     whyItSells: [
-      "Shoppers find products faster by picture than by name.",
-      "Looks inspire shoppers to buy matching pieces together.",
-      "Tabs keep a big catalog on one short, tidy screen.",
+      "Pictures are quicker to recognize than names, so shoppers reach the right category faster.",
+      "Complete looks give shoppers ideas for pieces that go together.",
+      "Two tabs keep even a big catalog on one short, tidy screen.",
     ],
   },
   "studio-simple": {
     tagline: "A clean photo grid that lets your products speak",
-    bestFor: ["Fashion", "Lifestyle", "Small catalogs"],
+    pitch:
+      "One calm grid of big product photos, with nothing else competing for attention. Each card opens its own list, so shoppers always know where they are.",
+    bestFor: ["Small catalogs", "Fashion", "Lifestyle"],
     highlights: [
       {
         icon: "layout-columns-2",
-        title: "Two-column photo grid",
-        text: "Every category gets a large, tappable product photo.",
+        title: "Big, tappable photos",
+        text: "Two photos per row, each one a category shoppers can open with a thumb.",
       },
       {
         icon: "arrow-right",
-        title: "A sub-menu per category",
-        text: "Each card opens its own list, so shoppers drill down without losing their place.",
+        title: "A sub-menu behind every card",
+        text: "Each category opens its own list with a clear way back, so nobody gets lost.",
       },
     ],
     whyItSells: [
-      "No clutter: one clear choice per tap.",
-      "Ideal for stores with 4 to 10 main categories.",
-      "Quick to set up and easy to keep up to date.",
+      "One clear choice per tap: no clutter, no hesitation.",
+      "A great fit for stores with about 4 to 10 main categories.",
+      "Quick to set up today, easy to keep fresh tomorrow.",
     ],
   },
   botanical: {
     tagline: "Let shoppers browse by product, or by what they need",
+    pitch:
+      "Some shoppers know exactly what they want, others know how they want to feel. Two tabs welcome both, and NEW and SAVE tags point out what's fresh and what's on offer.",
     bestFor: ["Health & wellness", "Beauty", "Natural products"],
     highlights: [
       {
         icon: "menu-horizontal",
-        title: "Products and goals tabs",
-        text: "Shoppers pick a product type, or a goal like “Sleep & calm”.",
+        title: "Browse by product or by goal",
+        text: "One tab lists your product types, the other goals like “Sleep & calm” or “Energy”.",
       },
       {
         icon: "gift-card",
-        title: "Build-your-own-set banner",
-        text: "Promote bundles at the moment shoppers are choosing.",
+        title: "A build-your-own-set banner",
+        text: "Invite shoppers to put together a bundle while they're still deciding.",
       },
       {
         icon: "discount",
         title: "NEW and SAVE tags",
-        text: "New arrivals and savings stand out before a product page is even opened.",
+        text: "New arrivals and deals stand out before a product page is even opened.",
       },
     ],
     whyItSells: [
-      "Goal-based browsing helps shoppers who don't know your product names yet.",
-      "Tags draw attention to new and discounted products.",
-      "The bundle banner nudges shoppers toward bigger orders.",
+      "Goal-based browsing helps new shoppers who don't know your product names yet.",
+      "Tags draw the eye to what's new and what's discounted.",
+      "The bundle banner suggests a bigger basket at just the right moment.",
     ],
   },
   "image-tiles": {
-    tagline: "Shop by goal with rich, full-color photo tiles",
+    tagline: "Rich, colorful photo tiles that set the mood",
+    pitch:
+      "Full-bleed photos that melt into color make your menu feel like a magazine. Every tile is named after what shoppers are hoping for, so browsing feels personal.",
     bestFor: ["Supplements", "Skincare", "Wellness"],
     highlights: [
       {
         icon: "image",
-        title: "Photo tiles that fade into color",
-        text: "Large, mood-setting imagery with clear labels on top.",
+        title: "Photos that fade into color",
+        text: "Mood-setting imagery with clear, readable labels on top.",
       },
       {
         icon: "target",
-        title: "Organised by goal",
-        text: "“Skin & hair”, “Sleep & calm”: the way shoppers think about their needs.",
+        title: "Organized the way shoppers think",
+        text: "“Skin & hair”, “Sleep & calm”: tiles named after needs, not product codes.",
       },
       {
         icon: "gift-card",
-        title: "Bundle banner",
-        text: "A build-your-own-set offer sits right above the tiles.",
+        title: "A bundle banner up top",
+        text: "Your build-your-own-set offer greets shoppers before the tiles.",
       },
     ],
     whyItSells: [
-      "Strong imagery builds desire before shoppers see a price.",
-      "Goals match shopper intent, so the first tap is the right one.",
-      "A visual menu makes your brand feel premium.",
+      "Beautiful imagery builds desire before shoppers see a price.",
+      "Goal tiles match what shoppers came for, so the first tap is the right one.",
+      "A polished, visual menu makes your brand feel premium.",
     ],
   },
   "circle-tiles": {
     tagline: "Friendly round photos for an easy first tap",
+    pitch:
+      "Soft cards with circular product photos feel warm and welcoming. It's the kind of menu shoppers enjoy scrolling, with two tabs to keep everything tidy.",
     bestFor: ["Beauty", "Food & drink", "Gifts"],
     highlights: [
       {
         icon: "collection",
-        title: "Round product photos",
-        text: "Soft cards with circular photos: approachable and easy to scan.",
+        title: "Round photos on soft cards",
+        text: "A gentle, inviting look that's easy to scan at a glance.",
       },
       {
         icon: "menu-horizontal",
-        title: "Categories and goals tabs",
-        text: "Two ways to browse, without making the menu longer.",
+        title: "Two ways to browse",
+        text: "Categories and goals sit side by side in tabs, without making the menu longer.",
       },
       {
         icon: "gift-card",
-        title: "Bundle banner",
-        text: "Promote sets or bundles at the top of the menu.",
+        title: "A bundle banner at the top",
+        text: "Feature a gift set or bundle the moment the menu opens.",
       },
     ],
     whyItSells: [
@@ -162,124 +187,132 @@ export const TEMPLATE_COPY: Record<string, TemplateCopy> = {
   },
   mono: {
     tagline: "Bold, minimal and unmistakably on brand",
+    pitch:
+      "Black, white and confident. Product photos sit on clean tiles with nothing to distract, so your brand does the talking and your products take center stage.",
     bestFor: ["Streetwear", "Sports nutrition", "Modern brands"],
     highlights: [
       {
         icon: "layout-columns-2",
-        title: "Black-and-white grid",
-        text: "High-contrast tiles that keep the focus on your products.",
+        title: "A high-contrast product grid",
+        text: "Clean black-and-white tiles that put every product photo front and center.",
       },
       {
         icon: "person",
-        title: "Refer-a-friend banner",
-        text: "Turn menu visits into referrals and new customers.",
+        title: "A refer-a-friend banner",
+        text: "Remind shoppers to share your store, right where they browse.",
       },
       {
         icon: "list-bulleted",
-        title: "Simple link list",
-        text: "Account, help and about pages stay one tap away.",
+        title: "Essentials one tap away",
+        text: "Account, help and about pages wait in a tidy list at the bottom.",
       },
     ],
     whyItSells: [
-      "A strong, consistent look builds brand trust.",
-      "The referral banner promotes growth where every shopper looks.",
-      "Minimal design means fast decisions.",
+      "A strong, consistent look makes your brand recognizable and trustworthy.",
+      "Your referral offer is seen by every shopper who opens the menu.",
+      "With fewer distractions, shoppers make up their minds faster.",
     ],
   },
   spotlight: {
     tagline: "Built to convert: proof, deals and best-sellers first",
-    bestFor: ["Stores running promotions", "Fashion", "Gifts"],
+    pitch:
+      "Lead with what convinces: happy customers, today's best offer and the products everyone loves. Made for the days you run a promotion and want every menu open to count.",
+    bestFor: ["Promotions", "Fashion", "Gifts"],
     highlights: [
       {
         icon: "star",
-        title: "Social proof bar",
-        text: "Show how many customers trust you right at the top.",
+        title: "Social proof at the top",
+        text: "Show how many customers love you before shoppers even start browsing.",
       },
       {
         icon: "discount",
-        title: "Deal highlight",
-        text: "Your best offer in a bold card, one tap from checkout.",
+        title: "Your best deal, front and center",
+        text: "A bold card for today's offer, one tap from the product.",
       },
       {
         icon: "heart",
         title: "Best-seller circles",
-        text: "Guide undecided shoppers to products that already sell.",
+        text: "Point undecided shoppers to the products that already sell.",
       },
       {
         icon: "chat",
-        title: "Customer review",
-        text: "A real quote reassures first-time visitors.",
+        title: "A real customer review",
+        text: "A short, honest quote that reassures first-time visitors.",
       },
     ],
     whyItSells: [
-      "Social proof and reviews reduce doubt before shoppers browse.",
-      "The deal card gives a reason to buy today.",
+      "Proof and reviews ease doubts before shoppers even browse.",
+      "A highlighted deal gives shoppers a reason to buy today.",
       "Best-sellers shorten the path from menu to product.",
     ],
   },
   accordion: {
     tagline: "Everything in reach, nothing in the way",
+    pitch:
+      "Quick-link chips for your most important pages, and rows that unfold right in place to reveal every product. Your whole range fits on one tidy screen.",
     bestFor: ["Large catalogs", "Wellness", "Beauty"],
     highlights: [
       {
         icon: "link",
         title: "Quick-link chips",
-        text: "Your top pages (deals, sets, new) as one-tap chips at the top.",
+        text: "Deals, sets and new arrivals as one-tap chips at the very top.",
       },
       {
         icon: "chevron-down-circle",
-        title: "Fold-out product lists",
-        text: "Rows open in place to show every product, without leaving the menu.",
+        title: "Rows that unfold in place",
+        text: "Shoppers open a category and see its products without leaving the menu.",
       },
       {
         icon: "image",
-        title: "Photo banners for About and Help",
-        text: "Tell your story and answer questions where shoppers look.",
+        title: "Photo banners for your story",
+        text: "About and Help get their own banners, right where questions come up.",
       },
     ],
     whyItSells: [
-      "Fold-outs show your whole range while keeping the menu short.",
+      "Unfolding rows show your whole range while keeping the menu short.",
       "Chips put your most important pages first.",
-      "About and Help banners build trust with new visitors.",
+      "Your story and help pages build trust with new visitors.",
     ],
   },
   sliding: {
     tagline: "Feels like a native shopping app",
+    pitch:
+      "Tap an arrow and the next level glides in, just like the shopping apps your customers already love. A second tab helps gift buyers shop by occasion.",
     bestFor: ["Kids & baby", "Gift shops", "Deep catalogs"],
     highlights: [
       {
         icon: "arrow-right",
-        title: "Sliding sub-menus",
-        text: "Tap an arrow and the next level slides in, with a clear way back.",
+        title: "Smooth sliding sub-menus",
+        text: "Each level slides in with a clear way back, so even deep catalogs feel simple.",
       },
       {
         icon: "gift-card",
         title: "Shop by occasion",
-        text: "A second tab for birthdays, holidays and other gift moments.",
+        text: "Birthdays, holidays and new arrivals get their own tab for gift buyers.",
       },
       {
         icon: "collection",
         title: "Story circles and icons",
-        text: "Round photos for highlights and line icons on every category.",
+        text: "Round photos for highlights and a friendly icon on every category.",
       },
       {
         icon: "profile",
-        title: "Account at the bottom",
-        text: "Sign-in stays in reach without taking up menu space.",
+        title: "Account always in reach",
+        text: "Sign-in sits at the bottom: there when needed, out of the way otherwise.",
       },
     ],
     whyItSells: [
       "Each screen stays short and focused, even with hundreds of categories.",
-      "Shopping by occasion catches gift buyers who don't know what they want yet.",
-      "App-like navigation feels familiar, so shoppers browse longer.",
+      "Shopping by occasion helps gift buyers who don't know what they want yet.",
+      "App-like navigation feels familiar, so shoppers feel at home right away.",
     ],
   },
 };
 
 /** What every template includes, shown under each preview. */
 export const INCLUDED_EVERYWHERE = [
-  "Link your own collections, products and pages",
-  "Change every text, image, color and font",
-  "Works with any theme, without editing theme code",
-  "Translatable for every language your store sells in",
+  "Your own collections, products and pages, linked in a few clicks",
+  "Every word, photo, color and font is yours to change",
+  "Works with any theme: no code, nothing to break",
+  "Speaks every language your store sells in",
 ];

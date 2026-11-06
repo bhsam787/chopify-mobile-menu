@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { ColorField } from "./controls";
+import type { GuideValue } from "../components/GuideBot";
 
 /**
  * Visual controls for Design dialogs: grouped cards, picture choices,
@@ -25,10 +26,34 @@ export interface DesignFocus {
  * change. Hovering shows it for a moment; touching (click, typing, slider)
  * keeps it highlighted until another part is touched.
  */
+/** One setting changed, in words: "Spacing › Top and bottom: 16 px → 28 px". */
+export interface DesignChange {
+  /** The card it's in ("Spacing"), if any. */
+  group?: string;
+  field: string;
+  from: GuideValue;
+  to: GuideValue;
+}
+
 export const DesignFocusContext = createContext<{
   hover: (focus: DesignFocus | null) => void;
   touch: (focus: DesignFocus) => void;
+  /** Tells the preview's helper what just changed. */
+  say?: (change: DesignChange) => void;
 }>({ hover: () => undefined, touch: () => undefined });
+
+/** The title of the design card a setting is in. */
+const GroupContext = createContext<string | undefined>(undefined);
+
+/** Reports a setting's change (`from` → `to`) to the helper. */
+function useSay(field: string) {
+  const { say } = useContext(DesignFocusContext);
+  const group = useContext(GroupContext);
+  return (from: GuideValue, to: GuideValue) => {
+    if (from.text !== to.text || from.color !== to.color)
+      say?.({ group, field, from, to });
+  };
+}
 
 /** Handlers that report `focus` to the phone preview. */
 function useFocusHandlers(focus: DesignFocus | undefined) {
@@ -100,7 +125,9 @@ export function DesignGroup({
         )}
         {hint && <span className="chm-dgroup__hint">{hint}</span>}
       </header>
-      <div className="chm-dgroup__body">{children}</div>
+      <div className="chm-dgroup__body">
+        <GroupContext.Provider value={title}>{children}</GroupContext.Provider>
+      </div>
     </section>
   );
 }
@@ -164,16 +191,26 @@ export function ChoiceTiles<T extends string>({
   onChange: (value: T) => void;
 }) {
   const start = useStartValue(value);
+  const say = useSay(label);
+  const name = (of: T) => ({
+    text: options.find((option) => option.value === of)?.label ?? String(of),
+  });
+  const change = (next: T) => {
+    say(name(value), name(next));
+    onChange(next);
+  };
   return (
     <div className="chm-field">
-      <div className="chm-field__top chm-field__top--end">
+      {/* The label row always holds the Reset button, so showing it never moves the tiles. */}
+      <div className="chm-field__top">
+        <span className="chm-field__label">{label}</span>
         <ResetButton
           shown={!sameValue(value, start)}
           describe={
             options.find((option) => option.value === start)?.label ??
             "the start"
           }
-          onReset={() => onChange(start)}
+          onReset={() => change(start)}
         />
       </div>
       <div className="chm-choices" role="radiogroup" aria-label={label}>
@@ -184,7 +221,7 @@ export function ChoiceTiles<T extends string>({
             role="radio"
             aria-checked={option.value === value}
             className="chm-choice"
-            onClick={() => onChange(option.value)}
+            onClick={() => change(option.value)}
           >
             <span className="chm-choice__picture" aria-hidden="true">
               {option.picture}
@@ -212,6 +249,20 @@ export function Segmented<T extends string | number>({
 }) {
   const start = useStartValue(value);
   const startOption = options.find((option) => option.value === start);
+  const say = useSay(label);
+  const name = (of: T | undefined) => {
+    const option = options.find((candidate) => candidate.value === of);
+    return {
+      text:
+        option?.title ??
+        (typeof option?.label === "string" ? option.label : undefined) ??
+        (of === undefined ? "Default" : String(of)),
+    };
+  };
+  const change = (next: T) => {
+    say(name(value), name(next));
+    onChange(next);
+  };
   return (
     <div className="chm-field">
       <div className="chm-field__top">
@@ -224,7 +275,7 @@ export function Segmented<T extends string | number>({
               ? startOption.label
               : String(start))
           }
-          onReset={() => start !== undefined && onChange(start)}
+          onReset={() => start !== undefined && change(start)}
         />
       </div>
       <div className="chm-segment" role="radiogroup" aria-label={label}>
@@ -236,7 +287,7 @@ export function Segmented<T extends string | number>({
             aria-checked={option.value === value}
             aria-label={option.title}
             title={option.title}
-            onClick={() => onChange(option.value)}
+            onClick={() => change(option.value)}
           >
             {option.label}
           </button>
@@ -276,10 +327,18 @@ export function SliderField({
   const shown = value ?? min;
   const sliderMax = Math.max(max, shown);
   const id = `chm-slider-${label.toLowerCase().replace(/\W+/g, "-")}`;
+  const say = useSay(label);
+  const name = (of: number | undefined) => ({
+    text: of === undefined ? placeholder : `${of} ${unit}`,
+  });
+  const change = (next: number | undefined) => {
+    say(name(value), name(next));
+    onChange(next);
+  };
   const set = (raw: string) => {
-    if (raw === "") return onChange(undefined);
+    if (raw === "") return change(undefined);
     const parsed = Number(raw);
-    if (!Number.isNaN(parsed)) onChange(Math.max(min, parsed));
+    if (!Number.isNaN(parsed)) change(Math.max(min, parsed));
   };
   return (
     <div className="chm-field">
@@ -292,7 +351,7 @@ export function SliderField({
           describe={
             start === undefined ? placeholder.toLowerCase() : `${start} ${unit}`
           }
-          onReset={() => onChange(start)}
+          onReset={() => change(start)}
         />
         <span className="chm-field__number">
           <input
@@ -330,7 +389,7 @@ export function SliderField({
               key={preset.label}
               type="button"
               aria-pressed={value === preset.value}
-              onClick={() => onChange(preset.value)}
+              onClick={() => change(preset.value)}
             >
               {preset.label}
             </button>
@@ -363,12 +422,26 @@ export function ColorPicker({
 }) {
   const start = useStartValue(value);
   const current = value?.toUpperCase();
+  const say = useSay(label);
+  const name = (of: string | undefined): GuideValue =>
+    of
+      ? {
+          text:
+            SWATCHES.find((swatch) => swatch.value === of.toUpperCase())
+              ?.label ?? of.toUpperCase(),
+          color: of,
+        }
+      : { text: "None" };
+  const change = (next: string | undefined) => {
+    say(name(value), name(next));
+    onChange(next);
+  };
   return (
     <div className="chm-field">
       <ColorField
         label={label}
         value={value}
-        onChange={(next) => onChange(next || undefined)}
+        onChange={(next) => change(next || undefined)}
       />
       <div
         className="chm-swatches"
@@ -381,7 +454,7 @@ export function ColorPicker({
           aria-pressed={!value}
           title="None"
           aria-label="None"
-          onClick={() => onChange(undefined)}
+          onClick={() => change(undefined)}
         />
         {SWATCHES.map((swatch) => (
           <button
@@ -392,13 +465,13 @@ export function ColorPicker({
             title={swatch.label}
             aria-label={swatch.label}
             style={{ background: swatch.value }}
-            onClick={() => onChange(swatch.value)}
+            onClick={() => change(swatch.value)}
           />
         ))}
         <ResetButton
           shown={!sameValue(value, start)}
           describe={start ?? "no color"}
-          onReset={() => onChange(start)}
+          onReset={() => change(start)}
         />
       </div>
     </div>

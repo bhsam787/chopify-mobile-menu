@@ -3,7 +3,7 @@
 client_id = "01c6f4382b86d4e4ac9d63f402d506ae"
 application_url = "https://example.com"
 embedded = true
-name = "Chopify - Menu"
+name = "Chopi - Menu"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
@@ -13,7 +13,8 @@ name = "Chopify - Menu"
 # read_themes: theme detection (burger adapters) and app embed status
 # write_files: images picked or uploaded in the editor
 # read_locales: languages for menu translations
-scopes = "read_products,read_content,read_legal_policies,read_themes,write_files,read_locales"
+# read_reports: the store's top searches for live search (ShopifyQL search_queries).
+scopes = "read_products,read_content,read_legal_policies,read_themes,write_files,read_locales,read_reports"
 
 [webhooks]
 api_version = "2026-10"
@@ -34,5 +35,4 @@ api_version = "2026-10"
 redirect_urls = [ "https://example.com/api/auth" ]
 
 [build]
-include_config_on_deploy = true
 automatically_update_urls_on_dev = true

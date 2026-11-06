@@ -1,4 +1,4 @@
-import type { Design } from "@chopify/menu-core";
+import type { Design } from "@chopi/menu-core";
 import { MenuPreview, type PreviewContext } from "./MenuPreview";
 
 /**

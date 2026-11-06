@@ -1,4 +1,4 @@
-# Chopify Menu: product and technical plan
+# Chopi - Menu: product and technical plan
 
 Status: draft v1 (2026-11-02). Scope: **mobile menu** (desktop menu comes later).
 
@@ -41,11 +41,11 @@ Admin (embedded iframe app, React Router)                Storefront (any theme)
 ┌──────────────────────────────────────────┐            ┌───────────────────────────────┐
 │ Dashboard · Templates · Editor · Billing  │            │ App embed (Liquid, body)       │
 │ Editor: canvas + layers + inspector       │            │  - reads app-data metafields   │
-│ Preview = @chopify/renderer in an iframe  │            │  - resolves links/products/    │
+│ Preview = @chopi/renderer in an iframe  │            │  - resolves links/products/    │
 └───────────────┬──────────────────────────┘            │    locale in Liquid → JSON     │
                 │ save draft / publish                   │  - hides theme drawer (CSS)    │
-        ┌───────▼────────┐   compile    ┌──────────────┐ │  - chopify-menu.js (~10 KB gz) │
-        │ Postgres (Neon)│ ───────────▶ │ Shopify       │─▶│    = @chopify/renderer       │
+        ┌───────▼────────┐   compile    ┌──────────────┐ │  - chopi-menu.js (~10 KB gz) │
+        │ Postgres (Neon)│ ───────────▶ │ Shopify       │─▶│    = @chopi/renderer       │
         │ drafts, history│   publish    │ $app metafield│ │    takes over the burger      │
         └────────────────┘              │ + links menu  │ └───────────────────────────────┘
                                         └──────────────┘
@@ -61,7 +61,7 @@ packages/menu-renderer/       TypeScript, no framework: render(published, data) 
                               behavior (open/close, sub-menu screens, focus trap). Used by the editor
                               preview and bundled into the extension.
 packages/widgets/             One folder per widget: schema, defaults, render(), inspector config.
-extensions/chopify-menu/      Theme app extension: blocks/menu-embed.liquid, assets/ (built
+extensions/chopi-menu/      Theme app extension: blocks/menu-embed.liquid, assets/ (built
                               renderer + CSS), locales/.
 docs/                         This plan, the theme-adapter notes and the metafield contract.
 ```
@@ -119,20 +119,20 @@ A Figma frame maps almost 1:1 onto this tree, which keeps templates faithful to 
 - **`$app` app-data metafields (AppInstallation)**, read in the embed through `app.metafields`:
   - `menu`: the compiled design (json, ≤128 KB)
   - `entitlement`: `{ plan, liveAllowed }`, written on install, on plan change and on the `app_subscriptions/update` webhook
-- **Hidden links menu** `chopify-menu-links`, named "Chopify Menu links (managed by app, don't edit)": one item per link, rewritten on publish (the bbb approach). Liquid looks items up by stable title/key and gets the current, translated URL.
+- **Hidden links menu** `chopi-menu-links`, named "Chopi - Menu links (managed by app, don't edit)": one item per link, rewritten on publish (the bbb approach). Liquid looks items up by stable title/key and gets the current, translated URL.
 - **Images:** Shopify Files (`fileCreate`). We store the CDN URL plus the file GID, and Liquid/CDN resize them.
 
 ## 4. Storefront engine (theme app extension)
 
 ### App embed `menu-embed.liquid` (target `body`)
 
-1. Reads `app.metafields.chopify.menu` and `.entitlement`. Outputs nothing if the menu is unpublished.
+1. Reads `app.metafields.chopi.menu` and `.entitlement`. Outputs nothing if the menu is unpublished.
 2. Resolves dynamic data **in Liquid** into a `<script type="application/json">` block:
-   - link URLs from `linklists['chopify-menu-links']`
+   - link URLs from `linklists['chopi-menu-links']`
    - widget data: products/collections for story circles and cards (`collections[handle].products`, limited counts), with images through `image_url: width:`
    - the active locale's texts (`request.locale.iso_code`), plus `localization` for the country/language picker
    - `customer`, `cart.item_count`, `routes.*`
-3. Loads `chopify-menu.js` with `defer`, plus a small CSS file.
+3. Loads `chopi-menu.js` with `defer`, plus a small CSS file.
 
 ### Takeover strategy
 
@@ -151,7 +151,7 @@ A Figma frame maps almost 1:1 onto this tree, which keeps templates faithful to 
 
   Before each tier is signed off, every adapter is checked against the theme's **latest version**, on the test checklist in §10. Theme updates can change header markup, so the adapter registry carries the theme versions it was tested on.
 - **Lazy rendering:** the drawer DOM is built on first open (or on idle), so page load pays only for the small loader. No layout shift.
-- **Theme editor:** when `request.design_mode` is on, show a small "Chopify Menu active" badge.
+- **Theme editor:** when `request.design_mode` is on, show a small "Chopi - Menu active" badge.
 - **Accessibility:** `<dialog>`/focus trap, Esc to close, `aria-expanded` on the theme burger, reduced-motion support.
 
 ### Performance budget (App Store review measures storefront impact)
@@ -178,7 +178,7 @@ A Figma frame maps almost 1:1 onto this tree, which keeps templates faithful to 
 
 - State: one design store with undo/redo (immer patches). Autosaves the draft to Postgres (debounced). Publishing is explicit.
 - Drag and drop with `@dnd-kit` for the library → canvas, section reorder and layer tree. Free-canvas layers get move/resize handles, snapping and alignment guides.
-- Preview: `@chopify/renderer` inside a sandboxed iframe with the same CSS as the storefront, fed by a preview data resolver that mimics the Liquid output using Admin API data.
+- Preview: `@chopi/renderer` inside a sandboxed iframe with the same CSS as the storefront, fed by a preview data resolver that mimics the Liquid output using Admin API data.
 - Pickers: App Bridge resource picker for products and collections. A link picker covers pages, blogs, articles, policies, routes and custom URLs. Images come from Shopify Files.
 
 ### Layout model (decision)
@@ -204,7 +204,7 @@ Derived from bbb-menu-sh, speckshop-menu-sh and the Figma file (`Rkml80qkqixTKqJ
 
 | Widget | Variants (style presets) | Seen in |
 |---|---|---|
-| **Header** | logo left/center; flag + language dropdown; close plain / in a circle | IOS, oils, BBB |
+| **Header** | one per menu (main menu and sub-menus share it). Ready-made styles (`HEADER_STYLES` in menu-core): Classic, Centered, With search, Shop icons (search/account/cart), Announcement (promo line), Minimal. A style only sets the layout (logo position, shortcut buttons, search field, promo line); logo, colors, spacing, language switcher and close button are kept. Language dropdown (flag not built yet); close plain / in a circle | IOS, oils, BBB |
 | **Category card** | *Studio*: title top-left, image right, arrow chip · *Product*: title, image, arrow, badge · *Overlay*: full image, gradient, label + arrow · *Bottom label*: image, then label + arrow · *Circle*: round image tile | IOS, oils A/B/C, Anwendungsziele, Components "Kategorie-Karte A/B/C" |
 | **Story circles** | bestsellers from a collection or manual picks; ring color | BBB |
 | **List row** | thumbnail + title + subline + chevron · icon + title (+ subline) · plain text · highlighted (accent color) | IOS sub-menu, BBB cards, oils "Special Deals / Zertifikate", Huel-style rows |
@@ -249,7 +249,7 @@ Launch set, each rebuilt as a **brand-neutral** design. The Figma files contain 
 | Mono Grid | Huel-style frames | black/white bottom-label cards, referral banner, plain rows, promo pill |
 | Accordion | Control menu | heading, chips row, image rows with accordion, split banners, footer bar |
 
-**Decided 2026-11-03:** templates are **pre-filled sample designs** (texts + images following the Figma frames), not filled from the shop's data, so previews always look finished. Images are served from `public/templates/` (WebP) for previews and copied to the merchant's Shopify Files on the first save. The sample photos are original generated stand-ins (same subjects and crops as the Figma frames, invented labels such as GROVE and NORTH, no client brand marks). Prompts are in `packages/menu-core/src/templates/images.json`. Each app menu creates its own Shopify navigation menu "<name> (Chopify Menu)" on save; deleting the app menu deletes it (never the store's own menus).
+**Decided 2026-11-03:** templates are **pre-filled sample designs** (texts + images following the Figma frames), not filled from the shop's data, so previews always look finished. Images are served from `public/templates/` (WebP) for previews and copied to the merchant's Shopify Files on the first save. The sample photos are original generated stand-ins (same subjects and crops as the Figma frames, invented labels such as GROVE and NORTH, no client brand marks). Prompts are in `packages/menu-core/src/templates/images.json`. Each app menu creates its own Shopify navigation menu "<name> (Chopi - Menu)" on save; deleting the app menu deletes it (never the store's own menus).
 
 Other template rules:
 
@@ -338,8 +338,8 @@ Resolved:
 - Custom CSS is only `app/components/gallery.css` (phone stages, fan, sketch). Polaris responsive `gridTemplateColumns` values must not contain commas (`minmax(0, 1fr)` breaks the parser) and need an `s-query-container`.
 
 ### 2026-11-06 — Links resolve by ID; no more Shopify navigation menu
-- Removed: the per-menu Shopify navigation menu ("<name> (Chopify Menu)"), `navigation.server.ts`, `navigationTree`, the `Menu.shopifyMenuId/Handle` columns (migration `drop_shopify_menu`) and the `write_online_store_navigation` scope.
-- On publish, `compile()` returns `references` (GIDs by type). `writeMenuReferences` stores them as `list.<type>_reference` app-owned shop metafields (`$app:chopify`, chunks of 50 because Liquid loops 50 references without `paginate`, which would follow the page's own `?page=`). There's a cap of 200 per type, checked on publish only (`TooManyLinksError`).
+- Removed: the per-menu Shopify navigation menu ("<name> (Chopi - Menu)"), `navigation.server.ts`, `navigationTree`, the `Menu.shopifyMenuId/Handle` columns (migration `drop_shopify_menu`) and the `write_online_store_navigation` scope.
+- On publish, `compile()` returns `references` (GIDs by type). `writeMenuReferences` stores them as `list.<type>_reference` app-owned shop metafields (`$app:chopi`, chunks of 50 because Liquid loops 50 references without `paginate`, which would follow the page's own `?page=`). There's a cap of 200 per type, checked on publish only (`TooManyLinksError`).
 - The embed loops the references and prints `kind:id → {url,title,image}`. Story-circle collections come from `product_collections`, with `collection.products limit: meta.productLimit`; there's no `collections[handle]` anymore.
 - Storefront `liveResources: true`: a collection/product/page/post missing from the resolved resources (deleted or unpublished) hides its item (card/row/chip/pill/button/banner/image, story items) instead of linking to a 404. Blogs (no reference type) keep their stored URL. The editor never hides.
 - Unpublish deletes the reference metafields too.
@@ -362,8 +362,26 @@ Resolved:
   - `resolveTexts(translations, locale)`: exact locale → base language → a regional variant, over ready-made packs of built-in words (`ui.close/menu/back/country/language`, ~19 languages).
   - `isRtlLocale`.
 - Renderer: uses `resolveTexts`; built-in words go through `t("ui", …)`; `dir="rtl"` on the root for RTL locales, with mirrored chevrons, arrows and back icons.
-- Storage: `compile()` strips translations from the menu and returns them per locale. Publish writes one app-data metafield per language (`chopify.t_<locale>`, its own 128 KB limit) and deletes removed languages; unpublish deletes them all. The embed loads only `t_<request locale>` (or its base language) and the storefront script merges it in. Older published menus with inline translations still render.
+- Storage: `compile()` strips translations from the menu and returns them per locale. Publish writes one app-data metafield per language (`chopi.t_<locale>`, its own 128 KB limit) and deletes removed languages; unpublish deletes them all. The embed loads only `t_<request locale>` (or its base language) and the storefront script merges it in. Older published menus with inline translations still render.
 - Editor: Translations manager (`app/editor/TranslationsPanel.tsx`), opened from the editor header and the canvas toolbar.
   - Language chips with %, progress, "Missing only", search, groups with missing counts, "Copy original", rich text where needed, built-in words showing their ready-made value.
   - Phone preview in that language, with the focused text's item outlined.
   - The inline translate mode (language dropdown in the header) stays.
+
+### 2026-11-06 — New elements (sections and canvas)
+- **Side tabs**: `TabsNode.placement: "side"` + `railWidth`; any tabs can switch top ↔ side (canvas panels are refitted by `app/canvas/tabPlacement.ts`; section grids lose/gain a column). Items inside side tabs never get sub-menus (`isInSideTabs`): side tabs are the second level already.
+- **Product cards** (`products`): a collection's products with photo, title and price. Liquid prints `price`/`compareAtPrice` with `money | strip_html` (shopper's currency); the editor formats Admin API prices. Editor-only `sample` products (stock photos) until a collection is picked; stripped in `compile()`. `/app/api/collection-products` loads a picked collection's products into the preview.
+- **Perks**, **Contact & help** (phone/email/WhatsApp/page; invalid values hidden on the store via `contactHref`), **Discount code** (Copy, optional Apply via `/discount/CODE`), **Ticker** (CSS loop, still and swipeable with reduced motion).
+- Merged duplicates: Tabs/Pill tabs → one Tabs with a style (pills, track, underline); Text list/Icon list → Menu list with an icons switch.
+
+### 2026-11-06 — Live search
+- Header setting `liveSearch` (needs the search field or the Search button; a button-only header gets a folded field). Focusing the field covers the menu with a panel: recent searches (shopper's browser only) and merchant "popular searches" before typing; while typing, matching links of this menu (instant, any screen) then Shopify's Predictive Search API (`{routes.search}/suggest.json`, debounced, aborted on new input, cached): suggestions (completion bold), collections, products (price in the shopper's currency, compare-at, sold out), "See all results".
+- Three results styles (list, grid, carousel) and three field styles (pill, box, underline); accent color. Renderer: `search.ts` (markup), `liveSearch.ts` (browser). The editor's Preview answers from known products (`app/editor/searchPreview.ts`).
+- Tested against shiam-dev-05's real `/search/suggest.json` (injected test page; the theme embed wasn't enabled on the live theme).
+- Popular searches = the merchant's own terms first, then the store's real top searches (ShopifyQL `search_queries`, last 30 days, searched ≥3 times, emails/phones/links/order numbers filtered), max 8, any hideable. No database: `app/services/top-searches.server.ts` refreshes them at most daily (editor load, publish) into the app-data metafield `chopi.top_searches`; the embed passes them as `context.topSearches`. Needs `read_reports` + protected customer data (Level 2) approval; without it only the merchant's terms show.
+
+### 2026-11-06 — Custom CSS (per menu)
+- `design.customCss` (max 20,000 chars), edited on its own page `/app/css/:menuId` opened in an App Bridge max modal from the editor toolbar ("Custom CSS"); unsaved editor changes are saved first, closing reloads the draft (like the canvas). Polaris `s-modal` breaks the code editor's text selection, hence the page.
+- Editor: CodeMirror 6 (loaded only on that page) with VS Code Light+/Dark+ colors, autocomplete (CSS + the menu's classes and variables, plain-language part names), live checks (unknown properties and values via CSS.supports, broken braces, blocked rules), Format (Shift+Alt+F), ⌘S, multiple cursors, search; "Menu parts" inserts rules; live phone (Try it / Still).
+- Safety: runs inside the menu's shadow root (never reaches the theme); `cleanCustomCss` blocks @import, expression(), javascript:, -moz-binding, behavior and "<", and marks declarations !important (not in @keyframes) so the merchant's rules beat the editor's inline settings.
+- CSS studio: "Preview" / "Select CSS" modes for the phone. Select CSS outlines parts on hover; a click adds a rule; the layer path (drawer › … › clicked part, ↑/↓) and scope ("All like this" with match count, or "Only this one" via `data-chm-id`) swap that rule's selector while it's untouched; matches are outlined. `data-chm-id` is rendered in the editor always and on the store only for ids the menu's custom CSS mentions. Light/dark theme for the whole page (`app/editor/css/cssEditor.css`).

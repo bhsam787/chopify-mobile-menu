@@ -1,0 +1,6 @@
+name = "Chopi - Menu"
+# Shopify's internal ID for this extension: it can't change once deployed, so it
+# keeps the app's original slug. Merchants never see it.
+handle = "chopify-menu"
+type = "theme"
+uid = "db6280b5-1632-146f-59f9-2e076028ba1df2eb456c"

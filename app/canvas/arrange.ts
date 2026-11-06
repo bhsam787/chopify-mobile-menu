@@ -4,7 +4,7 @@ import type {
   Node,
   ShapeNode,
   TabsNode,
-} from "@chopify/menu-core";
+} from "@chopi/menu-core";
 import {
   CANVAS_WIDTH,
   childNodes,
@@ -14,10 +14,10 @@ import {
   mapNode,
   newId,
   removeNode,
-  tabPanelOffset,
+  tabPanelArea,
   updateNode,
   walkDesign,
-} from "@chopify/menu-core";
+} from "@chopi/menu-core";
 
 /**
  * Figma-style arrange operations on canvas layers. All are pure: they take a
@@ -239,8 +239,10 @@ export function areaOf(
   if (node?.type === "canvas") return { w: CANVAS_WIDTH, h: node.height };
   if (node?.frame) return { w: node.frame.w, h: node.frame.h };
   const tabs = tabsOfPanel(design, parentId);
-  if (tabs?.frame)
-    return { w: tabs.frame.w, h: tabs.frame.h - tabPanelOffset(tabs) };
+  if (tabs?.frame) {
+    const area = tabPanelArea(tabs, tabs.frame);
+    return { w: area.w, h: area.h };
+  }
   return undefined;
 }
 
