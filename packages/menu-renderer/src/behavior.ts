@@ -105,6 +105,16 @@ export function attachBehavior(
 
   const controller: MenuController = {
     open({ focus = true } = {}) {
+      // Shoppers always start at the main menu (and out of search), even if
+      // they closed it inside a sub-menu. Done before it slides in, so the
+      // switch isn't seen. The editor's preview keeps its screen.
+      if (!options.editor) {
+        liveSearch?.exit();
+        history.length = 0;
+        const first =
+          root.querySelector<HTMLElement>(".chm-screen")?.dataset.chmScreenId;
+        if (first && currentScreen() !== first) setScreen(first, "back");
+      }
       menu()?.classList.add("is-open");
       startTimer();
       // Focus for keyboard users, without scrolling the page behind the drawer.

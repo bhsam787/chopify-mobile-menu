@@ -169,12 +169,17 @@ function start() {
     if (!mobile.matches) controller?.close();
   });
 
-  // Warm up the full menu once the page is idle, only on mobile widths.
+  // Warm up the full menu on mobile widths once the page has fully loaded
+  // and the browser is idle, so it never competes with the theme's own
+  // images and scripts (LCP) on slow connections.
   if (mobile.matches) {
     const idle =
       window.requestIdleCallback ??
       ((callback: () => void) => window.setTimeout(callback, 1500));
-    idle(() => loadApp(data.appUrl).catch(() => undefined));
+    const warmUp = () =>
+      idle(() => loadApp(data.appUrl).catch(() => undefined));
+    if (document.readyState === "complete") warmUp();
+    else window.addEventListener("load", warmUp, { once: true });
   }
 
   window.ChopiMenu = {
