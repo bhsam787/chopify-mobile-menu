@@ -18,6 +18,7 @@ import {
 } from "../services/support.server";
 import { SUPPORT_TOPICS, type SupportTopic } from "../support/topics";
 import { SelectField, TextField } from "../editor/controls";
+import { MenuButtonBanner } from "../home/MenuButtonBanner";
 import showcaseStyles from "../components/showcase.css?url";
 
 export const links: LinksFunction = () => [
@@ -67,6 +68,8 @@ interface Question {
   steps?: string[];
   /** Ends with a "Send us a message" button. */
   contact?: boolean;
+  /** A page in the app that solves it. */
+  link?: { href: string; label: string };
 }
 
 const FAQ: { topic: string; questions: Question[] }[] = [
@@ -91,7 +94,8 @@ const FAQ: { topic: string; questions: Question[] }[] = [
       {
         question: "Does it work with my theme?",
         answer:
-          "It works with Online Store 2.0 themes through the app embed and opens from your theme's own menu icon. If the icon isn't picked up on your theme, the app embed has an advanced “Menu button selector” setting where you can point it at your menu button, or send us a message and we'll help.",
+          "It works with Online Store 2.0 themes through the app embed and opens from your theme's own menu icon, which it finds by itself on almost every theme. If yours isn't picked up, open Menu button and tap your menu icon once in a phone-sized window of your store. No code needed.",
+        link: { href: "/app/menu-button", label: "Open Menu button" },
       },
     ],
   },
@@ -216,7 +220,8 @@ const FAQ: { topic: string; questions: Question[] }[] = [
       {
         question: "My theme's own menu opens instead of the new one.",
         answer:
-          "First check you're on a phone-sized screen: on desktop, your theme's menu is meant to stay. If your theme's menu still opens on phones, set the “Menu button selector” in the app embed settings, or send us a message and we'll find the right setting for you.",
+          "First check you're on a phone-sized screen: on desktop, your theme's menu is meant to stay. If your theme's menu still opens on phones, open Menu button, choose your theme and tap its menu icon once. Still stuck? Send us a message and we'll set it up for you.",
+        link: { href: "/app/menu-button", label: "Open Menu button" },
       },
     ],
   },
@@ -232,6 +237,22 @@ export default function Help() {
   const sending = fetcher.state !== "idle";
 
   const openForm = () => modal.current?.showOverlay();
+
+  // Arriving from "Still not working?" on Menu button: open the form, ready
+  // for the theme's name.
+  useEffect(() => {
+    if (!canMessage) return;
+    if (
+      new URLSearchParams(window.location.search).get("message") !==
+      "menu-button"
+    )
+      return;
+    setTopic("Something isn't working");
+    setMessage(
+      "My theme's menu icon doesn't open the Chopi menu.\nTheme name: ",
+    );
+    modal.current?.showOverlay();
+  }, [canMessage]);
   const send = () =>
     fetcher.submit({ topic, replyTo, message }, { method: "post" });
 
@@ -332,6 +353,8 @@ export default function Help() {
           </s-clickable>
         </div>
 
+        <MenuButtonBanner />
+
         <s-section heading="Frequently asked questions">
           <div className="chm-faq-groups">
             {FAQ.map((group) => (
@@ -339,7 +362,7 @@ export default function Help() {
                 <h3 className="chm-faq-group__title">{group.topic}</h3>
                 <div className="chm-faq">
                   {group.questions.map(
-                    ({ question, answer, steps, contact }) => (
+                    ({ question, answer, steps, contact, link }) => (
                       <details key={question} className="chm-faq__item">
                         <summary>{question}</summary>
                         <p>{answer}</p>
@@ -349,6 +372,11 @@ export default function Help() {
                               <li key={step}>{step}</li>
                             ))}
                           </ol>
+                        )}
+                        {link && (
+                          <div className="chm-faq__contact">
+                            <s-button href={link.href}>{link.label}</s-button>
+                          </div>
                         )}
                         {contact && canMessage && (
                           <div className="chm-faq__contact">

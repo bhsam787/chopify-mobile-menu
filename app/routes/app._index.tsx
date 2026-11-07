@@ -15,11 +15,11 @@ import { currentPlan, liveMenuCovered } from "../services/billing.server";
 import { usesCanvas } from "../billing/plans";
 import { buildPreviewContext } from "../services/preview-context.server";
 import galleryStyles from "../components/gallery.css?url";
+import { MenuButtonBanner } from "../home/MenuButtonBanner";
 import showcaseStyles from "../components/showcase.css?url";
 import { FEATURE_LABELS, TEMPLATE_COPY } from "../components/templateCopy";
 import {
   FeaturedMenu,
-  FooterHelp,
   MenusTable,
   TemplateTeaser,
   WelcomeCard,
@@ -265,8 +265,7 @@ export default function Home() {
         />
 
         {published && guide}
-
-        <FooterHelp />
+        {published && <MenuButtonBanner />}
       </s-stack>
 
       <s-modal

@@ -33,3 +33,4 @@ database.sqlite
 # Built by scripts/build-storefront.mjs (npm run dev/build/deploy)
 extensions/chopi-menu/assets/chopi-menu.js
 extensions/chopi-menu/assets/chopi-menu-app.js
+extensions/chopi-menu/assets/chopi-picker.js

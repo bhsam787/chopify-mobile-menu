@@ -84,31 +84,46 @@ export function SetupGuide({
     published ? null : (steps.find((step) => !step.done)?.id ?? null),
   );
   const [showSteps, setShowSteps] = useState(!published);
+  const allDone = doneCount === steps.length;
 
   return (
     <s-section
       heading="Setup guide"
       subheading="Three steps to an app-like mobile menu on your store."
     >
-      <s-text slot="supplemental" color="subdued">
-        {doneCount === steps.length
-          ? "All set"
-          : `${doneCount} of ${steps.length} steps completed`}
-      </s-text>
-      <s-button
-        slot="secondary-actions"
-        variant="tertiary"
-        icon={showSteps ? "chevron-up" : "chevron-down"}
-        accessibilityLabel={showSteps ? "Hide steps" : "Show steps"}
-        onClick={() => setShowSteps((current) => !current)}
-      />
+      {/* Our own row, not the section's header slots: an icon-only button
+          there shows a hover tooltip that shifts the header, so it shook. */}
+      <div className="chm-guide-bar">
+        <span className={`chm-guide-bar__status${allDone ? " is-done" : ""}`}>
+          {allDone
+            ? "All set"
+            : `${doneCount} of ${steps.length} steps completed`}
+        </span>
+        <button
+          type="button"
+          className="chm-guide-bar__toggle"
+          aria-expanded={showSteps}
+          onClick={() => setShowSteps((current) => !current)}
+        >
+          {showSteps ? "Hide steps" : "Show steps"}
+          <svg
+            viewBox="0 0 16 16"
+            width="14"
+            height="14"
+            aria-hidden="true"
+            className={showSteps ? "is-open" : ""}
+          >
+            <path d="m4 6 4 4 4-4" />
+          </svg>
+        </button>
+      </div>
       {!showSteps && (
         <s-paragraph color="subdued">
           {nextStep
             ? `Next: ${nextStep.label.toLowerCase()}.`
             : draftThemesOnly
               ? "Your menu is published to your draft themes. Choose a plan to show it on your live theme."
-              : doneCount === steps.length
+              : allDone
                 ? "Your menu is live and the app embed is on. Open the steps any time to check them again."
                 : "Your menu is live."}
         </s-paragraph>

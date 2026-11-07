@@ -18,12 +18,16 @@ interface EmbedData {
   liveAllowed: boolean;
   designMode: boolean;
   triggerOverride?: string;
+  /** Menu icons the merchant pointed at in the app, by theme id. */
+  menuButtons?: Record<string, { selector?: string }> | null;
   context: Omit<RenderContext, "editor">;
 }
 
 declare global {
   interface Window {
-    Shopify?: { theme?: { role?: string; schema_name?: string } };
+    Shopify?: {
+      theme?: { id?: number; role?: string; schema_name?: string };
+    };
     ChopiMenu?: { open: () => void; close: () => void };
   }
 }
@@ -77,16 +81,29 @@ function start() {
   // merchants can try it for free; the live theme keeps its own menu.
   if (!data.liveAllowed && !data.designMode && theme?.role === "main") return;
 
-  // A typo in the merchant's selector would throw on every click: ignore it.
-  let override = data.triggerOverride?.trim() || undefined;
-  if (override) {
+  // The menu icon: the theme editor setting, else the icon picked in the app
+  // for this theme, else our theme adapters. An invalid selector would throw
+  // on every click, so it's ignored.
+  const usable = (value: string | undefined) => {
+    const candidate = value?.trim();
+    if (!candidate) return undefined;
     try {
-      document.querySelector(override);
+      document.querySelector(candidate);
+      return candidate;
     } catch {
-      override = undefined;
+      return undefined;
     }
-  }
-  const selector = triggerSelector(theme?.schema_name, override);
+  };
+  let selector = triggerSelector(
+    theme?.schema_name,
+    usable(data.triggerOverride) ??
+      usable(data.menuButtons?.[String(theme?.id)]?.selector),
+  );
+  // Just picked in this window (the app's menu-button picker): use it now.
+  window.addEventListener("chopi:menu-button", (event) => {
+    const picked = usable((event as CustomEvent<string>).detail);
+    if (picked && !usable(data.triggerOverride)) selector = picked;
+  });
   const mobile = window.matchMedia(
     `(max-width: ${data.menu.behavior.breakpoint - 0.02}px)`,
   );
@@ -126,6 +143,8 @@ function start() {
     "click",
     (event) => {
       if (fallingBack || !mobile.matches) return;
+      // The merchant is pointing at their menu icon (menu-button picker).
+      if (document.documentElement.hasAttribute("data-chopi-picking")) return;
       const target = event.target instanceof Element ? event.target : null;
       const button = target?.closest<HTMLElement>(selector);
       if (!button) return;

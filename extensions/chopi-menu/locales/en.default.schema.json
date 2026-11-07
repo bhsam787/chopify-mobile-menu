@@ -3,7 +3,7 @@
     "name": "Mobile menu",
     "trigger_selector": {
       "label": "Menu button selector (advanced)",
-      "info": "Leave empty. Only needed if your theme's menu button isn't detected automatically."
+      "info": "Leave empty. If your menu icon isn't detected, use Menu button in the Chopi - Menu app instead: no code needed. This setting overrides it."
     }
   }
 }

@@ -24,6 +24,7 @@
       "liveAllowed": {% if entitlement.live_allowed %}true{% else %}false{% endif %},
       "designMode": {{ request.design_mode | json }},
       "triggerOverride": {{ block.settings.trigger_selector | json }},
+      "menuButtons": {{ app.metafields.chopi.menu_buttons.value | json }},
       "context": {
         "locale": {{ locale_code | json }},
         "shopName": {{ shop.name | json }},
@@ -100,6 +101,15 @@
   </script>
   <script src="{{ 'chopi-menu.js' | asset_url }}" defer></script>
 {%- endif -%}
+{%- comment -%} Only in a store window the app opened to point at the menu icon (its window name holds the pick session); shoppers never load the picker. {%- endcomment -%}
+<script>
+  if (window.name.indexOf('chopi-pick:') === 0) {
+    var chopiPicker = document.createElement('script');
+    chopiPicker.src = {{ 'chopi-picker.js' | asset_url | json }};
+    chopiPicker.defer = true;
+    document.head.appendChild(chopiPicker);
+  }
+</script>
 
 {% schema %}
 {

@@ -409,20 +409,3 @@ export function MenusTable({
     </s-section>
   );
 }
-
-/** Footer help (Shopify's pattern): where to learn more. */
-export function FooterHelp() {
-  return (
-    <s-stack alignItems="center" paddingBlock="large">
-      <s-text color="subdued">
-        Learn more about{" "}
-        <s-link
-          href="https://help.shopify.com/en/manual/online-store/themes/theme-structure/extend/apps"
-          target="_blank"
-        >
-          app embeds in your theme
-        </s-link>
-      </s-text>
-    </s-stack>
-  );
-}

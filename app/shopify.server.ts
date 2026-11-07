@@ -33,3 +33,5 @@ const shopify = shopifyApp({
 export const addDocumentResponseHeaders = shopify.addDocumentResponseHeaders;
 export const authenticate = shopify.authenticate;
 export const login = shopify.login;
+/** Admin API access without a request session (e.g. the storefront menu-button picker). */
+export const unauthenticated = shopify.unauthenticated;

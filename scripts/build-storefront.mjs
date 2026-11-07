@@ -8,6 +8,8 @@ const outdir = "extensions/chopi-menu/assets";
 const entryPoints = {
   "chopi-menu": "packages/menu-renderer/src/storefront.ts",
   "chopi-menu-app": "packages/menu-renderer/src/menu-app.ts",
+  // Only loaded in a store window the app opens to pick the menu icon.
+  "chopi-picker": "packages/menu-renderer/src/picker.ts",
 };
 
 await build({
