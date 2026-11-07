@@ -615,7 +615,11 @@ function nodeTexts(node: Node): [string, string | undefined, boolean][] {
         ["announcement", node.announcement, false],
         [
           "searchPlaceholder",
-          node.searchBar ? node.searchPlaceholder : "",
+          // Shown by the search bar, and by live search from the icon.
+          node.searchBar ||
+          (node.liveSearch?.enabled && (node.icons ?? []).includes("search"))
+            ? node.searchPlaceholder
+            : "",
           false,
         ],
       ];
@@ -805,6 +809,15 @@ export function collectTexts(design: Design): TextEntry[] {
       group,
       screenId: screen.id,
     });
+    if (screen.back?.label)
+      add({
+        key: `${screen.id}.back`,
+        original: screen.back.label,
+        field: "Back button text",
+        rich: false,
+        group,
+        screenId: screen.id,
+      });
     walk(screen.root, group, screen.id);
   });
 

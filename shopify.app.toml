@@ -9,7 +9,6 @@ name = "Chopi - Menu"
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
 # read_products: collections/products for widgets and links
 # read_content, read_legal_policies: pages, blogs, articles and policies in the link picker
-# write_online_store_navigation: the hidden links menu the theme reads for current URLs
 # read_themes: theme detection (burger adapters) and app embed status
 # write_files: images picked or uploaded in the editor
 # read_locales: languages for menu translations

@@ -23,18 +23,8 @@ function useGreeting(): string {
 /** Why a menu like this helps, in four short points. */
 const BENEFITS: { title: string; text: string; icon: ReactNode }[] = [
   {
-    title: "Sell right from the menu",
-    text: "Feature best-sellers, deals and discount codes where every shopper looks first.",
-    icon: (
-      <>
-        <path d="M3.5 12.6V4.5a1 1 0 0 1 1-1h8.1a1 1 0 0 1 .7.3l7.2 7.2a1 1 0 0 1 0 1.4l-8.1 8.1a1 1 0 0 1-1.4 0l-7.2-7.2a1 1 0 0 1-.3-.7Z" />
-        <circle cx="8.2" cy="8.2" r="1.4" />
-      </>
-    ),
-  },
-  {
-    title: "Help shoppers find it fast",
-    text: "Photo cards, tabs and live search get them to the right product in a tap or two.",
+    title: "Found in a tap or two",
+    text: "Photo cards, tabs and live search take shoppers straight to the right products.",
     icon: (
       <>
         <circle cx="10.5" cy="10.5" r="5.5" />
@@ -43,19 +33,29 @@ const BENEFITS: { title: string; text: string; icon: ReactNode }[] = [
     ),
   },
   {
-    title: "On-brand, without code",
-    text: "Your colors, fonts and photos. No developer, no theme edits, nothing to break.",
+    title: "Sell from the menu",
+    text: "Feature best-sellers, deals and discount codes right where every shopper looks.",
+    icon: (
+      <>
+        <path d="M3.5 12.6V4.5a1 1 0 0 1 1-1h8.1a1 1 0 0 1 .7.3l7.2 7.2a1 1 0 0 1 0 1.4l-8.1 8.1a1 1 0 0 1-1.4 0l-7.2-7.2a1 1 0 0 1-.3-.7Z" />
+        <circle cx="8.2" cy="8.2" r="1.4" />
+      </>
+    ),
+  },
+  {
+    title: "Your brand, no code",
+    text: "Your colors, fonts and photos, from a template or your own design. No theme edits.",
     icon: (
       <path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.2 0 1.8-.9 1.3-1.9-.5-1.1.2-2.3 1.4-2.3h1.9a3.9 3.9 0 0 0 3.9-3.9c0-4.9-3.8-8.9-8.5-8.9ZM7.8 11.2h0M10.6 7.8h0M14.8 8.6h0" />
     ),
   },
   {
-    title: "Stays up to date by itself",
-    text: "Rename a product or collection and the menu keeps up. Nothing to republish.",
+    title: "Try it free, go live later",
+    text: "Publish to a draft theme and tap through it like a shopper before anyone else sees it.",
     icon: (
       <>
-        <path d="M19.5 12a7.5 7.5 0 0 1-13.2 4.9M4.5 12a7.5 7.5 0 0 1 13.2-4.9" />
-        <path d="M18 3.5v3.8h-3.8M6 20.5v-3.8h3.8" />
+        <path d="M2.8 12s3.4-6.5 9.2-6.5 9.2 6.5 9.2 6.5-3.4 6.5-9.2 6.5S2.8 12 2.8 12Z" />
+        <circle cx="12" cy="12" r="2.8" />
       </>
     ),
   },
@@ -102,12 +102,16 @@ export function ChopiStage({ children }: { children: ReactNode }) {
 export function HomeHero({
   shopName,
   menus,
+  draftThemesOnly = false,
 }: {
   shopName: string;
   menus: HomeMenu[];
+  /** Published, but the plan doesn't cover the live theme yet. */
+  draftThemesOnly?: boolean;
 }) {
   const greeting = useGreeting();
-  const live = menus.find((menu) => menu.published);
+  const published = menus.some((menu) => menu.published);
+  const live = published && !draftThemesOnly;
   const hasMenu = menus.length > 0;
 
   return (
@@ -126,31 +130,45 @@ export function HomeHero({
               </>
             ) : (
               <>
-                Turn your mobile menu into{" "}
-                <span className="chm-hero__brand">a place to shop</span>
+                Welcome to <span className="chm-hero__brand">Chopi - Menu</span>
               </>
             )}
           </h2>
           <p className="chm-hero__lead">
             {live
-              ? "Shoppers on their phone now get a menu that feels like an app: big photos, quick tabs and instant search. Keep it fresh with new collections, deals and seasonal looks."
-              : hasMenu
-                ? "One step left: publish it, and every shopper who opens the menu on their phone sees your new design."
-                : "Most shoppers browse on their phone. Swap your theme's plain list of links for photos, tabs, promotions and live search, ready in minutes, no code needed."}
+              ? "Your new mobile menu is live: shoppers who tap the menu icon on their phone get big photos, quick tabs and instant search. Keep it fresh with new collections, deals and seasonal looks."
+              : published
+                ? "Your menu is published to your draft themes: preview it there like a shopper would. Choose a plan when you're ready to show it on your live theme."
+                : hasMenu
+                  ? "One step left: publish it, and the menu that opens from the menu icon on your shoppers' phones gets your new design."
+                  : "Chopi - Menu replaces the menu that opens when shoppers tap the menu icon on their phone. Give them an app-like one with photos, tabs, promotions and live search, and try it on your store for free."}
           </p>
-          {!hasMenu && (
-            <div className="chm-hero__actions">
-              <s-button variant="primary" href="/app/templates">
-                Choose a template
-              </s-button>
-            </div>
-          )}
+          {/* What the app changes, and what it never touches. */}
+          <span className="chm-hero__scope">
+            <svg
+              viewBox="0 0 20 20"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <rect x="5" y="1.8" width="10" height="16.4" rx="2.4" />
+              <path d="M8 7h4M8 10h4M8 13h4" />
+            </svg>
+            <span>
+              <strong>For your mobile ☰ menu</strong> · your desktop navigation
+              stays exactly as it is
+            </span>
+          </span>
         </div>
 
         <ChopiStage>
           {hasMenu
             ? "Your menu looks great! Open a section and I'll point the way."
-            : "Pick a template you like and I'll guide you, step by step."}
+            : "Start with a template, a blank menu or the canvas, and I'll guide you, step by step."}
         </ChopiStage>
       </div>
 

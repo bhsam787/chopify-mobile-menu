@@ -4,8 +4,17 @@ import { compile } from "@chopi/menu-core";
 import prisma from "../db.server";
 import { assertNoUserErrors, gql, type Admin } from "./admin-graphql.server";
 import { deleteMenuReferences, writeMenuReferences } from "./references.server";
-import { importTemplateImages } from "./template-images.server";
+import {
+  ImagesProcessingError,
+  importTemplateImages,
+} from "./template-images.server";
 import { topSearches } from "./top-searches.server";
+import {
+  livePlan,
+  planAllows,
+  usesCanvas,
+  type PlanKey,
+} from "../billing/plans";
 
 /** Namespace of the app-data metafields the theme embed reads (`app.metafields.chopi.*`). */
 export const METAFIELD_NAMESPACE = "chopi";
@@ -39,17 +48,22 @@ async function installationId(admin: Admin): Promise<string> {
   return data.currentAppInstallation.id;
 }
 
-/** Plan flags the storefront checks (written on publish and on plan changes). */
-export function entitlementValue(shop: { plan: string; isDevStore: boolean }) {
+/**
+ * What the storefront checks before showing the menu (written on publish and
+ * whenever the plan changes): the live menu needs a plan that covers it, so
+ * a canvas menu stops showing after a downgrade to Starter.
+ */
+export function entitlementValue(plan: PlanKey, liveMenuUsesCanvas: boolean) {
   return {
-    plan: shop.plan.toLowerCase(),
-    live_allowed: shop.plan === "PRO" || shop.isDevStore,
+    plan: plan.toLowerCase(),
+    live_allowed: planAllows(plan, liveMenuUsesCanvas ? "PRO" : "STARTER"),
   };
 }
 
 export async function writeEntitlement(
   admin: Admin,
-  shop: { plan: string; isDevStore: boolean },
+  plan: PlanKey,
+  liveMenuUsesCanvas: boolean,
 ) {
   const result = await gql(admin, SET_METAFIELDS, {
     metafields: [
@@ -58,7 +72,7 @@ export async function writeEntitlement(
         namespace: METAFIELD_NAMESPACE,
         key: "entitlement",
         type: "json",
-        value: JSON.stringify(entitlementValue(shop)),
+        value: JSON.stringify(entitlementValue(plan, liveMenuUsesCanvas)),
       },
     ],
   });
@@ -91,6 +105,8 @@ export async function publishMenu(
       data: { draft: design as unknown as Prisma.InputJsonValue },
     });
   }
+  // The storefront can't load images from the app: wait for the rest.
+  if (imported.pending > 0) throw new ImagesProcessingError();
   const { menu: published, translations, references, bytes } = compile(design);
 
   // Linked collections, products, pages and posts, by ID: the theme resolves
@@ -112,13 +128,20 @@ export async function publishMenu(
         namespace: METAFIELD_NAMESPACE,
         key: "entitlement",
         type: "json",
-        value: JSON.stringify(entitlementValue(menu.shop)),
+        value: JSON.stringify(
+          entitlementValue(
+            livePlan(menu.shop.plan, menu.shop.isDevStore),
+            usesCanvas(published),
+          ),
+        ),
       },
     ],
   });
   assertNoUserErrors(result.metafieldsSet.userErrors);
-  await writeTranslations(admin, ownerId, translations);
 
+  // The menu is live from here: record it before the translations, so a
+  // failed translation write (retried by publishing again) never leaves the
+  // database pointing at a menu that isn't the one on the store.
   await prisma.$transaction([
     // Only one menu is live per store.
     prisma.menu.updateMany({
@@ -140,11 +163,12 @@ export async function publishMenu(
       },
     }),
   ]);
+  await writeTranslations(admin, ownerId, translations);
 
   // Live search's popular searches: refresh the store's top searches with
   // the menu (at most daily; never fails the publish).
   if (design.header.liveSearch?.enabled) await topSearches(admin);
-  return { bytes, design, importedImages: imported.imported };
+  return { bytes, design, imageUrls: imported.urls };
 }
 
 /** Takes the menu off the storefront; the theme's own menu shows again. */

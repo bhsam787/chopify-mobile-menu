@@ -315,22 +315,13 @@ export function MenuPreview({
     }
   });
 
-  // Custom CSS updates in place (no re-render of the menu).
-  const customCss = design.customCss;
-  useEffect(() => {
-    const style = hostRef.current?.shadowRoot?.querySelector<HTMLStyleElement>(
-      "style[data-chm-custom]",
-    );
-    if (style) style.textContent = cleanCustomCss(customCss);
-  });
-
   useEffect(() => {
     const host = hostRef.current;
     if (!host || mountRef.current) return;
     const shadow = host.shadowRoot ?? host.attachShadow({ mode: "open" });
     const style = document.createElement("style");
     style.textContent = MENU_CSS + TRY_CSS + HIGHLIGHT_CSS + PICK_CSS;
-    // The menu's own custom CSS, kept current by the effect below.
+    // The menu's own custom CSS, filled by the effect after this one.
     const custom = document.createElement("style");
     custom.dataset.chmCustom = "";
     const mount = document.createElement("div");
@@ -374,6 +365,16 @@ export function MenuPreview({
       focusedRef.current = null;
     };
   }, [interactive]);
+
+  // Custom CSS updates in place (no re-render of the menu). Declared after
+  // the mount effect, so it also fills a freshly rebuilt style element.
+  const customCss = design.customCss;
+  useEffect(() => {
+    const style = hostRef.current?.shadowRoot?.querySelector<HTMLStyleElement>(
+      "style[data-chm-custom]",
+    );
+    if (style) style.textContent = cleanCustomCss(customCss);
+  });
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -602,14 +603,7 @@ export function MenuPreview({
         : null;
     const view = anchor?.closest<HTMLElement>(".chm-body") ?? mount;
     return followTarget(bot, frame, view, anchor);
-  }, [
-    showGuide,
-    selectedId,
-    focusSelector,
-    design,
-    screenId,
-    interactive,
-  ]);
+  }, [showGuide, selectedId, focusSelector, design, screenId, interactive]);
 
   // Design dialogs: when a setting changes and the part it changes has been
   // scrolled out of sight in the phone, bring it back (down/up, and sideways

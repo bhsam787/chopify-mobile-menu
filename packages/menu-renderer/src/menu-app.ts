@@ -20,17 +20,38 @@ export interface MenuApp {
 
 const app: MenuApp = {
   mount(design, context, onClose) {
-    const host = document.createElement("div");
+    // Rendered first: if it throws, no empty host is left in the page.
+    const markup = renderMenu(design, context);
+    // A custom tag plus inline !important, so theme rules can't hide it:
+    // a shadow host has no light-DOM children, and Dawn-based themes hide
+    // every `div:empty`.
+    const host = document.createElement("chopi-menu");
     host.id = "chopi-menu";
-    document.body.appendChild(host);
+    host.style.setProperty("display", "block", "important");
+    // Closed, the drawer is only moved off-screen: inert keeps its links out
+    // of the tab order and away from screen readers.
+    host.inert = true;
     const shadow = host.attachShadow({ mode: "open" });
     const style = document.createElement("style");
     // The merchant's own CSS last, so it wins; cleaned again here in case.
     style.textContent = MENU_CSS + cleanCustomCss(design.customCss);
     const root = document.createElement("div");
-    root.innerHTML = renderMenu(design, context);
+    root.innerHTML = markup;
     shadow.append(style, root);
-    return attachBehavior(root, { onClose });
+    document.body.appendChild(host);
+    const controller = attachBehavior(root, {
+      onClose: () => {
+        host.inert = true;
+        onClose();
+      },
+    });
+    return {
+      ...controller,
+      open(options) {
+        host.inert = false;
+        controller.open(options);
+      },
+    };
   },
 };
 

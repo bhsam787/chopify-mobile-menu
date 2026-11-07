@@ -11,6 +11,7 @@ import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 import { unpublishMenu } from "../services/publish.server";
 import { menuStats } from "../services/menu-stats.server";
+import { currentPlan, liveMenuCovered } from "../services/billing.server";
 import { buildPreviewContext } from "../services/preview-context.server";
 import galleryStyles from "../components/gallery.css?url";
 import showcaseStyles from "../components/showcase.css?url";
@@ -92,6 +93,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const teaser = templatePreviews(
     rows.length ? TEASER_TEMPLATES : ["spotlight", "botanical", "mono"],
   );
+  // A published menu the plan no longer covers isn't showing on the store.
+  const { livePlan } = await currentPlan(admin, session.shop);
+  const live = await liveMenuCovered(session.shop, livePlan);
   const { context } = await buildPreviewContext(admin, [
     ...(featuredDesign ? [featuredDesign] : []),
     ...welcome.map((template) => template.design),
@@ -113,6 +117,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     welcome,
     teaser,
     context,
+    liveNotCovered: live && !live.covered ? live.required : null,
   };
 };
 
@@ -142,8 +147,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Home() {
-  const { menus, featured, welcome, teaser, context, shop, apiKey } =
-    useLoaderData<typeof loader>();
+  const {
+    menus,
+    featured,
+    welcome,
+    teaser,
+    context,
+    shop,
+    apiKey,
+    liveNotCovered,
+  } = useLoaderData<typeof loader>();
   const embed = useEmbedStatus();
   const fetcher = useFetcher<typeof action>();
   const [deleting, setDeleting] = useState<HomeMenu | null>(null);
@@ -172,6 +185,7 @@ export default function Home() {
       published={published}
       embed={embed}
       embedUrl={embedUrl}
+      draftThemesOnly={Boolean(liveNotCovered)}
     />
   );
 
@@ -181,21 +195,37 @@ export default function Home() {
         Create menu
       </s-button>
 
-      <s-stack gap="base">
+      {/* Room between the page's sections, and above and below them. */}
+      <s-stack gap="large-400" paddingBlock="large large-400">
+        {liveNotCovered && (
+          <s-banner tone="info" heading="Your menu works on draft themes only">
+            {liveNotCovered === "PRO"
+              ? "Your published menu uses the free-form canvas, so your live theme needs the Pro plan to show it. Until then, shoppers see your theme's own menu."
+              : "Choose a plan to show your published menu on your live theme. Until then, shoppers see your theme's own menu."}
+            <s-button slot="secondary-actions" href="/app/pricing">
+              See plans
+            </s-button>
+          </s-banner>
+        )}
         {embed === "inactive" && published && (
           <s-banner
             tone="warning"
             heading="Your menu is published but the app embed is off"
           >
-            Shoppers still see your theme&apos;s menu. Turn on the Chopi - Menu
-            app embed in your theme editor to show yours.
+            Shoppers still see your theme&apos;s menu. In your theme editor,
+            open App embeds and turn on <strong>Mobile menu</strong> to show
+            yours.
             <s-button slot="secondary-actions" href={embedUrl} target="_blank">
               Turn on app embed
             </s-button>
           </s-banner>
         )}
 
-        <HomeHero shopName={context.shopName} menus={menus} />
+        <HomeHero
+          shopName={context.shopName}
+          menus={menus}
+          draftThemesOnly={Boolean(liveNotCovered)}
+        />
 
         {!hasMenu && <WelcomeCard templates={welcome} context={context} />}
         {/* Until the menu is live the guide leads; afterwards it folds away at the bottom. */}
@@ -211,6 +241,7 @@ export default function Home() {
               unlinked={featured.stats.unlinked}
               embed={embed}
               shop={shop}
+              draftThemesOnly={Boolean(liveNotCovered)}
             />
           </>
         )}
@@ -218,6 +249,7 @@ export default function Home() {
         {hasMenu && (
           <MenusTable
             menus={menus}
+            draftThemesOnly={Boolean(liveNotCovered)}
             onDelete={(menu) => {
               setDeleting(menu);
               deleteModal.current?.showOverlay();

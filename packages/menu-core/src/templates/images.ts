@@ -1,4 +1,4 @@
-import type { ImageRef } from "../types";
+import type { Design, ImageRef } from "../types";
 import manifest from "./images.json";
 
 /**
@@ -32,4 +32,21 @@ export function templateImage(name: TemplateImageName, alt = ""): ImageRef {
 
 export function isTemplateImage(url: string): boolean {
   return url.startsWith(TEMPLATE_IMAGE_PATH);
+}
+
+/**
+ * The design with template image paths swapped for their copies in Shopify
+ * Files (`urls`: path → CDN URL). Used by the server after copying, and by
+ * the editor to update the design the merchant kept editing meanwhile.
+ */
+export function replaceTemplateImages(
+  design: Design,
+  urls: Record<string, string>,
+): Design {
+  const entries = Object.entries(urls);
+  if (!entries.length) return design;
+  let json = JSON.stringify(design);
+  for (const [path, url] of entries)
+    json = json.split(JSON.stringify(path)).join(JSON.stringify(url));
+  return JSON.parse(json) as Design;
 }

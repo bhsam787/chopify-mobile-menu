@@ -48,7 +48,19 @@ import { href, isGone, nodeAttr, t, type State } from "./state";
 import { contact, discount, perks, products, ticker } from "./widgets";
 import { liveSearchOn, searchField, searchPanel } from "./search";
 import { countdownText, remaining } from "./countdown";
-import { boxCss, color, css, esc, img, rich, styleAttr, textCss } from "./html";
+import {
+  boxCss,
+  color,
+  css,
+  esc,
+  img,
+  num,
+  rich,
+  safeUrl,
+  styleAttr,
+  textCss,
+  token,
+} from "./html";
 import { ICONS, icon, shapeIcon, SOCIAL_LABELS, socialIcon } from "./icons";
 
 /** Items that only exist to link somewhere; left out when their target is gone. */
@@ -71,7 +83,7 @@ function tappable(
   style = "",
   extraAttrs = "",
 ): [string, string] {
-  const attrs = `class="${className}"${nodeAttr(state, node)}${style ? ` style="${esc(style)}"` : ""}${extraAttrs}`;
+  const attrs = `class="${esc(className)}"${nodeAttr(state, node)}${style ? ` style="${esc(style)}"` : ""}${extraAttrs}`;
   if (link.type === "screen") {
     return [
       `<button type="button" ${attrs} data-chm-screen="${esc(link.screenId)}">`,
@@ -140,7 +152,7 @@ function card(state: State, node: CardNode): string {
     state,
     node,
     node.link,
-    `chm-card chm-card--${node.variant}`,
+    `chm-card chm-card--${token(node.variant)}`,
     css(
       boxCss(node.box),
       // Fades blend into the card color.
@@ -189,7 +201,7 @@ function row(state: State, node: RowNode): string {
     state,
     node,
     node.link,
-    `chm-row chm-row--${node.variant}`,
+    `chm-row chm-row--${token(node.variant)}`,
     boxCss(node.box),
   );
   let lead = "";
@@ -244,7 +256,7 @@ function banner(state: State, node: BannerNode): string {
     state,
     node,
     node.link,
-    `chm-banner chm-banner--${node.variant}`,
+    `chm-banner chm-banner--${token(node.variant)}`,
     boxCss(node.box),
   );
   const titleHtml = `<span class="chm-banner__title"${styleAttr(textCss(node.titleStyle))}>${esc(title)}</span>`;
@@ -336,7 +348,7 @@ function button(state: State, node: ButtonNode): string {
     state,
     node,
     node.link,
-    `chm-btn chm-btn--${node.variant}`,
+    `chm-btn chm-btn--${token(node.variant)}`,
     css(
       node.background &&
         (filled
@@ -391,7 +403,7 @@ function stories(state: State, node: StoriesNode): string {
   return `<div class="chm-stories"${nodeAttr(state, node)}>${items
     .map(
       (item) =>
-        `${item.url ? `<a class="chm-story" href="${esc(item.url)}"` : '<div class="chm-story"'} style="width:${size + 8}px"><span class="chm-story__ring" style="${esc(ring)}">${img(
+        `${safeUrl(item.url) ? `<a class="chm-story" href="${esc(item.url)}"` : '<div class="chm-story"'} style="width:${num(size) + 8}px"><span class="chm-story__ring" style="${esc(ring)}">${img(
           item.image,
           size * 2,
           "",
@@ -450,7 +462,7 @@ function accountBar(state: State, node: AccountBarNode): string {
   }<span class="chm-account__socials"${styleAttr(node.iconColor && `color:${color(node.iconColor)}`)}>${socials
     .map(
       (social) =>
-        `<a href="${esc(social.url || "#")}" target="_blank" rel="noopener" aria-label="${SOCIAL_LABELS[social.network]}">${socialIcon(social.network)}</a>`,
+        `<a href="${esc(safeUrl(social.url) ?? "#")}" target="_blank" rel="noopener" aria-label="${SOCIAL_LABELS[social.network]}">${socialIcon(social.network)}</a>`,
     )
     .join("")}</span></div>`;
 }
@@ -575,7 +587,7 @@ function container(state: State, node: ContainerNode): string {
       `--chm-item-width:${node.itemWidth}px`,
     boxCss(node.box),
   );
-  return `<div class="chm-c chm-c--${node.layout}"${nodeAttr(state, node)}${styleAttr(vars)}>${node.children
+  return `<div class="chm-c chm-c--${token(node.layout)}"${nodeAttr(state, node)}${styleAttr(vars)}>${node.children
     .map((child) => renderNode(state, child))
     .join("")}</div>`;
 }
@@ -617,13 +629,13 @@ export function renderHeader(state: State, node: HeaderNode): string {
           "chm-header__logo",
         ).replace(
           "<img ",
-          `<img style="width:${node.logoWidth ?? 96}px" `,
+          `<img style="width:${num(node.logoWidth, 96)}px" `,
         )}</a>`
       : `<a class="chm-header__brand chm-header__name" href="${esc(state.ctx.routes.root)}">${esc(state.ctx.shopName)}</a>`;
   const language = node.showLanguage
     ? localizationSelects(state, false, true, true)
     : "";
-  const close = `<button type="button" class="chm-close chm-close--${node.close ?? "plain"}" data-chm-close aria-label="${esc(t(state, "ui", "close", UI_TEXT_DEFAULTS.close))}">${ICONS.close}</button>`;
+  const close = `<button type="button" class="chm-close chm-close--${token(node.close ?? "plain")}" data-chm-close aria-label="${esc(t(state, "ui", "close", UI_TEXT_DEFAULTS.close))}">${ICONS.close}</button>`;
   // The buttons that are on, in the merchant's order.
   const shown = headerButtonOrder(node).filter((button) =>
     button === "language"
@@ -797,7 +809,7 @@ function effectsCss(node: Node): string {
       ? `;backdrop-filter:blur(${clamp(effects.backdropBlur, 0, 40)}px);-webkit-backdrop-filter:blur(${clamp(effects.backdropBlur, 0, 40)}px)${radius ? `;border-radius:${clamp(radius, 0, 999)}px` : ""}`
       : "",
     effects.blend && BLENDS.has(effects.blend)
-      ? `;mix-blend-mode:${effects.blend}`
+      ? `;mix-blend-mode:${token(effects.blend)}`
       : "",
   ].join("");
 }
@@ -826,13 +838,16 @@ function placed(
         child.frame ?? { x: 0, y: 0, w: CANVAS_WIDTH, h: 48 };
       let attrs = "";
       if (flowing && child.frame) {
-        attrs = ` data-chm-y="${child.frame.y}"`;
+        attrs = ` data-chm-y="${num(child.frame.y)}"`;
         if (child.type === "shape" && child.collapsible) {
-          const closed = Math.min(child.collapsible.height, child.frame.h);
-          attrs += ` data-chm-collapse="${closed}" data-chm-full="${child.frame.h}"${child.collapsible.open ? " data-chm-default-open" : ""}${isOpen(state)(child) ? " data-chm-open" : ""}`;
+          const closed = Math.min(
+            num(child.collapsible.height),
+            num(child.frame.h),
+          );
+          attrs += ` data-chm-collapse="${closed}" data-chm-full="${num(child.frame.h)}"${child.collapsible.open ? " data-chm-default-open" : ""}${isOpen(state)(child) ? " data-chm-open" : ""}`;
         }
       }
-      return `<div class="chm-canvas__item${layerClasses(child)}"${attrs} style="left:${frame.x}px;top:${frame.y}px;width:${frame.w}px;height:${frame.h}px${effectsCss(child)}${layerCss(child)}">${renderNode(state, child)}</div>`;
+      return `<div class="chm-canvas__item${layerClasses(child)}"${attrs} style="${esc(`left:${num(frame.x)}px;top:${num(frame.y)}px;width:${num(frame.w)}px;height:${num(frame.h)}px${effectsCss(child)}${layerCss(child)}`)}">${renderNode(state, child)}</div>`;
     })
     .join("");
   return { html, extra };
@@ -853,14 +868,14 @@ function listLines(node: ShapeNode): string {
       const style = column
         ? `left:${a.x}px;top:${(a.y + a.h + b.y) / 2 - 0.5}px;width:${a.w}px;height:1px`
         : `top:${a.y}px;left:${(a.x + a.w + b.x) / 2 - 0.5}px;height:${a.h}px;width:1px`;
-      return `<span class="chm-list-line" style="${style};background:${line}"></span>`;
+      return `<span class="chm-list-line" style="${esc(`${style};background:${line}`)}"></span>`;
     })
     .join("");
 }
 
 function shape(state: State, node: ShapeNode): string {
   const iconHtml = node.icon
-    ? `<span class="chm-shape__icon chm-shape__icon--${node.icon}"${styleAttr(node.iconColor && `color:${color(node.iconColor)}`)}>${shapeIcon(node.icon)}</span>`
+    ? `<span class="chm-shape__icon chm-shape__icon--${token(node.icon)}"${styleAttr(node.iconColor && `color:${color(node.iconColor)}`)}>${shapeIcon(node.icon)}</span>`
     : "";
   const children = node.children?.length ? node.children : null;
   const fill = css(
@@ -1039,10 +1054,13 @@ function backBar(
   if (bar.style === "hidden") return "";
   const title = esc(t(state, screen.id, "title", screen.title));
   // The merchant's own back text, else the built-in word (translated).
+  // A sub-menu's own back text has its own key; the shared one is "back.label".
   const label = esc(
-    bar.label
-      ? t(state, "back", "label", bar.label)
-      : t(state, "ui", "back", UI_TEXT_DEFAULTS.back),
+    screen.back?.label
+      ? t(state, screen.id, "back", screen.back.label)
+      : bar.label
+        ? t(state, "back", "label", bar.label)
+        : t(state, "ui", "back", UI_TEXT_DEFAULTS.back),
   );
   const parent = parents.get(screen.id);
   const parentTitle =
@@ -1054,7 +1072,7 @@ function backBar(
     bar.background && `background:${color(bar.background)}`,
   );
   const button = (content: string, extra = "") =>
-    `<button type="button" class="chm-back chm-back--${bar.style}${extra}" data-chm-back${styleAttr(colors)}>${content}</button>`;
+    `<button type="button" class="chm-back chm-back--${token(bar.style)}${extra}" data-chm-back${styleAttr(colors)}>${content}</button>`;
   switch (bar.style) {
     case "link":
       return button(`${ICONS.arrowBack}<span>${label}</span>`);
@@ -1147,7 +1165,7 @@ export function renderMenu(
     })
     .join("");
 
-  return `<div${isRtlLocale(ctx.locale) ? ' dir="rtl"' : ""} class="chm-root chm-side-${design.behavior.side}${design.behavior.width === "full" ? " chm-full" : ""}${ctx.editor ? " chm-editor" : ""}${ctx.editor && ctx.searchSample && liveSearchOn(design.header) ? " chm-searching" : ""}" style="${esc(
+  return `<div${isRtlLocale(ctx.locale) ? ' dir="rtl"' : ""} class="chm-root chm-side-${token(design.behavior.side)}${design.behavior.width === "full" ? " chm-full" : ""}${ctx.editor ? " chm-editor" : ""}${ctx.editor && ctx.searchSample && liveSearchOn(design.header) ? " chm-searching" : ""}" style="${esc(
     tokenVars(design),
   )}"><div class="chm-overlay" data-chm-close></div><div class="chm-panel" role="dialog" aria-modal="true" aria-label="${esc(t(state, "ui", "menu", UI_TEXT_DEFAULTS.menu))}" tabindex="-1">${renderHeader(
     state,

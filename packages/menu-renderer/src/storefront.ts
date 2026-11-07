@@ -73,10 +73,21 @@ function start() {
     };
 
   const theme = window.Shopify?.theme;
-  // Free plan: the menu only runs on unpublished (preview) themes and in the theme editor.
+  // Without a plan that covers this menu (Starter, or Pro for canvas menus),
+  // it runs only on draft (unpublished) themes and in the theme editor, so
+  // merchants can try it for free; the live theme keeps its own menu.
   if (!data.liveAllowed && !data.designMode && theme?.role === "main") return;
 
-  const selector = triggerSelector(theme?.schema_name, data.triggerOverride);
+  // A typo in the merchant's selector would throw on every click: ignore it.
+  let override = data.triggerOverride?.trim() || undefined;
+  if (override) {
+    try {
+      document.querySelector(override);
+    } catch {
+      override = undefined;
+    }
+  }
+  const selector = triggerSelector(theme?.schema_name, override);
   const mobile = window.matchMedia(
     `(max-width: ${data.menu.behavior.breakpoint - 0.02}px)`,
   );
@@ -85,9 +96,11 @@ function start() {
   let trigger: HTMLElement | null = null;
   // Set when the menu can't load: clicks then reach the theme's own menu.
   let fallingBack = false;
+  // The page's own overflow before opening, restored on close.
+  let pageOverflow = "";
 
   const onClose = () => {
-    document.documentElement.style.removeProperty("overflow");
+    document.documentElement.style.overflow = pageOverflow;
     trigger?.setAttribute("aria-expanded", "false");
     trigger?.focus({ preventScroll: true });
   };
@@ -102,6 +115,7 @@ function start() {
       trigger?.click();
       return;
     }
+    pageOverflow = document.documentElement.style.overflow;
     document.documentElement.style.overflow = "hidden";
     trigger?.setAttribute("aria-expanded", "true");
     const menu = controller;
@@ -137,7 +151,9 @@ function start() {
   }
 
   window.ChopiMenu = {
-    open: () => void open(),
+    open: () => {
+      if (!fallingBack) void open();
+    },
     close: () => controller?.close(),
   };
 }

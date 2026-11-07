@@ -15,14 +15,14 @@
   border: 1px solid #d4d4d8;
   border-radius: 999px;
   background: #fff;
-  color: #3f7a22;
+  color: #5b9a35;
   font: inherit;
   font-size: 11px;
   cursor: pointer;
 }
 .chm-guide-restore:hover,
 .chm-designws__guide-on:hover {
-  border-color: #5e8e3e;
+  border-color: #7cb04f;
 }
 
 /*
@@ -87,11 +87,11 @@
   cursor: pointer;
 }
 .chm-bot__tool:hover {
-  border-color: #5e8e3e;
+  border-color: #7cb04f;
   background: #f1f7ea;
 }
 .chm-bot__tool:focus-visible {
-  outline: 2px solid #5e8e3e;
+  outline: 2px solid #7cb04f;
   outline-offset: 1px;
 }
 /* A soft pill tooltip under the button ("Take a dance break", "Hide me for now"), with a little pointer. */
@@ -176,6 +176,11 @@
   transform-origin: 43.5px 48px;
   animation: chm-bot-blink 4.2s infinite;
   transition: translate 0.3s ease;
+}
+/* Cheeks scale around their own centre (the shy move), also mid-glide. */
+.chm-bot__blush {
+  transform-box: fill-box;
+  transform-origin: center;
 }
 /* The heart on the handle beats. */
 .chm-bot__heart {
@@ -515,7 +520,7 @@
 }
 .chm-bot__caption {
   overflow: hidden;
-  color: #4f8a2e;
+  color: #5b9a35;
   font-size: 10px;
   font-weight: 650;
   letter-spacing: 0.02em;
@@ -549,7 +554,7 @@
   overflow: hidden;
   padding: 2px 7px;
   border-radius: 999px;
-  background: #4f8a2e;
+  background: #5b9a35;
   color: #fff;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -570,7 +575,7 @@
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
 }
 .chm-bot__arrow {
-  color: #4f8a2e;
+  color: #5b9a35;
   font-weight: 700;
 }
 /* The mouth chatters from here (GuideBot plays it on each new line). */

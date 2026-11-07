@@ -1,4 +1,27 @@
-import { useState, type ReactNode } from "react";
+import { isValidElement, useState, type ReactNode } from "react";
+
+/**
+ * A stable key for a field in a list where fields come and go (a switch
+ * shows or hides one above): its own key or label, so stateful fields below
+ * keep their state instead of being reused for a different field.
+ */
+function fieldKey(field: ReactNode, index: number): string {
+  if (!isValidElement(field)) return `#${index}`;
+  if (field.key != null) return `k:${field.key}`;
+  const label = (field.props as { label?: unknown }).label;
+  return typeof label === "string" ? `l:${label}` : `#${index}`;
+}
+
+/** Fields wrapped for a stack, keyed by `fieldKey` (made unique). */
+function keyedFields(list: ReactNode[]) {
+  const seen = new Set<string>();
+  return list.filter(Boolean).map((field, index) => {
+    let key = fieldKey(field, index);
+    if (seen.has(key)) key = `${key}#${index}`;
+    seen.add(key);
+    return <div key={key}>{field}</div>;
+  });
+}
 import type {
   ContainerNode,
   Design,
@@ -2348,8 +2371,7 @@ export function Inspector({
       break;
   }
 
-  const fields = (list: ReactNode[]) =>
-    list.filter(Boolean).map((field, index) => <div key={index}>{field}</div>);
+  const fields = (list: ReactNode[]) => keyedFields(list);
 
   if (part === "content") {
     const shown = fields(content);
@@ -2390,20 +2412,12 @@ export function Inspector({
         onChange={(name) => set({ name: name || undefined })}
       />
       {content.filter(Boolean).length > 0 && (
-        <Group title="Content">
-          {content.map((field, index) => (
-            <div key={index}>{field}</div>
-          ))}
-        </Group>
+        <Group title="Content">{keyedFields(content)}</Group>
       )}
       {!translating && style.filter(Boolean).length > 0 && (
         <>
           <s-divider />
-          <Group title="Design">
-            {style.map((field, index) => (
-              <div key={index}>{field}</div>
-            ))}
-          </Group>
+          <Group title="Design">{keyedFields(style)}</Group>
         </>
       )}
     </s-stack>

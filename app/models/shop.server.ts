@@ -48,7 +48,20 @@ export async function markShopUninstalled(shop: string) {
     prisma.session.deleteMany({ where: { shop } }),
     prisma.shop.updateMany({
       where: { shop },
-      data: { uninstalledAt: new Date() },
+      // Removing the app ends its subscription: start from Free on reinstall.
+      data: {
+        uninstalledAt: new Date(),
+        plan: "FREE",
+        trialEndsAt: null,
+        cancelAtEndOfCycle: false,
+        planCheckedAt: null,
+      },
+    }),
+    // Uninstalling deletes the app-data metafields, so nothing is live any
+    // more: after a reinstall the merchant sees "not published" and republishes.
+    prisma.menu.updateMany({
+      where: { shop: { shop } },
+      data: { publishedAt: null },
     }),
   ]);
 }

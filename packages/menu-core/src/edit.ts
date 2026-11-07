@@ -167,8 +167,12 @@ export function cloneWithNewIds<T extends Node>(node: T): T {
     current.id = newId(current.id.replace(/[^a-z].*$/, "") || "n");
     if (current.type === "tabs")
       current.tabs.forEach((tab) => (tab.id = newId("tab")));
-    if (current.type === "stories")
-      current.items.forEach((item) => (item.id = newId("i")));
+    // Item ids (stories, perks, ticker, contact…) are translation keys: a
+    // copy needs its own, or translating it would change the original too.
+    const items = (current as { items?: unknown }).items;
+    if (Array.isArray(items))
+      for (const item of items as { id?: unknown }[])
+        if (item && typeof item.id === "string") item.id = newId("i");
     childNodes(current).forEach(renew);
   };
   renew(copy);

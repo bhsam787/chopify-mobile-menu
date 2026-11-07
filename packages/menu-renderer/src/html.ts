@@ -1,5 +1,5 @@
 import type { BoxStyle, Spacing, TextStyle } from "@chopi/menu-core";
-import { richToHtml } from "@chopi/menu-core";
+import { isSafeUrl, richToHtml } from "@chopi/menu-core";
 
 export function esc(value: unknown): string {
   return String(value ?? "")
@@ -8,6 +8,28 @@ export function esc(value: unknown): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+/*
+ * The design is merchant data: these guards keep a hand-edited or corrupted
+ * value from breaking out of an attribute or running script, both in the
+ * admin preview and on the storefront.
+ */
+
+/** A link target that can't run script (http(s), relative, mailto, tel, #). */
+export function safeUrl(url: string | null | undefined): string | null {
+  return url && isSafeUrl(url) ? url : null;
+}
+
+/** A finite number, else the fallback. */
+export function num(value: unknown, fallback = 0): number {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+/** A class-name or keyword fragment: letters, digits and dashes only. */
+export function token(value: unknown): string {
+  return String(value ?? "").replace(/[^a-zA-Z0-9-]/g, "");
 }
 
 /**

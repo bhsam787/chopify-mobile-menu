@@ -197,6 +197,14 @@ export function CanvasEditor({
   const submitted = useRef<Design | null>(null);
 
   const canvas = locate(design, canvasId)?.node as CanvasNode | undefined;
+  // Undo can remove a sub-menu canvas made while editing: go back to the
+  // canvas this editor was opened for instead of a dead end.
+  useEffect(() => {
+    if (!canvas && canvasId !== openedCanvasId) {
+      setCanvasId(openedCanvasId);
+      setSelectedIds([]);
+    }
+  }, [canvas, canvasId, openedCanvasId]);
   // The selection can be any layer on this canvas, also inside frames.
   const selectedLocation = selectedId ? locate(design, selectedId) : undefined;
   const selected =
@@ -814,7 +822,8 @@ export function CanvasEditor({
       const key = event.key.toLowerCase();
       if (mod && key === "s") {
         event.preventDefault();
-        save(false);
+        // A second save would cancel the first (and a pending "Done").
+        if (!saving) save(false);
         return;
       }
       if (typing) return;
@@ -900,19 +909,23 @@ export function CanvasEditor({
               ? step
               : 0;
         updateFrames(
-          selectedNodes.map((node) => ({
-            id: node.id,
-            frame: {
-              ...node.frame!,
-              x: node.frame!.x + dx,
-              y: node.frame!.y + dy,
-            },
-          })),
+          // Locked layers stay put (they can still be picked in Layers).
+          selectedNodes
+            .filter((node) => !node.locked)
+            .map((node) => ({
+              id: node.id,
+              frame: {
+                ...node.frame!,
+                x: node.frame!.x + dx,
+                y: node.frame!.y + dy,
+              },
+            })),
           `nudge:${selectedIds.join()}`,
         );
       } else if (has && (event.key === "Delete" || event.key === "Backspace")) {
         handled();
-        removeSelected();
+        // The keyboard never deletes a locked layer by accident.
+        if (selectedNodes.every((node) => !node.locked)) removeSelected();
       }
     };
     window.addEventListener("keydown", onKey);
@@ -1146,9 +1159,17 @@ export function CanvasEditor({
   if (!canvas) {
     return (
       <s-page heading="Canvas not found">
-        <s-banner tone="critical">
-          This canvas no longer exists in the menu. Close the editor and reload.
-        </s-banner>
+        <s-section>
+          <s-stack gap="base">
+            <s-banner tone="critical">
+              This canvas no longer exists in the menu. It may have been removed
+              in another tab.
+            </s-banner>
+            <s-button variant="primary" onClick={() => notifyDone()}>
+              Close the editor
+            </s-button>
+          </s-stack>
+        </s-section>
       </s-page>
     );
   }

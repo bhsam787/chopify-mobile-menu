@@ -1,5 +1,5 @@
 import type { Design } from "@chopi/menu-core";
-import { isTemplateImage } from "@chopi/menu-core";
+import { isTemplateImage, replaceTemplateImages } from "@chopi/menu-core";
 import { assertNoUserErrors, gql, type Admin } from "./admin-graphql.server";
 
 /**
@@ -43,12 +43,34 @@ function templateImagePaths(design: Design): string[] {
   return [...paths];
 }
 
+/** Shown to the merchant: some images weren't ready, publishing again works. */
+export class ImagesProcessingError extends Error {
+  constructor() {
+    super(
+      "Template images are still processing in Shopify. Please publish again in a moment.",
+    );
+    this.name = "ImagesProcessingError";
+  }
+}
+
+/**
+ * Copies the design's template images to Shopify Files. Images Shopify is
+ * still processing after ~30 s stay as template paths (`pending`): callers
+ * save the returned design anyway, so a retry only copies those, never the
+ * finished ones again.
+ */
 export async function importTemplateImages(
   admin: Admin,
   design: Design,
-): Promise<{ design: Design; imported: number }> {
+): Promise<{
+  design: Design;
+  imported: number;
+  pending: number;
+  /** Template path → Shopify CDN URL, for each image copied. */
+  urls: Record<string, string>;
+}> {
   const paths = templateImagePaths(design);
-  if (paths.length === 0) return { design, imported: 0 };
+  if (paths.length === 0) return { design, imported: 0, pending: 0, urls: {} };
   const appUrl = (process.env.SHOPIFY_APP_URL || "").replace(/\/$/, "");
   if (!appUrl)
     throw new Error(
@@ -88,15 +110,15 @@ export async function importTemplateImages(
         );
     }
   }
-  if (urls.size < ids.length)
-    throw new Error(
-      "Template images are still processing in Shopify. Please publish again in a moment.",
-    );
-
-  let json = JSON.stringify(design);
+  const copied: Record<string, string> = {};
   paths.forEach((path, index) => {
     const cdn = urls.get(ids[index]);
-    if (cdn) json = json.split(JSON.stringify(path)).join(JSON.stringify(cdn));
+    if (cdn) copied[path] = cdn;
   });
-  return { design: JSON.parse(json) as Design, imported: paths.length };
+  return {
+    design: replaceTemplateImages(design, copied),
+    imported: urls.size,
+    pending: paths.length - urls.size,
+    urls: copied,
+  };
 }

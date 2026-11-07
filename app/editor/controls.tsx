@@ -55,12 +55,15 @@ export function TextField({
   placeholder,
   details,
   multiline,
+  rows = 3,
   labelAccessibilityVisibility,
 }: BaseProps & {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   multiline?: boolean;
+  /** Height of a multiline field, in lines. */
+  rows?: number;
 }) {
   const ref = useFieldEvents(value, (element) => onChange(element.value), [
     "input",
@@ -74,7 +77,7 @@ export function TextField({
         value={value}
         placeholder={placeholder}
         details={details}
-        rows={3}
+        rows={rows}
       />
     );
   }

@@ -34,21 +34,49 @@ model Session {
   refreshTokenExpires DateTime?
 }
 
+/// The shop's app plan, read from Shopify App Pricing (Partner API).
+/// FREE: everything except publishing. STARTER: publishes template and
+/// section menus. PRO: also publishes free-form canvas menus.
 enum Plan {
   FREE
+  STARTER
   PRO
 }
 
 /// One row per installed shop. Every app-owned row hangs off this.
 model Shop {
-  id            String    @id @default(cuid())
-  shop          String    @unique /// myshopify domain
-  plan          Plan      @default(FREE)
-  isDevStore    Boolean   @default(false)
-  installedAt   DateTime  @default(now())
-  uninstalledAt DateTime?
-  updatedAt     DateTime  @updatedAt
-  menus         Menu[]
+  id                 String           @id @default(cuid())
+  shop               String           @unique /// myshopify domain
+  plan               Plan             @default(FREE)
+  /// End of the plan's free trial (null: no trial running).
+  trialEndsAt        DateTime?
+  /// The plan ends when the current billing cycle does.
+  cancelAtEndOfCycle Boolean          @default(false)
+  /// When `plan` was last read from Shopify (it's re-read after 5 minutes).
+  planCheckedAt      DateTime?
+  isDevStore         Boolean          @default(false)
+  installedAt        DateTime         @default(now())
+  uninstalledAt      DateTime?
+  updatedAt          DateTime         @updatedAt
+  menus              Menu[]
+  supportMessages    SupportMessage[]
+}
+
+/// A message a merchant sent from the Help page. Kept so nothing is lost if
+/// the email fails; removed with the shop's data (`shop/redact`).
+model SupportMessage {
+  id        String   @id @default(cuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  topic     String
+  /// Where the developer replies (the merchant's email).
+  replyTo   String
+  message   String
+  /// Whether the email to the developer went out.
+  emailed   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([shopId, createdAt])
 }
 
 /// A menu design. `draft` is the full editor state; `published` is the

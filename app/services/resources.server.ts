@@ -172,7 +172,9 @@ async function fetchResources(
             image: product.featuredMedia?.preview?.image?.url ?? undefined,
             price: formatMoney(price, locale),
             compareAtPrice:
-              compareAt && price && Number(compareAt.amount) > Number(price.amount)
+              compareAt &&
+              price &&
+              Number(compareAt.amount) > Number(price.amount)
                 ? formatMoney(compareAt, locale)
                 : undefined,
           };

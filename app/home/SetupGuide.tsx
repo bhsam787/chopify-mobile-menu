@@ -23,10 +23,13 @@ export function SetupGuide({
   published,
   embed,
   embedUrl,
+  draftThemesOnly = false,
 }: {
   hasMenu: boolean;
   firstMenuId?: string;
   published: boolean;
+  /** Published, but the plan doesn't cover the live theme yet. */
+  draftThemesOnly?: boolean;
   embed: EmbedStatus;
   embedUrl: string;
 }) {
@@ -35,11 +38,11 @@ export function SetupGuide({
       id: "create",
       label: "Create your menu",
       description:
-        "Pick a template that's already filled in, or design your own from scratch on the canvas. You can change every text, image, link and color.",
+        "Start from a ready-made template (easiest), a blank menu you build section by section, or a free-form canvas. Whichever you pick, every text, photo, link and color can change.",
       done: hasMenu,
       action: (
         <s-button variant="primary" href="/app/templates">
-          Browse templates
+          Choose how to start
         </s-button>
       ),
     },
@@ -64,7 +67,7 @@ export function SetupGuide({
       label: "Turn on the app embed",
       description:
         embed === "unknown"
-          ? "In your theme editor, open App embeds and turn on Chopi - Menu. It replaces your theme's mobile menu with yours."
+          ? "In your theme editor, open App embeds and turn on Mobile menu (by Chopi - Menu). It replaces your theme's mobile menu with yours."
           : "One switch in your theme editor replaces your theme's mobile menu with yours. Your theme files aren't changed.",
       done: embed === "active",
       checking: embed === "loading",
@@ -103,9 +106,11 @@ export function SetupGuide({
         <s-paragraph color="subdued">
           {nextStep
             ? `Next: ${nextStep.label.toLowerCase()}.`
-            : doneCount === steps.length
-              ? "Your menu is live and the app embed is on. Open the steps any time to check them again."
-              : "Your menu is live."}
+            : draftThemesOnly
+              ? "Your menu is published to your draft themes. Choose a plan to show it on your live theme."
+              : doneCount === steps.length
+                ? "Your menu is live and the app embed is on. Open the steps any time to check them again."
+                : "Your menu is live."}
         </s-paragraph>
       )}
       {showSteps && (

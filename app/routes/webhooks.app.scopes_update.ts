@@ -10,7 +10,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const current = payload.current as string[];
 
   if (session) {
-    await prisma.session.update({
+    // updateMany: the session may already be gone (uninstalled), and a
+    // throw here would only make Shopify retry the webhook.
+    await prisma.session.updateMany({
       where: { id: session.id },
       data: { scope: current.toString() },
     });

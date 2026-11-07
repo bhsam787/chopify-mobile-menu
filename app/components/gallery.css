@@ -1,7 +1,7 @@
 /*
  * Home and template gallery: only what Polaris has no component for (phone
- * stages, the empty-state phone fan, the blank-canvas sketch). Everything
- * else is Polaris.
+ * stages, the empty-state phone fan, the preview modal). Everything else
+ * is Polaris.
  */
 
 /* A soft backdrop tinted with the menu's accent color, phone centered. */
@@ -78,51 +78,6 @@
   transform: translate(-46px, 26px) rotate(8deg);
 }
 
-/* The blank canvas card: a sketch of free-placed layers. */
-.chm-sketch {
-  position: relative;
-  width: 132px;
-  height: 108px;
-  flex: none;
-  border-radius: 12px;
-  background:
-    radial-gradient(circle, rgba(0, 0, 0, 0.12) 1px, transparent 1.5px) 0 0 /
-      10px 10px,
-    #f7f7f7;
-}
-.chm-sketch span {
-  position: absolute;
-  border-radius: 6px;
-}
-.chm-sketch span:nth-child(1) {
-  inset: 14px 20px auto 16px;
-  height: 34px;
-  background: #e3e8f8;
-  border: 1.5px solid #3062d4;
-}
-.chm-sketch span:nth-child(2) {
-  top: 58px;
-  left: 16px;
-  width: 44px;
-  height: 34px;
-  background: #fde8d8;
-}
-.chm-sketch span:nth-child(3) {
-  top: 58px;
-  left: 68px;
-  width: 44px;
-  height: 14px;
-  background: #e6e6e6;
-}
-.chm-sketch span:nth-child(4) {
-  top: 78px;
-  left: 68px;
-  width: 30px;
-  height: 14px;
-  background: #e6e6e6;
-}
-
-/* Tiles in a row are equally tall; their buttons line up at the bottom. */
 /* Preview modal: the phone stays put while the details scroll. */
 .chm-sticky {
   position: sticky;

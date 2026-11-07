@@ -1,4 +1,5 @@
 import type { Design } from "@chopi/menu-core";
+import { LocalDate } from "../components/LocalDate";
 import type { PreviewContext } from "../components/MenuPreview";
 import { MenuPreview } from "../components/MenuPreview";
 import { PhoneStage } from "../components/PhoneStage";
@@ -55,23 +56,29 @@ export function FeaturedMenu({
   unlinked,
   embed,
   shop,
+  draftThemesOnly = false,
 }: {
   menu: HomeMenu;
   design: Design;
   context: PreviewContext;
   publishedAt: string | null;
+  /** Published, but the plan doesn't cover the live theme yet. */
+  draftThemesOnly?: boolean;
   /** Items that look tappable but go nowhere yet. */
   unlinked: number;
   embed: EmbedStatus;
   shop: string;
 }) {
-  const dateFormat = new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  const live = menu.published && !draftThemesOnly;
   return (
     <s-section
-      heading={menu.published ? "Live on your store" : "Your latest menu"}
+      heading={
+        live
+          ? "Live on your store"
+          : menu.published
+            ? "Published to your draft themes"
+            : "Your latest menu"
+      }
       subheading={
         menu.published
           ? "What shoppers see when they open the menu on their phone. Try it: tabs, sub-menus and swiping work here too."
@@ -80,9 +87,9 @@ export function FeaturedMenu({
     >
       <s-badge
         slot="supplemental"
-        tone={menu.published ? "success" : "neutral"}
+        tone={live ? "success" : menu.published ? "info" : "neutral"}
       >
-        {menu.published ? "Live" : "Draft"}
+        {live ? "Live" : menu.published ? "Draft themes" : "Draft"}
       </s-badge>
       <s-query-container>
         <s-grid
@@ -99,10 +106,12 @@ export function FeaturedMenu({
           />
           <div className="chm-featured">
             <div className="chm-featured__head">
-              <span
-                className={`chm-featured__kicker${menu.published ? " is-live" : ""}`}
-              >
-                {menu.published ? "Live now" : "Draft"}
+              <span className={`chm-featured__kicker${live ? " is-live" : ""}`}>
+                {live
+                  ? "Live now"
+                  : menu.published
+                    ? "On draft themes"
+                    : "Draft"}
               </span>
               <h3 className="chm-featured__name">
                 {menu.name}
@@ -113,13 +122,13 @@ export function FeaturedMenu({
                 )}
               </h3>
               <span className="chm-featured__meta">
-                Last edited {dateFormat.format(new Date(menu.updatedAt))}
+                Last edited <LocalDate value={menu.updatedAt} withTime />
               </span>
             </div>
             <div className="chm-featured__checks">
               {publishedAt ? (
                 <StatusLine icon="check-circle" tone="success">
-                  Published {dateFormat.format(new Date(publishedAt))}
+                  Published <LocalDate value={publishedAt} withTime />
                 </StatusLine>
               ) : (
                 <StatusLine icon="clock">Not published yet</StatusLine>
@@ -161,7 +170,23 @@ export function FeaturedMenu({
   );
 }
 
-/** First visit: what the app does, shown with three template phones. */
+/** The three steps from install to a live menu (first visit). */
+const HOW_IT_WORKS: { title: string; text: string }[] = [
+  {
+    title: "Choose how to start",
+    text: "A ready-made template, a blank menu built from sections, or a free-form canvas.",
+  },
+  {
+    title: "Make it yours",
+    text: "Change words, photos, links and colors with a real phone preview beside you. Click anything on the phone to edit it.",
+  },
+  {
+    title: "Try it, then go live",
+    text: "Publish to a draft theme for free and tap through it like a shopper. Pick a plan when it's ready for your live store.",
+  },
+];
+
+/** First visit: how it works in three steps, beside three template phones. */
 export function WelcomeCard({
   templates,
   context,
@@ -170,50 +195,43 @@ export function WelcomeCard({
   context: PreviewContext;
 }) {
   return (
-    <s-section>
-      <s-query-container>
-        <s-grid
-          gridTemplateColumns="@container (inline-size <= 640px) 1fr, 1fr 1fr"
-          gap="large"
-          alignItems="center"
-        >
-          <s-stack gap="base">
-            <s-stack gap="small-200">
-              <s-heading>Everything a great mobile menu needs</s-heading>
-              <s-paragraph color="subdued">
-                Most shoppers browse on their phone. Your menu replaces the
-                theme&apos;s plain one on mobile, and your theme&apos;s code
-                stays untouched.
-              </s-paragraph>
-            </s-stack>
-            <s-unordered-list>
-              <s-list-item>
-                Ready-made templates, filled in and ready to publish
-              </s-list-item>
-              <s-list-item>A live editor with a real phone preview</s-list-item>
-              <s-list-item>
-                A free-form canvas to design your own from scratch
-              </s-list-item>
-            </s-unordered-list>
-          </s-stack>
-          <div className="chm-fan" aria-hidden="true">
-            {templates.slice(0, 3).map((template) => (
-              <div
-                key={template.id}
-                className="chm-fan__phone"
-                ref={(element) => element?.setAttribute("inert", "")}
-              >
-                <MenuPreview
-                  design={template.design}
-                  context={context}
-                  scale={0.42}
-                />
-              </div>
-            ))}
-          </div>
-        </s-grid>
-      </s-query-container>
-    </s-section>
+    <section className="chm-how" aria-labelledby="chm-how-title">
+      <div className="chm-how__copy">
+        <span className="chm-hero__eyebrow">How it works</span>
+        <h2 id="chm-how-title" className="chm-how__title">
+          From idea to a live menu,{" "}
+          <span className="chm-hero__brand">in three steps</span>
+        </h2>
+        <ol className="chm-how__steps">
+          {HOW_IT_WORKS.map((step, index) => (
+            <li key={step.title}>
+              <span className="chm-how__num">{index + 1}</span>
+              <span className="chm-how__step">
+                <span className="chm-how__step-title">{step.title}</span>
+                <span className="chm-how__step-text">{step.text}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+      </div>
+      <div className="chm-how__stage">
+        <div className="chm-fan" aria-hidden="true">
+          {templates.slice(0, 3).map((template) => (
+            <div
+              key={template.id}
+              className="chm-fan__phone"
+              ref={(element) => element?.setAttribute("inert", "")}
+            >
+              <MenuPreview
+                design={template.design}
+                context={context}
+                scale={0.42}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -310,14 +328,13 @@ export function TemplateTeaser({
 export function MenusTable({
   menus,
   onDelete,
+  draftThemesOnly = false,
 }: {
   menus: HomeMenu[];
   onDelete: (menu: HomeMenu) => void;
+  /** The published menu shows on draft themes only (no plan for live). */
+  draftThemesOnly?: boolean;
 }) {
-  const dateFormat = new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
   return (
     <s-section
       heading="Your menus"
@@ -350,12 +367,24 @@ export function MenusTable({
                 </s-stack>
               </s-table-cell>
               <s-table-cell>
-                <s-badge tone={menu.published ? "success" : "neutral"}>
-                  {menu.published ? "Live on store" : "Draft"}
+                <s-badge
+                  tone={
+                    !menu.published
+                      ? "neutral"
+                      : draftThemesOnly
+                        ? "info"
+                        : "success"
+                  }
+                >
+                  {!menu.published
+                    ? "Draft"
+                    : draftThemesOnly
+                      ? "Draft themes only"
+                      : "Live on store"}
                 </s-badge>
               </s-table-cell>
               <s-table-cell>
-                {dateFormat.format(new Date(menu.updatedAt))}
+                <LocalDate value={menu.updatedAt} withTime />
               </s-table-cell>
               <s-table-cell>
                 <s-stack

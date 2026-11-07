@@ -313,6 +313,6 @@ export const TEMPLATE_COPY: Record<string, TemplateCopy> = {
 export const INCLUDED_EVERYWHERE = [
   "Your own collections, products and pages, linked in a few clicks",
   "Every word, photo, color and font is yours to change",
-  "Works with any theme: no code, nothing to break",
+  "Works with Online Store 2.0 themes: no code, nothing to break",
   "Speaks every language your store sells in",
 ];

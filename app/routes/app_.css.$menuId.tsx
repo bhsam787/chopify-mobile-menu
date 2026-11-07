@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   ActionFunctionArgs,
   HeadersFunction,
@@ -108,15 +108,17 @@ export function CssEditorPage() {
   const dirty = css !== saved;
   const busy = fetcher.state !== "idle";
 
-  const save = useCallback(
-    () => fetcher.submit({ css }, { method: "post" }),
-    [fetcher, css],
-  );
+  // What was sent: typing goes on during the save, and only this is saved.
+  const submitted = useRef(css);
+  const save = useCallback(() => {
+    submitted.current = css;
+    fetcher.submit({ css }, { method: "post" });
+  }, [fetcher, css]);
 
   useEffect(() => {
     if (fetcher.state !== "idle" || !fetcher.data) return;
     if (fetcher.data.ok) {
-      setSaved(css);
+      setSaved(submitted.current);
       if (closing) notifyDone();
       else shopify.toast.show("CSS saved");
     } else {

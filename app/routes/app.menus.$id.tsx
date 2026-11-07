@@ -35,12 +35,14 @@ import {
   parseDesign,
   removeNode,
   removeScreen,
+  replaceTemplateImages,
   updateNode,
 } from "@chopi/menu-core";
 import type { ResolvedResource } from "@chopi/menu-renderer";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 import { MenuPreview } from "../components/MenuPreview";
+import { GuideBot } from "../components/GuideBot";
 import {
   setGuidePref,
   useGuidePrefs,
@@ -52,7 +54,17 @@ import { DEFAULT_DEVICE, DEVICES, type Device } from "../components/devices";
 import { buildPreviewContext } from "../services/preview-context.server";
 import { topSearches } from "../services/top-searches.server";
 import { publishMenu, unpublishMenu } from "../services/publish.server";
-import { importTemplateImages } from "../services/template-images.server";
+import { currentPlan, publishCheck } from "../services/billing.server";
+import {
+  PAID_PLANS,
+  PLAN_NAMES,
+  TRIAL_DAYS,
+  type PaidPlanKey,
+} from "../billing/plans";
+import {
+  ImagesProcessingError,
+  importTemplateImages,
+} from "../services/template-images.server";
 import { ShopifyUserError } from "../services/admin-graphql.server";
 import {
   DesignSettings,
@@ -78,9 +90,11 @@ import { SectionLibrary } from "../editor/SectionLibrary";
 import { convertScreenToCanvas, isCanvasScreen } from "../canvas/convert";
 import { reorder, SortableItem, SortableList } from "../editor/Sortable";
 import editorStyles from "../editor/editor.css?url";
+import showcaseStyles from "../components/showcase.css?url";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: editorStyles },
+  { rel: "stylesheet", href: showcaseStyles },
 ];
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -90,11 +104,15 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   });
   if (!menu) throw new Response("Menu not found", { status: 404 });
   const design = menu.draft as unknown as Design;
-  const [{ context: baseContext, locales }, top] = await Promise.all([
-    buildPreviewContext(admin, [design]),
-    // The store's top searches for live search (refreshed at most daily).
-    topSearches(admin),
-  ]);
+  const [{ context: baseContext, locales }, top, planState] = await Promise.all(
+    [
+      buildPreviewContext(admin, [design]),
+      // The store's top searches for live search (refreshed at most daily).
+      topSearches(admin),
+      // Publishing needs a plan (cached for a few minutes).
+      currentPlan(admin, session.shop),
+    ],
+  );
   const context = {
     ...baseContext,
     topSearches: top.available ? top.terms : null,
@@ -128,6 +146,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     },
     changedSincePublish,
     liveMenuName: liveMenu?.name ?? null,
+    plan: planState.plan,
     design,
     context,
     locales,
@@ -144,6 +163,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       id: true,
       name: true,
       draft: true,
+      publishedAt: true,
     },
   });
   if (!menu) throw new Response("Menu not found", { status: 404 });
@@ -171,6 +191,9 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
   if (intent === "unpublish") {
     // Off the storefront: the theme's own menu shows again. The draft stays.
+    // Only the live menu can be unpublished: a stale tab must not take
+    // another (live) menu off the store.
+    if (!menu.publishedAt) return { ok: true as const, intent };
     try {
       await unpublishMenu(admin);
       await prisma.menu.update({
@@ -205,8 +228,13 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     // menu (and the Files gallery) use the merchant's own copies.
     const imported = await importTemplateImages(admin, design);
     const saved = imported.design;
-    let serverDesign: Design | undefined =
-      imported.imported > 0 ? saved : undefined;
+    // Shopify file URLs are longer than the sample paths: check the size again.
+    if (imported.imported > 0) compile(saved);
+    // Template images copied to Shopify Files (path → URL): the editor applies
+    // them to the design, which the merchant may have kept editing.
+    const imageUrls = { ...imported.urls };
+    /** Published, but the live theme needs this plan to show it. */
+    let liveNeedsPlan: PaidPlanKey | null = null;
     await prisma.menu.update({
       where: { id: menu.id },
       data: {
@@ -215,13 +243,28 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       },
     });
     if (intent === "publish") {
+      // Publishing is free: the menu runs on draft themes and in the theme
+      // editor. The live theme also needs a plan that covers it (Starter for
+      // template menus, Pro for canvas), which the storefront checks.
+      const { livePlan } = await currentPlan(admin, session.shop);
+      const check = publishCheck(livePlan, saved);
+      liveNeedsPlan = check.allowed ? null : check.required;
+      // Not published until every image has its Shopify copy.
+      if (imported.pending > 0)
+        return {
+          ok: false as const,
+          intent,
+          error: new ImagesProcessingError().message,
+          imageUrls,
+        };
       const result = await publishMenu(admin, session.shop, menu.id);
-      if (result.importedImages > 0) serverDesign = result.design;
+      Object.assign(imageUrls, result.imageUrls);
     }
     return {
       ok: true as const,
       intent,
-      serverDesign,
+      imageUrls,
+      liveNeedsPlan,
       bytes,
       warnSize: bytes > METAFIELD_WARN_BYTES,
     };
@@ -229,7 +272,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     const message =
       error instanceof MenuTooLargeError ||
       error instanceof TooManyLinksError ||
-      error instanceof ShopifyUserError
+      error instanceof ShopifyUserError ||
+      error instanceof ImagesProcessingError
         ? error.message
         : error instanceof Error && error.name === "InvalidDesignError"
           ? error.message
@@ -391,16 +435,25 @@ function Modal({
   heading,
   modalRef,
   size = "large",
+  onClosed,
   children,
 }: {
   id: string;
   heading: string;
   modalRef: RefObject<ModalElement>;
   size?: "large" | "large-100";
+  /** After the close animation: clear what the modal was editing. */
+  onClosed?: () => void;
   children: ReactNode;
 }) {
   return (
-    <s-modal id={id} heading={heading} size={size} ref={modalRef}>
+    <s-modal
+      id={id}
+      heading={heading}
+      size={size}
+      ref={modalRef}
+      onAfterHide={onClosed}
+    >
       {children}
       <s-button
         slot="primary-action"
@@ -411,6 +464,80 @@ function Modal({
         Done
       </s-button>
     </s-modal>
+  );
+}
+
+/**
+ * After publishing without a plan that covers the menu: it already works on
+ * draft themes; the live theme needs this plan.
+ */
+function PlanNeeded({
+  needs,
+  plan,
+}: {
+  needs: PaidPlanKey | null;
+  plan: keyof typeof PLAN_NAMES;
+}) {
+  if (!needs) return null;
+  const needed = PAID_PLANS.find((candidate) => candidate.key === needs)!;
+  const steps: [string, string][] = [
+    ["Open Online Store → Themes", "in your Shopify admin."],
+    ["Pick a theme that isn't live", "and choose Preview or Customize."],
+    [
+      "Look at it on a phone",
+      "(or the editor's mobile view) and tap the menu icon.",
+    ],
+  ];
+  return (
+    <div className="chm-published">
+      <div className="chm-published__hero">
+        <div className="chm-published__bot">
+          <GuideBot variant="hero" />
+        </div>
+        <div className="chm-published__intro">
+          <span className="chm-hero__eyebrow">Published</span>
+          <h3 className="chm-published__title">
+            Your menu is ready to try{" "}
+            <span className="chm-hero__brand">on your store</span>
+          </h3>
+          <p className="chm-published__text">
+            It already works on your draft themes and in the theme editor, so
+            you can see it exactly like a shopper will.
+          </p>
+        </div>
+      </div>
+
+      <ol className="chm-published__steps">
+        {steps.map(([title, rest], index) => (
+          <li key={title}>
+            <span className="chm-published__num">{index + 1}</span>
+            <span>
+              <strong>{title}</strong> {rest}
+            </span>
+          </li>
+        ))}
+      </ol>
+
+      <div className="chm-published__plan">
+        <div className="chm-published__plan-copy">
+          <span className="chm-published__plan-label">For your live theme</span>
+          <span className="chm-published__plan-name">
+            {needed.name}
+            <span className="chm-published__plan-price">
+              {needed.price}/month
+            </span>
+          </span>
+          <span className="chm-published__plan-text">
+            {needs === "PRO"
+              ? plan === "STARTER"
+                ? "This menu uses the free-form canvas: Starter covers template menus, canvas menus need Pro."
+                : "This menu uses the free-form canvas, which shows on your live theme with Pro."
+              : "Shows template and section menus on your live theme. Pro adds canvas menus."}
+          </span>
+        </div>
+        <span className="chm-plan__trial">{TRIAL_DAYS}-day free trial</span>
+      </div>
+    </div>
   );
 }
 
@@ -448,6 +575,9 @@ export default function MenuEditor() {
   } | null>(null);
   const [designId, setDesignId] = useState<string | null>(null);
   const [published, setPublished] = useState(Boolean(data.menu.publishedAt));
+  /** The plan publishing needs, when the shop's plan doesn't have it (shows the plan dialog). */
+  const [needsPlan, setNeedsPlan] = useState<PaidPlanKey | null>(null);
+  const planModal = useRef<ModalElement>(null);
   const [menuName, setMenuName] = useState(data.menu.name);
   /** Another menu that's live now (publishing this one replaces it). */
   const [liveMenuName, setLiveMenuName] = useState(data.liveMenuName);
@@ -516,10 +646,14 @@ export default function MenuEditor() {
   const busy = fetcher.state !== "idle";
   const pendingIntent = busy ? fetcher.formData?.get("intent") : null;
   const translating = locale !== primaryLocale;
-  const isMainScreen = screenId === design.screens[0].id;
+  // The sub-menu may be gone (undo, discard): fall back to the main screen.
   const screen =
     design.screens.find((candidate) => candidate.id === screenId) ??
     design.screens[0];
+  const isMainScreen = screen.id === design.screens[0].id;
+  useEffect(() => {
+    if (screen.id !== screenId) setScreenId(screen.id);
+  }, [screen.id, screenId]);
 
   const resources = useMemo(
     () => ({ ...data.context.resources, ...extraResources }),
@@ -543,7 +677,21 @@ export default function MenuEditor() {
     if (!result || result === lastResult.current || fetcher.state !== "idle")
       return;
     lastResult.current = result;
+    // Template images now in Shopify Files: point the design at them, keeping
+    // anything the merchant changed while the save was running.
+    const imageUrls =
+      "imageUrls" in result && result.imageUrls ? result.imageUrls : {};
+    const copiedImages = Object.keys(imageUrls).length > 0;
+    if (copiedImages)
+      history.reset(replaceTemplateImages(history.value, imageUrls));
     if (!result.ok) {
+      // A canvas or CSS editor waiting for this save must not open later.
+      pendingCanvas.current = null;
+      pendingCss.current = false;
+      if (copiedImages && submittedDesign.current)
+        setSavedDesign(
+          replaceTemplateImages(submittedDesign.current, imageUrls),
+        );
       shopify.toast.show(result.error, { isError: true });
       return;
     }
@@ -557,11 +705,9 @@ export default function MenuEditor() {
       shopify.toast.show("Menu unpublished. Your theme's menu shows again.");
       return;
     }
-    const nowSaved = result.serverDesign ?? submittedDesign.current;
-    if (result.serverDesign) {
-      // The server changed the design (template images moved to Shopify Files).
-      history.reset(result.serverDesign);
-    }
+    const nowSaved =
+      submittedDesign.current &&
+      replaceTemplateImages(submittedDesign.current, imageUrls);
     if (nowSaved) setSavedDesign(nowSaved);
     if (result.intent === "publish" && nowSaved) setLiveDesign(nowSaved);
     if (pendingCanvas.current) {
@@ -578,6 +724,12 @@ export default function MenuEditor() {
     if (result.intent === "publish") {
       setPublished(true);
       setLiveMenuName(null);
+      // Published for draft themes; the live theme needs a plan first.
+      if ("liveNeedsPlan" in result && result.liveNeedsPlan) {
+        setNeedsPlan(result.liveNeedsPlan);
+        planModal.current?.showOverlay();
+        return;
+      }
     }
     shopify.toast.show(
       result.intent === "publish" ? "Menu published" : "Menu saved",
@@ -1113,12 +1265,12 @@ export default function MenuEditor() {
           label="Menu name"
           value={nameDraft}
           onChange={setNameDraft}
-          details="Only you see this name, in the app and in your store's navigation menus."
+          details="Only you see this name, in the app."
         />
         <s-button
           slot="primary-action"
           variant="primary"
-          disabled={!cleanMenuName(nameDraft)}
+          disabled={busy || !cleanMenuName(nameDraft)}
           onClick={rename}
         >
           Save name
@@ -1129,6 +1281,19 @@ export default function MenuEditor() {
           command="--hide"
         >
           Cancel
+        </s-button>
+      </s-modal>
+      <s-modal id="plan-modal" heading="Menu published" ref={planModal}>
+        <PlanNeeded needs={needsPlan} plan={data.plan} />
+        <s-button slot="primary-action" variant="primary" href="/app/pricing">
+          See plans
+        </s-button>
+        <s-button
+          slot="secondary-actions"
+          commandFor="plan-modal"
+          command="--hide"
+        >
+          Got it
         </s-button>
       </s-modal>
       <s-modal
@@ -1204,7 +1369,12 @@ export default function MenuEditor() {
         >
           Save
         </button>
-        <button onClick={() => history.reset(savedDesign)}>Discard</button>
+        <button
+          onClick={() => history.reset(savedDesign)}
+          disabled={busy || undefined}
+        >
+          Discard
+        </button>
       </ui-save-bar>
 
       <div className="chm-editor">
@@ -1565,6 +1735,7 @@ export default function MenuEditor() {
         heading={editing ? `Edit “${nodeName(editing.node)}”` : "Edit"}
         modalRef={itemModal}
         size="large-100"
+        onClosed={() => setEditingId(null)}
       >
         {editing ? (
           <DesignWorkspace
@@ -1727,6 +1898,7 @@ export default function MenuEditor() {
         id="section-design"
         heading={designing?.type === "container" ? "Layout & design" : "Design"}
         modalRef={designModal}
+        onClosed={() => setDesignId(null)}
         size="large-100"
       >
         {designing ? (
@@ -1917,6 +2089,8 @@ export default function MenuEditor() {
         heading="Add a section"
         modalRef={libraryModal}
         size="large-100"
+        // Unmounted when closed: its many previews would re-render on every edit.
+        onClosed={() => setLibraryOpened(false)}
       >
         {libraryOpened && (
           <SectionLibrary

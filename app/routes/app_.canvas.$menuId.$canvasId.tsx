@@ -67,7 +67,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     compile(design);
     await prisma.menu.update({
       where: { id: menu.id },
-      data: { draft: design as unknown as Prisma.InputJsonValue },
+      data: {
+        draft: design as unknown as Prisma.InputJsonValue,
+        schemaVersion: design.schemaVersion,
+      },
     });
     return { ok: true };
   } catch (error) {

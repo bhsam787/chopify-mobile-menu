@@ -207,7 +207,7 @@ function LibraryTile({
           </div>
         )}
         <div className="chm-lib__actions">
-          <s-button icon="plus" onClick={add}>
+          <s-button icon="plus" inlineSize="fill" onClick={add}>
             Add section
           </s-button>
         </div>

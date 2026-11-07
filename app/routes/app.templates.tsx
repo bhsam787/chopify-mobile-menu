@@ -14,6 +14,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Prisma } from "@prisma/client";
 import {
   blankCanvas,
+  blankSections,
   findTemplate,
   TEMPLATE_FEATURES,
   TEMPLATES,
@@ -30,6 +31,7 @@ import { FEATURE_LABELS, TEMPLATE_COPY } from "../components/templateCopy";
 import galleryStyles from "../components/gallery.css?url";
 import showcaseStyles from "../components/showcase.css?url";
 import { ChopiStage } from "../home/HomeHero";
+import { StartChoices } from "../templates/StartChoices";
 import { TextField } from "../editor/controls";
 import { buildPreviewContext } from "../services/preview-context.server";
 
@@ -66,17 +68,37 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const { session } = await authenticate.admin(request);
   const form = await request.formData();
   const templateId = String(form.get("templateId"));
+  // "blank": an empty section menu; "canvas": an empty free-form canvas.
   const template =
-    templateId === "blank" ? undefined : findTemplate(templateId);
-  if (templateId !== "blank" && !template)
+    templateId === "blank" || templateId === "canvas"
+      ? undefined
+      : findTemplate(templateId);
+  if (!template && templateId !== "blank" && templateId !== "canvas")
     throw new Response("Unknown template", { status: 400 });
   // The merchant's name, or a free default like "Canvas menu 2".
   const name =
     cleanMenuName(form.get("name")) ??
     (await uniqueMenuName(
       session.shop,
-      template ? `${template.name} menu` : "Canvas menu",
+      template
+        ? `${template.name} menu`
+        : templateId === "canvas"
+          ? "Canvas menu"
+          : "My menu",
     ));
+
+  if (templateId === "blank") {
+    const design = blankSections();
+    const menu = await prisma.menu.create({
+      data: {
+        name,
+        schemaVersion: design.schemaVersion,
+        draft: design as unknown as Prisma.InputJsonValue,
+        shop: { connect: { shop: session.shop } },
+      },
+    });
+    return redirect(`/app/menus/${menu.id}`);
+  }
 
   if (!template) {
     const design = blankCanvas();
@@ -154,9 +176,11 @@ export default function Templates() {
   useEffect(() => {
     if (previewing) previewModal.current?.showOverlay();
   }, [previewing]);
-  // "Start from scratch" on Home links here with #blank.
+  // Home links here with #blank (empty section menu) or #canvas.
   useEffect(() => {
-    if (window.location.hash === "#blank") startNaming("blank", "Canvas menu");
+    if (window.location.hash === "#blank") startNaming("blank", "My menu");
+    if (window.location.hash === "#canvas")
+      startNaming("canvas", "Canvas menu");
     // Only on arrival.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -173,7 +197,8 @@ export default function Templates() {
       <s-link slot="breadcrumb-actions" href="/app">
         Home
       </s-link>
-      <s-stack gap="base">
+      {/* Room between the page's sections, and above and below them. */}
+      <s-stack gap="large-400" paddingBlock="large large-400">
         <section className="chm-hero" aria-labelledby="chm-gallery-title">
           <div className="chm-hero__main">
             <div className="chm-hero__copy">
@@ -184,159 +209,143 @@ export default function Templates() {
                 Find your <span className="chm-hero__brand">perfect look</span>
               </h2>
               <p className="chm-hero__lead">
-                Every template comes filled in with sample content and works
-                just like on your store. Try the tabs, sub-menus and swiping
-                right here, then make it yours: every text, photo, link and
-                color can change.
+                Start from a ready-made template, a blank menu or a free-form
+                canvas. Every template comes filled in and works just like on
+                your store, so try the tabs, sub-menus and swiping right here.
               </p>
             </div>
             <ChopiStage>
-              Every phone below works. Tap around, then pick your favorite!
+              Not sure where to start? Pick a template: you can change
+              everything later!
             </ChopiStage>
-          </div>
-          {/* A blank page, for merchants who'd rather design their own. */}
-          <div className="chm-hero__blank">
-            <div className="chm-sketch" aria-hidden="true">
-              <span />
-              <span />
-              <span />
-              <span />
-            </div>
-            <div className="chm-hero__blank-copy">
-              <span className="chm-hero__blank-title">
-                Prefer a blank page?
-                <s-badge tone="info" icon="layout-block">
-                  Canvas
-                </s-badge>
-              </span>
-              <span className="chm-hero__blank-text">
-                Design freely in a full-screen editor: place text, images,
-                shapes and widgets anywhere. It scales to every phone size.
-              </span>
-            </div>
-            <s-button
-              icon="plus"
-              loading={pending === "blank"}
-              disabled={Boolean(pending)}
-              onClick={() => startNaming("blank", "Canvas menu")}
-            >
-              Start from scratch
-            </s-button>
           </div>
         </section>
 
-        <s-section
-          heading="Choose a template"
-          subheading="Filter by what you need, try the phone, then use it as your starting point."
-        >
-          <s-text slot="supplemental" color="subdued">
-            {shown.length} of {templates.length}
-          </s-text>
-          <div className="chm-looks">
-            <div
-              className="chm-filters"
-              role="group"
-              aria-label="Filter templates"
-            >
-              <button
-                type="button"
-                className="chm-filter"
-                aria-pressed={filter === null}
-                onClick={() => setFilter(null)}
+        <StartChoices
+          pending={typeof pending === "string" ? pending : null}
+          onTemplates={() =>
+            document
+              .getElementById("templates")
+              ?.scrollIntoView({ behavior: "smooth", block: "start" })
+          }
+          onBlank={() => startNaming("blank", "My menu")}
+          onCanvas={() => startNaming("canvas", "Canvas menu")}
+        />
+
+        <div id="templates" className="chm-anchor">
+          <s-section
+            heading="Choose a template"
+            subheading="Filter by what you need, try the phone, then use it as your starting point."
+          >
+            <s-text slot="supplemental" color="subdued">
+              {shown.length} of {templates.length}
+            </s-text>
+            <div className="chm-looks">
+              <div
+                className="chm-filters"
+                role="group"
+                aria-label="Filter templates"
               >
-                All
-                <span className="chm-filter__count">{templates.length}</span>
-              </button>
-              {usedFeatures.map((feature) => (
                 <button
-                  key={feature}
                   type="button"
                   className="chm-filter"
-                  aria-pressed={filter === feature}
-                  onClick={() =>
-                    setFilter((current) =>
-                      current === feature ? null : feature,
-                    )
-                  }
+                  aria-pressed={filter === null}
+                  onClick={() => setFilter(null)}
                 >
-                  {FEATURE_LABELS[feature]}
-                  <span className="chm-filter__count">
-                    {
-                      templates.filter((template) =>
-                        template.features.includes(feature),
-                      ).length
-                    }
-                  </span>
+                  All
+                  <span className="chm-filter__count">{templates.length}</span>
                 </button>
-              ))}
-            </div>
-            <div className="chm-looks__grid chm-looks__grid--gallery">
-              {shown.map((template) => {
-                const copy = TEMPLATE_COPY[template.id];
-                return (
-                  <div key={template.id} className="chm-look chm-look--live">
-                    <div className="chm-look__stage">
-                      <PhoneStage
-                        design={template.design}
-                        context={context}
-                        scale={0.56}
-                        size="large"
-                        interactive
-                      />
-                      {(template.isNew || copy?.bestFor[0]) && (
-                        <span
-                          className={`chm-look__ribbon${template.isNew ? " is-new" : ""}`}
-                        >
-                          {template.isNew
-                            ? "✦ New"
-                            : `Great for ${copy?.bestFor[0]}`}
-                        </span>
-                      )}
-                    </div>
-                    <div className="chm-look__info">
-                      <span className="chm-look__name">{template.name}</span>
-                      <span className="chm-look__tagline">
-                        {copy?.tagline ?? template.description}
-                      </span>
-                      {copy && (
-                        <span className="chm-look__best">
-                          Best for {copy.bestFor.join(" · ")}
-                        </span>
-                      )}
-                      <span className="chm-look__chips">
-                        {template.features.map((feature) => (
-                          <span key={feature} className="chm-look__chip">
-                            {FEATURE_LABELS[feature]}
+                {usedFeatures.map((feature) => (
+                  <button
+                    key={feature}
+                    type="button"
+                    className="chm-filter"
+                    aria-pressed={filter === feature}
+                    onClick={() =>
+                      setFilter((current) =>
+                        current === feature ? null : feature,
+                      )
+                    }
+                  >
+                    {FEATURE_LABELS[feature]}
+                    <span className="chm-filter__count">
+                      {
+                        templates.filter((template) =>
+                          template.features.includes(feature),
+                        ).length
+                      }
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <div className="chm-looks__grid chm-looks__grid--gallery">
+                {shown.map((template) => {
+                  const copy = TEMPLATE_COPY[template.id];
+                  return (
+                    <div key={template.id} className="chm-look chm-look--live">
+                      <div className="chm-look__stage">
+                        <PhoneStage
+                          design={template.design}
+                          context={context}
+                          scale={0.56}
+                          size="large"
+                          interactive
+                        />
+                        {(template.isNew || copy?.bestFor[0]) && (
+                          <span
+                            className={`chm-look__ribbon${template.isNew ? " is-new" : ""}`}
+                          >
+                            {template.isNew
+                              ? "✦ New"
+                              : `Great for ${copy?.bestFor[0]}`}
                           </span>
-                        ))}
-                      </span>
-                      <div className="chm-look__actions">
-                        <s-button
-                          variant="primary"
-                          inlineSize="fill"
-                          loading={pending === template.id}
-                          disabled={Boolean(pending)}
-                          onClick={() =>
-                            startNaming(template.id, `${template.name} menu`)
-                          }
-                        >
-                          Use template
-                        </s-button>
-                        <s-button
-                          icon="maximize"
-                          accessibilityLabel={`Preview ${template.name} larger`}
-                          onClick={() => openPreview(template.id)}
-                        >
-                          Preview
-                        </s-button>
+                        )}
+                      </div>
+                      <div className="chm-look__info">
+                        <span className="chm-look__name">{template.name}</span>
+                        <span className="chm-look__tagline">
+                          {copy?.tagline ?? template.description}
+                        </span>
+                        {copy && (
+                          <span className="chm-look__best">
+                            Best for {copy.bestFor.join(" · ")}
+                          </span>
+                        )}
+                        <span className="chm-look__chips">
+                          {template.features.map((feature) => (
+                            <span key={feature} className="chm-look__chip">
+                              {FEATURE_LABELS[feature]}
+                            </span>
+                          ))}
+                        </span>
+                        <div className="chm-look__actions">
+                          <s-button
+                            variant="primary"
+                            inlineSize="fill"
+                            loading={pending === template.id}
+                            disabled={Boolean(pending)}
+                            onClick={() =>
+                              startNaming(template.id, `${template.name} menu`)
+                            }
+                          >
+                            Use template
+                          </s-button>
+                          <s-button
+                            icon="maximize"
+                            accessibilityLabel={`Preview ${template.name} larger`}
+                            onClick={() => openPreview(template.id)}
+                          >
+                            Preview
+                          </s-button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        </s-section>
+          </s-section>
+        </div>
       </s-stack>
 
       <s-modal
@@ -412,7 +421,7 @@ export default function Templates() {
             label="Menu name"
             value={name}
             onChange={setName}
-            details="Only you see this name, in the app and in your store's navigation menus. You can change it later."
+            details="Only you see this name, in the app. You can change it later."
           />
           {name.trim().length > MENU_NAME_MAX && (
             <s-text tone="critical">
@@ -426,7 +435,7 @@ export default function Templates() {
           disabled={!name.trim() || name.trim().length > MENU_NAME_MAX}
           onClick={create}
         >
-          {naming?.id === "blank" ? "Create and open canvas" : "Create menu"}
+          {naming?.id === "canvas" ? "Create and open canvas" : "Create menu"}
         </s-button>
         <s-button
           slot="secondary-actions"

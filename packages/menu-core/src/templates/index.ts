@@ -12,6 +12,7 @@ export {
   TEMPLATE_IMAGES,
   TEMPLATE_IMAGE_PATH,
   isTemplateImage,
+  replaceTemplateImages,
   templateImage,
 } from "./images";
 
@@ -113,22 +114,37 @@ export const TEMPLATES: Template[] = [
   },
 ];
 
+/** The plain look a blank menu starts from (the merchant restyles it). */
+const BLANK_TOKENS: Design["tokens"] = {
+  fontFamily: "theme",
+  text: "#1A1A1A",
+  mutedText: "#6B6B6B",
+  background: "#FFFFFF",
+  canvas: "#FFFFFF",
+  accent: "#1A1A1A",
+  accentText: "#FFFFFF",
+  radius: 12,
+};
+
+/**
+ * "Start blank": the header and no sections yet, built up section by section
+ * in the regular editor (Add section), like a template without its content.
+ */
+export function blankSections(): Design {
+  return design({
+    tokens: BLANK_TOKENS,
+    header: header({ box: { padding: [12, 16, 12, 16] } }),
+    main: stack([], { gap: 12 }),
+  });
+}
+
 /**
  * "Start with a blank canvas": the header (close button, logo) and one empty
  * canvas filling the menu, edited in the full-screen canvas editor.
  */
 export function blankCanvas(): Design {
   return design({
-    tokens: {
-      fontFamily: "theme",
-      text: "#1A1A1A",
-      mutedText: "#6B6B6B",
-      background: "#FFFFFF",
-      canvas: "#FFFFFF",
-      accent: "#1A1A1A",
-      accentText: "#FFFFFF",
-      radius: 12,
-    },
+    tokens: BLANK_TOKENS,
     header: header({ box: { padding: [12, 16, 12, 16] } }),
     main: stack(
       [

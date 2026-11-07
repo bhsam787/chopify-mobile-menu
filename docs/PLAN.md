@@ -10,7 +10,7 @@ Merchants design their storefront's **mobile drawer menu** in a visual editor an
 - **Widgets:** drop in building blocks such as story circles (best sellers), featured cards, pills, promo banners, reviews and links.
 - **Visual editor:** live phone preview, drag-and-drop, and per-element styling (font sizes, colors, spacing, radius). A free-form canvas section allows Figma-like layouts.
 - **Theme takeover:** the app embed hides the theme's drawer and opens ours from the theme's burger icon, with no theme code edits.
-- **Pricing:** Free (every feature, but draft/preview themes only), Pro at $20/month with a 7-day trial (live theme), and free on development stores.
+- **Pricing:** Free to install and use: every feature, and publishing to draft themes to try the menu on the store. The live theme needs a plan. **Starter** $9.99/month publishes template and section menus; **Pro** $14.99/month also publishes free-form canvas menus. Both have a 14-day free trial (Shopify App Pricing).
 
 ### What we keep from bbb-menu-sh and speckshop-menu-sh
 
@@ -165,7 +165,7 @@ A Figma frame maps almost 1:1 onto this tree, which keeps templates faithful to 
 ### Screens
 
 1. **Home / onboarding checklist:** pick a template, customize, enable the app embed (deep link into the theme editor), publish. Shows embed status from `shopify.app.extensions()` and the plan.
-2. **Template gallery:** cards with previews. Applying a template fills it with the shop's data (main-menu links, top collections, best sellers) so it looks like their store immediately.
+2. **Template gallery:** first "How do you want to start?" with three explained choices: **Start from a template** (easiest, recommended), **Start blank** (`blankSections()`: the section editor with no sections yet) and **Design on a free-form canvas** (`blankCanvas()`, advanced, goes live with Pro). Then the template cards with previews. Applying a template fills it with the shop's data (main-menu links, top collections, best sellers) so it looks like their store immediately.
 3. **Editor:** full-screen (App Bridge max modal / app window).
    - Left: widget library (drag in) and a layers tree (drag to reorder, hide, duplicate, delete).
    - Center: phone frame with the live renderer (360/390/430 widths, language switcher, main and sub-menu screens). Click an element to select it.
@@ -258,14 +258,25 @@ Other template rules:
 
 ## 8. Billing and plan gating
 
-- Use **Shopify App Pricing** (configured in the Partner Dashboard), which Shopify recommends for public apps:
-  - **Free:** $0, every feature.
-  - **Pro:** $20/month with a 7-day free trial, plus the "Free for partners and developers" option for dev stores.
-- Read the current plan with an `activeSubscription` check. On change, update `Shop.plan` and the `entitlement` metafield.
-- **Free = draft/preview themes only:**
-  - Storefront: when `liveAllowed` is false, the embed script doesn't take over on the **published** theme (detected with `window.Shopify.theme.role === 'main'`; to be verified in the spike, see §10). The theme's own menu keeps working, so nothing breaks.
-  - Admin: if the embed is active on the published theme while on Free, a banner says the menu shows only in theme previews and offers an upgrade.
-  - This client-side check can be bypassed by a determined user. That's acceptable for a $20 app, and it never harms the shopper.
+- **Shopify App Pricing** (Shopify's recommended path for new public apps): plans live in the Partner Dashboard and Shopify hosts the plan selection page. No Billing API charges in code (`appSubscriptionCreate` / `billing.request`).
+  - **Starter** (handle `starter`): $9.99/month, 14-day trial. Publishes menus made from templates and sections.
+  - **Pro** (handle `pro`): $14.99/month, 14-day trial. Also publishes menus with a free-form canvas.
+  - Tick "Free for partners and developers" on both, so development stores can test them at no charge.
+  - Welcome link on both plans: `/app/pricing` (Shopify appends `plan_handle`).
+- **Free:** install and use everything, and publish: the menu then runs on draft (unpublished) themes and in the theme editor, canvas menus included, so merchants can try it on their store. Only the **live** theme needs a plan. `app/billing/plans.ts` holds the plans (prices and handles must match the Partner Dashboard) and the rule: a menu with a `canvas` node needs Pro, any other menu needs Starter.
+- **Reading the plan:** `activeSubscription` on the Partner API (`app/services/partner-api.server.ts`). App Pricing sends no billing webhooks, so the app re-reads it: stored on `Shop` (`plan`, `trialEndsAt`, `cancelAtEndOfCycle`, `planCheckedAt`) and trusted for 5 minutes, forced fresh on the Pricing page (`app/services/billing.server.ts`). A failed check falls back to the stored plan, never to "no plan".
+  - Env: `SHOPIFY_PARTNER_ORG_ID`, `SHOPIFY_PARTNER_API_ACCESS_TOKEN` (Partner API client with "Manage apps"), `SHOPIFY_APP_GID` (`gid://shopify/App/<id>`), `SHOPIFY_APP_HANDLE` (plan selection page URL). Without them, the stored plan (Free) is used and plans can't be chosen.
+- **Gating:**
+  - Publishing is never blocked. The publish action returns `liveNeedsPlan` when the plan doesn't cover the menu, and the editor then explains how to preview it on a draft theme and which plan the live theme needs.
+  - Storefront: the `entitlement` metafield's `live_allowed` is true only when the plan covers the published menu; when false, the embed doesn't run on the theme with role `main` (draft themes and the theme editor still show it). It's rewritten on publish and whenever a plan change is noticed, so after a downgrade or cancellation the theme's own menu shows again. Home and Pricing warn about it.
+- **Development stores are unrestricted** (partners and App Store reviewers test on them): `livePlan()` in `plans.ts` counts them as Pro for publishing and the live theme, whatever plan they chose. `Shop.isDevStore` comes from `shop.plan.partnerDevelopment`, set on install and re-read with every plan check, so a store handed over to a merchant becomes a normal one.
+- Uninstalling ends the subscription: the shop's plan is reset to Free.
+
+## 8b. Help and support
+
+- `/app/help`: answers about every feature (grouped FAQ) and a **Message the developer** form (pop-up: topic, reply-to email pre-filled from the shop, message).
+- `app/services/support.server.ts` checks the input, limits each shop to 5 messages an hour, stores the message (`SupportMessage`, deleted with the shop on `shop/redact`) and emails it through Resend's HTTP API with reply-to set to the merchant. If the email fails, the message stays in the database.
+- Env: `SUPPORT_EMAIL` (inbox), `SUPPORT_FROM_EMAIL` (sender on a domain verified in Resend), `RESEND_API_KEY`. Without them the form is hidden.
 
 ## 9. App Store readiness (applies to every phase)
 
@@ -311,7 +322,7 @@ Resolved:
 - Theme support (2026-11-03): popular Theme Store themes, with tier 1 = Horizon, Dawn, Impulse, Prestige and Broadcast (§4). Dev store: `shiam-dev-05.myshopify.com`.
 
 ### 2026-11-03 — Menus, publishing and preview modes
-- Merchants can make many menus (blank canvas or template) and name them when creating (unique default like "Canvas menu 2"); **Rename** in the editor also retitles the menu's Shopify navigation menu.
+- Merchants can make many menus (template, blank or canvas) and name them when creating (unique default like "Canvas menu 2"); **Rename** in the editor also retitles the menu's Shopify navigation menu.
 - Only one menu is live per store: publishing another asks to replace the live one; **Unpublish** takes the menu off the store (draft kept). Home shows "Live on store" / "Draft".
 - Live preview has **Edit** (click to select) and **Preview** (storefront behaviour in a sandbox: tabs, accordions, sub-menus, drag-to-swipe; links/forms/close stay in the editor) modes.
 

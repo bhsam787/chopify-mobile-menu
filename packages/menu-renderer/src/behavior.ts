@@ -108,6 +108,9 @@ export function attachBehavior(
         window.setTimeout(() => panel()?.focus({ preventScroll: true }), 50);
     },
     close() {
+      // Closing a closed menu (e.g. resizing past the breakpoint) must not
+      // run onClose: it unlocks the page scroll and moves focus.
+      if (!menu()?.classList.contains("is-open")) return;
       menu()?.classList.remove("is-open");
       stopTimer();
       options.onClose?.();

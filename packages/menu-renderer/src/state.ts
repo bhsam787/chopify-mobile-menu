@@ -5,7 +5,7 @@
 import type { Design, LinkRef, Node } from "@chopi/menu-core";
 import { isResourceLink, resourceKey } from "@chopi/menu-core";
 import type { RenderContext } from "./context";
-import { esc } from "./html";
+import { esc, safeUrl } from "./html";
 
 export interface State {
   design: Design;
@@ -57,14 +57,13 @@ export function href(state: State, link: LinkRef): string | null {
     case "screen":
       return null;
     case "url":
-      return link.url || null;
+      return safeUrl(link.url);
     case "route":
       return state.ctx.routes[link.route] ?? null;
     default:
       return (
         state.ctx.resources[resourceKey(link.type, link.id)]?.url ??
-        link.url ??
-        null
+        safeUrl(link.url)
       );
   }
 }

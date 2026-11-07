@@ -11,7 +11,7 @@ import {
 /** Outline and limbs: a deep green that goes with the bag. */
 const INK = "#22401a";
 const BAG = "#95BF47";
-const BAG_SIDE = "#5E8E3E";
+const BAG_SIDE = "#7CB04F";
 
 /** A value in the helper's bubble, e.g. "28 px" or a color. */
 export interface GuideValue {

@@ -6,7 +6,7 @@
  */
 .chm-hero {
   --chm-hero-ink: #1d2a14;
-  --chm-hero-green: #4f8a2e;
+  --chm-hero-green: #5b9a35;
   --chm-hero-muted: #5b6455;
   position: relative;
   container-type: inline-size;
@@ -59,7 +59,7 @@
   align-items: center;
   gap: 8px;
   padding: 5px 12px 5px 10px;
-  border: 1px solid rgba(79, 138, 46, 0.18);
+  border: 1px solid rgba(91, 154, 53, 0.16);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.75);
   color: var(--chm-hero-green);
@@ -85,7 +85,7 @@
   text-wrap: balance;
 }
 .chm-hero__brand {
-  background: linear-gradient(100deg, #3f7a22 0%, #6aa83a 55%, #95bf47 100%);
+  background: linear-gradient(100deg, #5b9a35 0%, #8dc45c 55%, #95bf47 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -96,11 +96,137 @@
   font-size: 14px;
   line-height: 1.6;
 }
-.chm-hero__actions {
-  display: flex;
-  flex-wrap: wrap;
+
+/* What the app is for: the phone's hamburger menu (desktop untouched). */
+.chm-hero__scope {
+  display: inline-flex;
+  align-items: center;
   gap: 8px;
-  margin-top: 6px;
+  margin-top: 2px;
+  padding: 7px 12px;
+  border: 1px solid rgba(29, 42, 20, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--chm-hero-muted);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.chm-hero__scope svg {
+  flex: none;
+  color: var(--chm-hero-green);
+}
+.chm-hero__scope strong {
+  color: var(--chm-hero-ink);
+  font-weight: 650;
+}
+
+/* First visit: "How it works" in three steps, beside the phone fan. */
+.chm-how {
+  --chm-hero-ink: #1d2a14;
+  --chm-hero-green: #5b9a35;
+  --chm-hero-muted: #5b6455;
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  align-items: center;
+  gap: 28px;
+  padding: 28px;
+  border: 1px solid rgba(29, 42, 20, 0.07);
+  border-radius: 20px;
+  background:
+    radial-gradient(60% 90% at 0% 0%, #fbf1e2 0%, rgba(251, 241, 226, 0) 70%),
+    linear-gradient(160deg, #ffffff 0%, #fafbf8 100%);
+  box-shadow:
+    0 1px 2px rgba(29, 42, 20, 0.05),
+    0 12px 32px -20px rgba(29, 42, 20, 0.25);
+  color: var(--chm-hero-ink);
+}
+.chm-how__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding-left: 8px;
+}
+.chm-how__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.chm-how__steps {
+  position: relative;
+  display: grid;
+  gap: 18px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+/* The soft line joining each step number to the next one. */
+.chm-how__steps li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 36px;
+  bottom: -16px;
+  left: 15px;
+  border-left: 2px dashed #d6e6c4;
+}
+.chm-how__steps li {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 14px;
+}
+.chm-how__num {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(140deg, #8dc45c, #5b9a35);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow:
+    0 0 0 4px #fff,
+    0 6px 14px -6px rgba(91, 154, 53, 0.45);
+}
+.chm-how__step {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: 4px;
+}
+.chm-how__step-title {
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.chm-how__step-text {
+  color: var(--chm-hero-muted);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+.chm-how__stage .chm-fan {
+  height: 320px;
+  border-radius: 18px;
+  background:
+    radial-gradient(
+      90% 70% at 50% 10%,
+      rgba(149, 191, 71, 0.24),
+      transparent 70%
+    ),
+    linear-gradient(160deg, #f6faf1, #edf4e4);
+}
+/* A media query: .chm-how has no container around it. */
+@media (max-width: 720px) {
+  .chm-how {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 20px;
+  }
 }
 
 /* Chopi's stage: a soft glowing disc with sparkles, and its hello. */
@@ -246,8 +372,8 @@
   margin-bottom: 8px;
   border-radius: 11px;
   background: linear-gradient(140deg, #eef7e3, #d9eec2);
-  color: #3f7a22;
-  box-shadow: inset 0 0 0 1px rgba(63, 122, 34, 0.12);
+  color: #5b9a35;
+  box-shadow: inset 0 0 0 1px rgba(91, 154, 53, 0.12);
 }
 .chm-hero__benefit:nth-child(2) .chm-hero__benefit-icon {
   background: linear-gradient(140deg, #fdf3e3, #f9e2bf);
@@ -336,7 +462,7 @@
 }
 .chm-look__ribbon.is-new {
   border-color: transparent;
-  background: linear-gradient(100deg, #3f7a22, #6aa83a);
+  background: linear-gradient(100deg, #5b9a35, #8dc45c);
   color: #fff;
 }
 .chm-look__cta {
@@ -419,43 +545,130 @@
   font-weight: 550;
 }
 
-/* Gallery: the blank-page offer along the hero's bottom. */
-.chm-hero__blank {
-  position: relative;
+/* Gallery: the three ways to start, side by side. */
+.chm-anchor {
+  scroll-margin-top: 16px;
+}
+.chm-starts {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 18px;
-  margin: 0 24px 24px;
-  padding: 14px 18px 14px 14px;
-  border: 1px solid rgba(29, 42, 20, 0.07);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.72);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
 }
-.chm-hero__blank .chm-sketch {
-  zoom: 0.8;
-}
-.chm-hero__blank-copy {
+.chm-start {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-}
-.chm-hero__blank-title {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
-  color: var(--chm-hero-ink);
-  font-size: 15px;
+  padding: 18px;
+  border: 1px solid #e8e8e8;
+  border-radius: 18px;
+  background: #fff;
+  transition:
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.25s ease;
+}
+.chm-start:hover {
+  box-shadow: 0 18px 40px -24px rgba(0, 0, 0, 0.3);
+  transform: translateY(-2px);
+}
+.chm-start--recommended {
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(#fff, #fff) padding-box,
+    linear-gradient(140deg, #95bf47, #5b9a35) border-box;
+}
+.chm-start__picture {
+  display: grid;
+  place-items: center;
+  align-self: stretch;
+  height: 132px;
+  margin-bottom: 6px;
+  border-radius: 14px;
+  background:
+    radial-gradient(70% 90% at 100% 0%, #e3f3cf 0%, rgba(227, 243, 207, 0) 70%),
+    linear-gradient(160deg, #fbfcf9, #f3f6ef);
+}
+.chm-start__picture svg {
+  width: 84px;
+  height: 105px;
+}
+.chm-start__level {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
   font-weight: 650;
+}
+.chm-start__level--template {
+  background: linear-gradient(100deg, #5b9a35, #8dc45c);
+  color: #fff;
+}
+.chm-start__level--blank {
+  background: #eaf2fd;
+  color: #2f62a8;
+}
+.chm-start__level--canvas {
+  background: #fdeef3;
+  color: #b0436c;
+}
+.chm-start__title {
+  color: #1a1a1a;
+  font-size: 16px;
+  font-weight: 700;
   letter-spacing: -0.01em;
 }
-.chm-hero__blank-text {
-  color: var(--chm-hero-muted);
+.chm-start__text {
+  margin: 0;
+  color: #616161;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.chm-start__points {
+  display: grid;
+  gap: 6px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.chm-start__points li {
+  position: relative;
+  padding-left: 18px;
+  color: #303030;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.chm-start__points li::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: 2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #95bf47;
+}
+.chm-start__plan {
+  /* Sits just above the button, at the same height in every card. */
+  margin-top: auto;
+  padding-top: 6px;
+  color: #5b9a35;
+  font-size: 12px;
+  font-weight: 600;
+}
+.chm-start__action {
+  align-self: stretch;
+  padding-top: 8px;
+}
+.chm-starts__tip {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fffaf2;
+  color: #6b5a44;
   font-size: 13px;
   line-height: 1.5;
+}
+.chm-starts__tip strong {
+  color: #4a3b26;
 }
 
 /* Gallery filters: soft pills with counts; the chosen one turns green. */
@@ -489,7 +702,7 @@
   background: #fafafa;
 }
 .chm-filter:focus-visible {
-  outline: 2px solid #5e8e3e;
+  outline: 2px solid #7cb04f;
   outline-offset: 2px;
 }
 .chm-filter__count {
@@ -504,9 +717,9 @@
 }
 .chm-filter[aria-pressed="true"] {
   border-color: transparent;
-  background: linear-gradient(100deg, #3f7a22, #6aa83a);
+  background: linear-gradient(100deg, #5b9a35, #8dc45c);
   color: #fff;
-  box-shadow: 0 6px 16px -8px rgba(63, 122, 34, 0.7);
+  box-shadow: 0 6px 16px -8px rgba(91, 154, 53, 0.45);
 }
 .chm-filter[aria-pressed="true"] .chm-filter__count {
   background: rgba(255, 255, 255, 0.24);
@@ -519,7 +732,7 @@
   gap: 18px;
 }
 .chm-look__best {
-  color: #4f8a2e;
+  color: #5b9a35;
   font-size: 12px;
   font-weight: 600;
 }
@@ -620,7 +833,7 @@
   border: 1px solid rgba(79, 138, 46, 0.2);
   border-radius: 999px;
   background: #f1f8e9;
-  color: #3f7a22;
+  color: #5b9a35;
   font-size: 12.5px;
   font-weight: 600;
 }
@@ -665,7 +878,7 @@
   height: 40px;
   border-radius: 12px;
   background: linear-gradient(140deg, #eef7e3, #d9eec2);
-  box-shadow: inset 0 0 0 1px rgba(63, 122, 34, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(91, 154, 53, 0.12);
 }
 .chm-pv__highlight:nth-child(2) .chm-pv__highlight-icon {
   background: linear-gradient(140deg, #fdf3e3, #f9e2bf);
@@ -716,7 +929,7 @@
   height: 20px;
   margin-top: 0.5px;
   border-radius: 50%;
-  background: linear-gradient(140deg, #5fae2f, #3f7a22);
+  background: linear-gradient(140deg, #8dc45c, #5b9a35);
   color: #fff;
 }
 .chm-pv__included {
@@ -731,7 +944,7 @@
 }
 .chm-pv__included .chm-pv__tick {
   background: #eef7e3;
-  color: #3f7a22;
+  color: #5b9a35;
 }
 /* Chopi's tip: a warm card. */
 .chm-pv__tip {
@@ -749,7 +962,7 @@
   margin-bottom: 4px;
   padding: 3px 9px;
   border-radius: 999px;
-  background: linear-gradient(100deg, #95bf47, #6aa83a);
+  background: linear-gradient(100deg, #95bf47, #8dc45c);
   color: #fff;
   font-size: 11px;
   font-weight: 650;
@@ -763,6 +976,543 @@
   color: #6b5a44;
   font-size: 13px;
   line-height: 1.5;
+}
+
+/*
+ * Pricing: the current plan along the hero's bottom, three plan cards
+ * (Pro framed in green) and the questions.
+ */
+.chm-plan-status {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 0 24px 24px;
+  padding: 14px 18px;
+  border: 1px solid rgba(29, 42, 20, 0.07);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.chm-plan-status__pill {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #f1f1f1;
+  color: #303030;
+  font-size: 12.5px;
+  font-weight: 650;
+}
+.chm-plan-status__pill.is-paid {
+  background: linear-gradient(100deg, #5b9a35, #8dc45c);
+  color: #fff;
+}
+.chm-plan-status__text {
+  flex: 1;
+  min-width: 220px;
+  color: var(--chm-hero-muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.chm-plans {
+  /* Room for Pro's badge, which sits on the card's top edge. */
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  align-items: stretch;
+  gap: 16px;
+}
+.chm-plan {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px 22px 22px;
+  border: 1px solid #e6e6e6;
+  border-radius: 20px;
+  background: #fff;
+  color: #1a1a1a;
+  transition:
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.25s ease;
+}
+.chm-plan:hover {
+  box-shadow: 0 18px 40px -22px rgba(0, 0, 0, 0.3);
+  transform: translateY(-2px);
+}
+/* Pro: a green frame and a soft glow. */
+.chm-plan--pro {
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(#fff, #fff) padding-box,
+    linear-gradient(140deg, #95bf47, #5b9a35) border-box;
+  box-shadow: 0 14px 34px -20px rgba(91, 154, 53, 0.35);
+}
+.chm-plan.is-current {
+  background-color: #fbfdf8;
+}
+.chm-plan--pro.is-current {
+  background:
+    linear-gradient(#fbfdf8, #fbfdf8) padding-box,
+    linear-gradient(140deg, #95bf47, #5b9a35) border-box;
+}
+.chm-plan__badge {
+  position: absolute;
+  top: -11px;
+  left: 22px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: linear-gradient(100deg, #5b9a35, #8dc45c);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 650;
+  box-shadow: 0 6px 14px -6px rgba(91, 154, 53, 0.45);
+}
+.chm-plan__head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.chm-plan__name {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.chm-plan__tagline {
+  color: #616161;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.chm-plan__price {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.chm-plan__amount {
+  color: #1d2a14;
+  font-size: 34px;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.chm-plan__per {
+  color: #616161;
+  font-size: 13px;
+}
+.chm-plan__trial {
+  align-self: flex-start;
+  margin-top: -6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #f1f8e9;
+  color: #5b9a35;
+  font-size: 12px;
+  font-weight: 600;
+}
+.chm-plan__features {
+  display: grid;
+  gap: 10px;
+  margin: 2px 0 0;
+  padding: 14px 0 0;
+  border-top: 1px solid #f0f0f0;
+  list-style: none;
+}
+.chm-plan__features li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.chm-plan__features li.is-muted {
+  grid-template-columns: minmax(0, 1fr);
+  padding-left: 30px;
+  color: #6d7175;
+  font-style: italic;
+}
+.chm-plan__action {
+  margin-top: auto;
+  padding-top: 6px;
+}
+
+/* Questions: quiet cards that open in place. */
+.chm-faq {
+  display: grid;
+  gap: 12px;
+}
+.chm-faq__item {
+  border: 1px solid #ececec;
+  border-radius: 14px;
+  background: #fff;
+  transition: border-color 0.2s ease;
+}
+.chm-faq__item[open] {
+  border-color: #dfe8d6;
+  background: #fbfdf8;
+}
+.chm-faq__item summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  color: #1a1a1a;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+.chm-faq__item summary::-webkit-details-marker {
+  display: none;
+}
+.chm-faq__item summary::after {
+  content: "+";
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #f1f1f1;
+  color: #303030;
+  font-size: 16px;
+  font-weight: 500;
+  transition:
+    transform 0.25s ease,
+    background 0.2s ease;
+}
+.chm-faq__item[open] summary::after {
+  background: #e3f3cf;
+  color: #5b9a35;
+  transform: rotate(45deg);
+}
+.chm-faq__item summary:focus-visible {
+  outline: 2px solid #7cb04f;
+  outline-offset: -2px;
+  border-radius: 14px;
+}
+.chm-faq__item p {
+  margin: 0;
+  padding: 0 18px 18px;
+  color: #4a4a4a;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+/* Editor: "Published! Try it on a draft theme" (no plan for the live theme yet). */
+.chm-published {
+  --chm-hero-ink: #1d2a14;
+  --chm-hero-green: #5b9a35;
+  --chm-hero-muted: #5b6455;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: #1a1a1a;
+}
+.chm-published__hero {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+  padding: 18px 22px 18px 12px;
+  border: 1px solid rgba(29, 42, 20, 0.07);
+  border-radius: 18px;
+  background:
+    radial-gradient(70% 90% at 100% 0%, #e3f3cf 0%, rgba(227, 243, 207, 0) 70%),
+    radial-gradient(60% 80% at 0% 100%, #fbf1e2 0%, rgba(251, 241, 226, 0) 70%),
+    linear-gradient(160deg, #ffffff 0%, #f7faf3 100%);
+}
+.chm-published__bot {
+  display: grid;
+  place-items: center;
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 55%,
+    #fff 0%,
+    #eef7e3 50%,
+    rgba(214, 236, 190, 0) 72%
+  );
+}
+.chm-published__bot .chm-bot.chm-bot--hero {
+  width: 92px;
+  height: 96px;
+}
+.chm-published__intro {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.chm-published__title {
+  margin: 0;
+  color: #1d2a14;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.chm-published__text {
+  margin: 0;
+  color: #5b6455;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+.chm-published__steps {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.chm-published__steps li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border: 1px solid #ececec;
+  border-radius: 12px;
+  background: #fff;
+  color: #4a4a4a;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.chm-published__steps strong {
+  color: #1a1a1a;
+  font-weight: 650;
+}
+.chm-published__num {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(140deg, #8dc45c, #5b9a35);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+.chm-published__plan {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1.5px solid transparent;
+  border-radius: 16px;
+  background:
+    linear-gradient(#fbfdf8, #fbfdf8) padding-box,
+    linear-gradient(140deg, #95bf47, #5b9a35) border-box;
+}
+.chm-published__plan-copy {
+  display: flex;
+  flex: 1;
+  min-width: 220px;
+  flex-direction: column;
+  gap: 3px;
+}
+.chm-published__plan-label {
+  color: #5b9a35;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.chm-published__plan-name {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 700;
+}
+.chm-published__plan-price {
+  color: #616161;
+  font-size: 13px;
+  font-weight: 500;
+}
+.chm-published__plan-text {
+  color: #5b6455;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.chm-published .chm-plan__trial {
+  margin-top: 0;
+}
+
+/* Help: the email card along the hero's bottom, shortcuts, grouped FAQ. */
+.chm-contact {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  margin: 0 24px 24px;
+  padding: 16px 18px;
+  border: 1px solid rgba(29, 42, 20, 0.07);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.78);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.chm-contact__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: linear-gradient(140deg, #eef7e3, #d9eec2);
+  color: #5b9a35;
+  box-shadow: inset 0 0 0 1px rgba(91, 154, 53, 0.12);
+}
+.chm-contact__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.chm-contact__title {
+  color: var(--chm-hero-ink);
+  font-size: 15px;
+  font-weight: 650;
+}
+.chm-contact__text {
+  color: var(--chm-hero-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.chm-contact__text strong {
+  color: var(--chm-hero-ink);
+  font-weight: 650;
+}
+.chm-contact__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chm-quick {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+.chm-quick__card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  border: 1px solid #e8e8e8;
+  border-radius: 16px;
+  background: #fff;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+.chm-quick__card:hover {
+  border-color: #dfe8d6;
+  box-shadow: 0 12px 28px -18px rgba(29, 42, 20, 0.35);
+  transform: translateY(-2px);
+}
+.chm-quick__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #1a1a1a;
+  font-size: 14px;
+  font-weight: 650;
+}
+.chm-quick__title::after {
+  content: "→";
+  color: #5b9a35;
+  font-weight: 600;
+  transition: transform 0.2s ease;
+}
+.chm-quick__card:hover .chm-quick__title::after {
+  transform: translateX(3px);
+}
+.chm-quick__text {
+  color: #616161;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.chm-faq-groups {
+  display: grid;
+  gap: 36px;
+  padding-block: 4px;
+}
+.chm-faq-group {
+  display: grid;
+  gap: 14px;
+}
+.chm-faq-group__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #5b9a35;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.chm-faq-group__title::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #95bf47;
+  box-shadow: 0 0 0 3px rgba(149, 191, 71, 0.22);
+}
+
+/* A checklist inside an answer, and the "Still stuck?" line after it. */
+.chm-faq__steps {
+  display: grid;
+  gap: 8px;
+  margin: -6px 0 0;
+  padding: 0 18px 18px;
+  list-style: none;
+  counter-reset: chm-step;
+}
+.chm-faq__steps li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  color: #4a4a4a;
+  font-size: 13.5px;
+  line-height: 1.55;
+  counter-increment: chm-step;
+}
+.chm-faq__steps li::before {
+  content: counter(chm-step);
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(140deg, #8dc45c, #5b9a35);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+.chm-faq__contact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0 18px 18px;
+  padding-top: 14px;
+  border-top: 1px solid #ececec;
+  color: #4a4a4a;
+  font-size: 13.5px;
+  font-weight: 600;
 }
 
 /* The live menu's card: name, status and actions beside its phone. */
@@ -795,11 +1545,11 @@
   background: #b5b5b5;
 }
 .chm-featured__kicker.is-live {
-  color: #3f7a22;
+  color: #5b9a35;
 }
 /* Live: a softly pulsing dot. */
 .chm-featured__kicker.is-live::before {
-  background: #5fae2f;
+  background: #8dc45c;
   animation: chm-featured-pulse 2s ease-out infinite;
 }
 .chm-featured__name {
@@ -856,12 +1606,12 @@
 
 /* Narrow admin: Chopi above the words, tiles two by two. */
 @container (max-width: 720px) {
-  .chm-hero__blank {
-    grid-template-columns: minmax(0, 1fr);
+  .chm-contact {
+    grid-template-columns: auto minmax(0, 1fr);
     margin: 0 16px 16px;
   }
-  .chm-hero__blank .chm-sketch {
-    display: none;
+  .chm-contact__actions {
+    grid-column: 1 / -1;
   }
   .chm-hero__main {
     grid-template-columns: minmax(0, 1fr);
@@ -886,6 +1636,10 @@
     animation: none;
   }
   .chm-look,
+  .chm-quick__card,
+  .chm-start,
+  .chm-plan,
+  .chm-faq__item summary::after,
   .chm-filter,
   .chm-pv__highlight,
   .chm-look__cta,

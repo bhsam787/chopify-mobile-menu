@@ -11,7 +11,7 @@ import type {
   UiTextKey,
 } from "@chopi/menu-core";
 import { UI_TEXT_DEFAULTS } from "@chopi/menu-core";
-import { color, esc, img, styleAttr } from "./html";
+import { color, esc, img, styleAttr, token } from "./html";
 import { ICONS, icon } from "./icons";
 import { nodeAttr, t, type State } from "./state";
 
@@ -197,7 +197,7 @@ export function searchPanel(state: State, node: HeaderNode): string {
         searchUrl: settings.searchUrl,
       })
     : "";
-  return `<div class="chm-sr chm-sr--${live.layout}${sample ? " has-query" : ""}" id="chm-sr" data-chm-search-panel="${esc(JSON.stringify(settings))}"${nodeAttr(state, node)}${styleAttr(
+  return `<div class="chm-sr chm-sr--${token(live.layout)}${sample ? " has-query" : ""}" id="chm-sr" data-chm-search-panel="${esc(JSON.stringify(settings))}"${nodeAttr(state, node)}${styleAttr(
     live.accent && `--chm-sr-accent:${color(live.accent)}`,
     searchVars(live, "panel"),
   )}${sample ? "" : " hidden"}>${searchStart(words, popular, [], live.recent !== false)}<div class="chm-sr__results" aria-live="polite">${results}</div></div>`;
