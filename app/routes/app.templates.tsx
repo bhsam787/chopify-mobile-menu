@@ -33,6 +33,7 @@ import { PhoneStage } from "../components/PhoneStage";
 import { TemplateDetails } from "../components/TemplateDetails";
 import { FEATURE_LABELS, TEMPLATE_COPY } from "../components/templateCopy";
 import galleryStyles from "../components/gallery.css?url";
+import { useElementEvent } from "../components/useElementEvent";
 import showcaseStyles from "../components/showcase.css?url";
 import { ChopiStage } from "../home/HomeHero";
 import { StartChoices } from "../templates/StartChoices";
@@ -149,6 +150,9 @@ export default function Templates() {
     );
   const closePreview = () =>
     setSearchParams({}, { replace: true, preventScrollReset: true });
+  // However the preview closes (Done, Escape, backdrop), forget it, so the
+  // same template can be previewed again.
+  useElementEvent(previewModal, "hide", closePreview);
 
   useEffect(() => {
     if (previewing) previewModal.current?.showOverlay();
@@ -322,7 +326,6 @@ export default function Templates() {
         heading={previewing?.name ?? "Template"}
         size="large"
         ref={previewModal}
-        onHide={closePreview}
       >
         {previewing && (
           <s-query-container>

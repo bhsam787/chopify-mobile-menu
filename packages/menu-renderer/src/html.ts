@@ -1,5 +1,5 @@
 import type { BoxStyle, Spacing, TextStyle } from "@chopi/menu-core";
-import { isSafeUrl, richToHtml } from "@chopi/menu-core";
+import { normalizeLink, richToHtml } from "@chopi/menu-core";
 
 export function esc(value: unknown): string {
   return String(value ?? "")
@@ -16,9 +16,9 @@ export function esc(value: unknown): string {
  * admin preview and on the storefront.
  */
 
-/** A link target that can't run script (http(s), relative, mailto, tel, #). */
+/** A link target that can't run script (see normalizeLink), or null. */
 export function safeUrl(url: string | null | undefined): string | null {
-  return url && isSafeUrl(url) ? url : null;
+  return normalizeLink(url);
 }
 
 /** A finite number, else the fallback. */

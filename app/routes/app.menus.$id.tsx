@@ -90,6 +90,7 @@ import { SectionLibrary } from "../editor/SectionLibrary";
 import { convertScreenToCanvas, isCanvasScreen } from "../canvas/convert";
 import { reorder, SortableItem, SortableList } from "../editor/Sortable";
 import editorStyles from "../editor/editor.css?url";
+import { useElementEvent } from "../components/useElementEvent";
 import showcaseStyles from "../components/showcase.css?url";
 
 export const links: LinksFunction = () => [
@@ -473,14 +474,9 @@ function Modal({
   onClosed?: () => void;
   children: ReactNode;
 }) {
+  useElementEvent(modalRef, "afterhide", onClosed);
   return (
-    <s-modal
-      id={id}
-      heading={heading}
-      size={size}
-      ref={modalRef}
-      onAfterHide={onClosed}
-    >
+    <s-modal id={id} heading={heading} size={size} ref={modalRef}>
       {children}
       <s-button
         slot="primary-action"
@@ -688,16 +684,23 @@ export default function MenuEditor() {
     const imageUrls =
       "imageUrls" in result && result.imageUrls ? result.imageUrls : {};
     const copiedImages = Object.keys(imageUrls).length > 0;
+    // What the server now has. Computed once: when nothing changed during
+    // the save, the editor gets this same object, so it isn't seen as dirty.
+    const serverCopy =
+      copiedImages && submittedDesign.current
+        ? replaceTemplateImages(submittedDesign.current, imageUrls)
+        : submittedDesign.current;
     if (copiedImages)
-      history.reset(replaceTemplateImages(history.value, imageUrls));
+      history.reset(
+        history.value === submittedDesign.current && serverCopy
+          ? serverCopy
+          : replaceTemplateImages(history.value, imageUrls),
+      );
     if (!result.ok) {
       // A canvas or CSS editor waiting for this save must not open later.
       pendingCanvas.current = null;
       pendingCss.current = false;
-      if (copiedImages && submittedDesign.current)
-        setSavedDesign(
-          replaceTemplateImages(submittedDesign.current, imageUrls),
-        );
+      if (copiedImages && serverCopy) setSavedDesign(serverCopy);
       shopify.toast.show(result.error, { isError: true });
       return;
     }
@@ -711,9 +714,7 @@ export default function MenuEditor() {
       shopify.toast.show("Menu unpublished. Your theme's menu shows again.");
       return;
     }
-    const nowSaved =
-      submittedDesign.current &&
-      replaceTemplateImages(submittedDesign.current, imageUrls);
+    const nowSaved = serverCopy;
     if (nowSaved) setSavedDesign(nowSaved);
     if (result.intent === "publish" && nowSaved) setLiveDesign(nowSaved);
     if (pendingCanvas.current) {

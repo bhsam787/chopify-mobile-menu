@@ -415,7 +415,8 @@ function stories(state: State, node: StoriesNode): string {
 }
 
 function review(state: State, node: ReviewNode): string {
-  const stars = node.stars ?? 0;
+  // A whole number 0–5: anything else could inject markup or throw in repeat().
+  const stars = Math.round(clamp(node.stars, 0, 5));
   return `<figure class="chm-review"${nodeAttr(state, node)}${styleAttr(boxCss(node.box))}><span class="chm-review__mark"${styleAttr(
     node.markColor && `color:${color(node.markColor)}`,
   )}>${ICONS.quote}</span><div class="chm-review__body"><blockquote class="chm-review__quote"${styleAttr(textCss(node.quoteStyle))}>${rich(

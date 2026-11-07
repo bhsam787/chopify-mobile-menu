@@ -2,15 +2,22 @@
 export const CUSTOM_CSS_MAX = 20_000;
 
 /**
- * Parts of CSS that could load or run something from elsewhere. The
+ * At-rules that load other files, matched outside strings only (a ";" or an
+ * "@\\" inside quotes is just text). The whole statement goes, so a leftover
+ * "url(…);" can't eat the next rule.
+ */
+const BLOCKED_AT_RULES: [RegExp, string][] = [
+  [/@import\b[^;{}]*;?/gi, "/* blocked */"],
+  // An escaped at-rule name ("@\\69mport") is read as @import by browsers.
+  [/@\\[^;{}]*;?/g, "/* blocked */"],
+];
+
+/**
+ * Things that could run code, blocked everywhere (strings included). The
  * replacements don't match again, so cleaning twice (compile, then the
  * storefront) gives the same CSS.
  */
 const BLOCKED: [RegExp, string][] = [
-  // The whole statement, so its leftover "url(…);" can't eat the next rule.
-  [/@import\b[^;{}]*;?/gi, "/* blocked */"],
-  // An escaped at-rule name ("@\69mport") is read as @import by browsers.
-  [/@\\[^;{}]*;?/g, "/* blocked */"],
   [/expression\s*\(/gi, "/* blocked */("],
   [/javascript\s*:/gi, "blocked:"],
   [/-moz-binding\s*:/gi, "/* blocked */:"],
@@ -18,14 +25,36 @@ const BLOCKED: [RegExp, string][] = [
   [/(^|[;{\s])behavior\s*:/gi, "$1/* blocked */:"],
 ];
 
+const STRING = /"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'/g;
+/** Placeholder for a string while at-rules are matched (NULs are stripped first). */
+// eslint-disable-next-line no-control-regex -- NUL marks a placeholder.
+const PLACEHOLDER = /\u0000(\d+)\u0000/g;
+
+/**
+ * Safety bound only: the editor and the save action limit what merchants
+ * type to CUSTOM_CSS_MAX. Cleaned CSS is longer (every declaration gets
+ * !important), so cutting at CUSTOM_CSS_MAX here would drop the end of the
+ * merchant's CSS when it's cleaned a second time on the storefront.
+ */
+const CLEAN_LIMIT = CUSTOM_CSS_MAX * 4;
+
 /**
  * The merchant's CSS made safe to put in the menu: nothing that loads other
- * files or runs code, and no "<" (it can't close the style element), within
- * CUSTOM_CSS_MAX. The menu's shadow root keeps it away from the theme.
+ * files or runs code, and no "<" (it can't close the style element). The
+ * menu's shadow root keeps it away from the theme.
  */
 export function cleanCustomCss(css: string | undefined): string {
   if (!css) return "";
-  let clean = css.slice(0, CUSTOM_CSS_MAX).replace(/</g, "\\3C ");
+  const strings: string[] = [];
+  let clean = css
+    .slice(0, CLEAN_LIMIT)
+    // eslint-disable-next-line no-control-regex -- NUL is our placeholder marker.
+    .replace(/\u0000/g, "")
+    .replace(/</g, "\\3C ")
+    .replace(STRING, (match) => `\u0000${strings.push(match) - 1}\u0000`);
+  for (const [pattern, replacement] of BLOCKED_AT_RULES)
+    clean = clean.replace(pattern, replacement);
+  clean = clean.replace(PLACEHOLDER, (_, index: string) => strings[+index]);
   for (const [pattern, replacement] of BLOCKED)
     clean = clean.replace(pattern, replacement);
   return withPriority(clean);

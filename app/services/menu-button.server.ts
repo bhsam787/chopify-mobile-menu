@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { gql, type Admin } from "./admin-graphql.server";
+import { gql, ShopifyUserError, type Admin } from "./admin-graphql.server";
 import { APP_DATA_NAMESPACE, setMetafields } from "./metafields.server";
 
 /**
@@ -14,14 +14,18 @@ import { APP_DATA_NAMESPACE, setMetafields } from "./metafields.server";
 
 const KEY = "menu_buttons";
 const EMBED_BLOCK = "/blocks/menu-embed/";
+/** The theme extension's uid (extensions/chopi-menu/shopify.extension.toml). */
+const EXTENSION_UID = "db6280b5-1632-146f-59f9-2e076028ba1df2eb456c";
 /** How long a pick window stays valid. */
 const PICK_TTL_MS = 60 * 60 * 1000;
 const SELECTOR_MAX = 300;
 
+/**
+ * One picked icon. The whole map is printed on every storefront page, so it
+ * holds nothing private (no theme names: the app lists those itself).
+ */
 export interface MenuButton {
   selector: string;
-  /** Theme name when it was picked, for the list. */
-  theme: string;
   pickedAt: string;
 }
 export type MenuButtons = Record<string, MenuButton>;
@@ -83,6 +87,7 @@ const MENU_BUTTONS = `#graphql
       id
       metafield(namespace: "chopi", key: "menu_buttons") {
         value
+        compareDigest
       }
     }
   }
@@ -105,8 +110,13 @@ function embedOn(settingsData: string | undefined): boolean | null {
       type?: string;
       disabled?: boolean;
     }[];
-    return blocks.some(
-      (block) => block.type?.includes(EMBED_BLOCK) && block.disabled !== true,
+    // Block types look like "shopify://apps/<app>/blocks/menu-embed/<id>".
+    // Prefer blocks that carry our extension's id; another app's block with
+    // the same common name must not count as ours.
+    const embeds = blocks.filter((block) => block.type?.includes(EMBED_BLOCK));
+    const ours = embeds.filter((block) => block.type?.includes(EXTENSION_UID));
+    return (ours.length ? ours : embeds).some(
+      (block) => block.disabled !== true,
     );
   } catch {
     return null;
@@ -175,40 +185,62 @@ export async function embedStatuses(
   return statuses;
 }
 
-async function readStored(
-  admin: Admin,
-): Promise<{ ownerId: string; buttons: MenuButtons }> {
+async function readStored(admin: Admin): Promise<{
+  ownerId: string;
+  buttons: MenuButtons;
+  digest: string | null;
+}> {
   const data = await gql<{
-    currentAppInstallation: { id: string; metafield: { value: string } | null };
+    currentAppInstallation: {
+      id: string;
+      metafield: { value: string; compareDigest: string } | null;
+    };
   }>(admin, MENU_BUTTONS);
+  const metafield = data.currentAppInstallation.metafield;
   let buttons: MenuButtons = {};
   try {
-    const value = data.currentAppInstallation.metafield?.value;
-    if (value) buttons = JSON.parse(value) as MenuButtons;
+    if (metafield?.value) buttons = JSON.parse(metafield.value) as MenuButtons;
   } catch {
     // A broken value is replaced on the next save.
   }
-  return { ownerId: data.currentAppInstallation.id, buttons };
+  return {
+    ownerId: data.currentAppInstallation.id,
+    buttons,
+    digest: metafield?.compareDigest ?? null,
+  };
 }
 
 export async function readMenuButtons(admin: Admin): Promise<MenuButtons> {
   return (await readStored(admin)).buttons;
 }
 
+/**
+ * Read, change, write, guarded by the metafield's digest: two picks saved at
+ * the same moment (two themes, two tabs) can't overwrite each other; the
+ * loser reads again and retries.
+ */
 async function writeMenuButtons(
   admin: Admin,
   change: (buttons: MenuButtons) => MenuButtons,
 ) {
-  const { ownerId, buttons } = await readStored(admin);
-  await setMetafields(admin, [
-    {
-      ownerId,
-      namespace: APP_DATA_NAMESPACE,
-      key: KEY,
-      type: "json",
-      value: JSON.stringify(change(buttons)),
-    },
-  ]);
+  for (let attempt = 0; ; attempt++) {
+    const { ownerId, buttons, digest } = await readStored(admin);
+    try {
+      await setMetafields(admin, [
+        {
+          ownerId,
+          namespace: APP_DATA_NAMESPACE,
+          key: KEY,
+          type: "json",
+          value: JSON.stringify(change(buttons)),
+          compareDigest: digest,
+        },
+      ]);
+      return;
+    } catch (error) {
+      if (attempt >= 2 || !(error instanceof ShopifyUserError)) throw error;
+    }
+  }
 }
 
 /**
@@ -219,23 +251,22 @@ export function cleanSelector(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const selector = value.trim();
   if (!selector || selector.length > SELECTOR_MAX) return null;
-  if (/[<{};\\\n\r]/.test(selector)) return null;
+  // Backslashes are fine: CSS.escape uses them (ids starting with a digit,
+  // "md:hidden" classes). Braces, semicolons, "<" and line breaks are not.
+  if (/[<{};\n\r]/.test(selector)) return null;
+  // Catch-alls would turn every button or link into the menu icon.
+  if (/^(\*|[a-z]+)$/i.test(selector)) return null;
   return selector;
 }
 
 export function saveMenuButton(
   admin: Admin,
   themeId: string,
-  themeName: string,
   selector: string,
 ) {
   return writeMenuButtons(admin, (buttons) => ({
     ...buttons,
-    [themeId]: {
-      selector,
-      theme: themeName.slice(0, 80),
-      pickedAt: new Date().toISOString(),
-    },
+    [themeId]: { selector, pickedAt: new Date().toISOString() },
   }));
 }
 
@@ -263,9 +294,10 @@ const base64url = (value: string | Buffer) =>
   Buffer.from(value).toString("base64url");
 
 function signature(payload: string): string {
-  return createHmac("sha256", process.env.SHOPIFY_API_SECRET || "")
-    .update(payload)
-    .digest("base64url");
+  const secret = process.env.SHOPIFY_API_SECRET;
+  // Never sign (or accept) tokens with an empty key: anyone could forge them.
+  if (!secret) throw new Error("SHOPIFY_API_SECRET is not set");
+  return createHmac("sha256", secret).update(payload).digest("base64url");
 }
 
 export function signPick(
@@ -288,7 +320,12 @@ export function verifyPick(token: unknown): PickClaims | null {
   if (typeof token !== "string" || token.length > 1000) return null;
   const [payload, sig] = token.split(".");
   if (!payload || !sig) return null;
-  const expected = Buffer.from(signature(payload));
+  let expected: Buffer;
+  try {
+    expected = Buffer.from(signature(payload));
+  } catch {
+    return null;
+  }
   const given = Buffer.from(sig);
   if (expected.length !== given.length || !timingSafeEqual(expected, given))
     return null;

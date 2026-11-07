@@ -7,6 +7,15 @@
  */
 
 const SESSION_PREFIX = "chopi-pick:";
+/** Events the theme mustn't see while picking (its drawer stays shut). */
+const SWALLOWED = [
+  "pointerdown",
+  "pointerup",
+  "mousedown",
+  "mouseup",
+  "touchstart",
+  "touchend",
+];
 /** Set on <html> while picking: the menu loader then leaves clicks alone. */
 const PICKING_ATTR = "data-chopi-picking";
 
@@ -18,6 +27,8 @@ interface PickSession {
   /** Numeric theme id the window was opened for. */
   theme: string;
   name: string;
+  /** One-time code the app checks on our messages. */
+  n?: string;
 }
 
 function readSession(): PickSession | null {
@@ -35,8 +46,12 @@ const TAPPABLE =
   "button, a, summary, label, [role='button'], [aria-controls], [aria-expanded], [onclick], [tabindex]";
 
 function tappableOf(target: Element): HTMLElement | null {
-  const element = target.closest<HTMLElement>(TAPPABLE) ?? target;
-  return element instanceof HTMLElement &&
+  // An icon inside a plain clickable <div> has no tappable ancestor: use the
+  // nearest HTML element (an <svg> or <path> itself can't be the trigger).
+  let element: Element | null = target.closest(TAPPABLE) ?? target;
+  while (element && !(element instanceof HTMLElement))
+    element = element.parentElement;
+  return element &&
     element !== document.body &&
     element !== document.documentElement
     ? element
@@ -48,71 +63,107 @@ const STATE_CLASS =
   /^(is-|has-|active|open|opened|closed|show|hide|hidden|visible|focus|hover|selected|current|animate|transition|loaded|sticky)/i;
 /** Values that look generated (long digit runs, hashes): unstable. */
 const GENERATED = /\d{4,}|[a-f0-9]{8,}|__[a-z0-9]{5,}$/i;
-const ATTRIBUTES = [
+/** Attributes that name what a button opens: stable across languages. */
+const STRUCTURAL = [
   "aria-controls",
   "data-action",
   "data-target",
   "data-toggle",
   "data-drawer",
   "data-modal",
-  "aria-label",
-  "name",
-  "for",
 ];
+/** Wording a theme translates: only when nothing else identifies the icon. */
+const WORDED = ["aria-label", "name", "for"];
 
-/** A selector that matches `element` (and, ideally, nothing else visible). */
-export function selectorFor(element: HTMLElement): string {
+const stableClasses = (element: Element) =>
+  [...element.classList].filter(
+    (name) => !STATE_CLASS.test(name) && !GENERATED.test(name),
+  );
+
+/**
+ * Whether `selector` picks out `element` safely: it must match it, and any
+ * other match must be a copy of the same button (themes render the header
+ * twice for the sticky version), never a different button.
+ */
+function picksOut(selector: string, element: HTMLElement): boolean {
+  let found: Element[];
+  try {
+    found = [...document.querySelectorAll(selector)];
+  } catch {
+    return false;
+  }
+  if (!found.includes(element)) return false;
+  if (found.length === 1) return true;
+  const signature = (node: Element) =>
+    `${node.tagName}|${node.getAttribute("aria-controls") ?? ""}|${stableClasses(node).sort().join(" ")}|${node.textContent?.trim().slice(0, 40) ?? ""}`;
+  const own = signature(element);
+  return found.length <= 3 && found.every((node) => signature(node) === own);
+}
+
+/**
+ * A selector for `element` that won't catch other buttons, or null when
+ * there's no safe one (the merchant is then pointed to the developer).
+ * Structural attributes and classes come before translated labels, so the
+ * icon keeps working in every language of the store.
+ */
+export function selectorFor(element: HTMLElement): string | null {
   const tag = element.tagName.toLowerCase();
-  const matchesWell = (selector: string) => {
-    try {
-      const found = document.querySelectorAll(selector);
-      // Themes often render the header twice (sticky copy): up to 3 is fine.
-      return found.length <= 3 && [...found].includes(element);
-    } catch {
-      return false;
-    }
-  };
   const attr = (name: string, value: string) =>
-    `[${name}="${value.replace(/"/g, '\\"')}"]`;
+    `${tag}[${name}="${CSS.escape(value)}"]`;
+  const classes = stableClasses(element);
 
   const candidates: string[] = [];
   if (element.id && !GENERATED.test(element.id))
     candidates.push(`#${CSS.escape(element.id)}`);
-  for (const name of ATTRIBUTES) {
+  for (const name of STRUCTURAL) {
     const value = element.getAttribute(name);
     if (value && value.length <= 60 && !GENERATED.test(value))
-      candidates.push(`${tag}${attr(name, value)}`);
+      candidates.push(attr(name, value));
   }
-  const classes = [...element.classList].filter(
-    (name) => !STATE_CLASS.test(name) && !GENERATED.test(name),
-  );
   for (const name of classes) candidates.push(`${tag}.${CSS.escape(name)}`);
   for (let a = 0; a < classes.length; a++)
     for (let b = a + 1; b < classes.length; b++)
       candidates.push(
         `${tag}.${CSS.escape(classes[a])}.${CSS.escape(classes[b])}`,
       );
-  const found = candidates.find(matchesWell);
+  const found = candidates.find((selector) => picksOut(selector, element));
   if (found) return found;
 
-  // Nothing unique on the element itself: anchor on a named ancestor.
-  let path = `${tag}${classes[0] ? `.${CSS.escape(classes[0])}` : ""}`;
+  // Nothing unique on the element itself: anchor on a named ancestor, with
+  // the element's position among its siblings.
+  const step = (node: Element) => {
+    const nodeTag = node.tagName.toLowerCase();
+    const named = stableClasses(node)[0];
+    if (node.id && !GENERATED.test(node.id)) return `#${CSS.escape(node.id)}`;
+    const base = named ? `${nodeTag}.${CSS.escape(named)}` : nodeTag;
+    const siblings = node.parentElement
+      ? [...node.parentElement.children].filter(
+          (sibling) => sibling.tagName === node.tagName,
+        )
+      : [];
+    return siblings.length > 1
+      ? `${base}:nth-of-type(${siblings.indexOf(node) + 1})`
+      : base;
+  };
+  let path = step(element);
   let parent = element.parentElement;
-  for (let depth = 0; parent && depth < 4; depth++) {
-    const parentTag = parent.tagName.toLowerCase();
-    const named =
-      parent.id && !GENERATED.test(parent.id)
-        ? `#${CSS.escape(parent.id)}`
-        : [...parent.classList].find(
-              (name) => !STATE_CLASS.test(name) && !GENERATED.test(name),
-            )
-          ? `${parentTag}.${CSS.escape([...parent.classList].find((name) => !STATE_CLASS.test(name) && !GENERATED.test(name))!)}`
-          : parentTag;
-    path = `${named} > ${path}`;
-    if (matchesWell(path)) return path;
+  for (
+    let depth = 0;
+    parent && parent !== document.body && depth < 5;
+    depth++
+  ) {
+    path = `${step(parent)} > ${path}`;
+    if (picksOut(path, element)) return path;
     parent = parent.parentElement;
   }
-  return path;
+
+  // Last resort: the wording (it may differ in other languages).
+  for (const name of WORDED) {
+    const value = element.getAttribute(name);
+    if (value && value.length <= 60 && picksOut(attr(name, value), element))
+      return attr(name, value);
+  }
+  return null;
 }
 
 /** Chopi, the app's helper, pointing up at the header (where menu icons live). */
@@ -197,7 +248,7 @@ function escapeHtml(value: string): string {
 function notifyApp(session: PickSession, type: "alive" | "saved") {
   try {
     window.opener?.postMessage(
-      { type: `chopi:pick-${type}`, theme: session.theme },
+      { type: `chopi:pick-${type}`, theme: session.theme, nonce: session.n },
       new URL(session.api).origin,
     );
   } catch {
@@ -265,7 +316,8 @@ function start(session: PickSession) {
     if (++checks >= 30) window.clearInterval(watch);
   }, 1000);
   window.addEventListener("resize", fitAboveBottomBar);
-  const themeId = String(window.Shopify?.theme?.id ?? "");
+  // Without Shopify.theme (rare) trust the window's own theme.
+  const themeId = String(window.Shopify?.theme?.id ?? session.theme);
   if (themeId && themeId !== session.theme) {
     // Shopify keeps showing the last previewed theme: switch this window to
     // the right one, once (Shopify strips the parameter for the live theme,
@@ -359,7 +411,9 @@ function start(session: PickSession) {
   // The theme must not react while picking (its own drawer stays shut).
   const swallow = (event: Event) => {
     if (ours(event)) return;
-    event.preventDefault();
+    // Cancelling a touch would also cancel the tap's click (our pick):
+    // touches are only kept from the theme's own listeners.
+    if (!event.type.startsWith("touch")) event.preventDefault();
     event.stopImmediatePropagation();
   };
 
@@ -382,7 +436,19 @@ function start(session: PickSession) {
     intro();
   };
 
-  const confirm = (element: HTMLElement, selector: string) => {
+  const confirm = (element: HTMLElement, selector: string | null) => {
+    if (!selector) {
+      show(
+        "thinking",
+        `<span class="eyebrow">Hmm</span><h2>I can't tell this icon apart</h2>
+        <p>Your theme builds this button in a way I can't point to safely. Try tapping right on the ☰ lines, or close this window and send us a message from the app: we'll set it up for you.</p>`,
+        `<button type="button" class="primary" data-again>Choose again</button>`,
+      );
+      card
+        .querySelector("[data-again]")!
+        .addEventListener("click", release, { once: true });
+      return;
+    }
     show(
       "thinking",
       `<span class="eyebrow">Check this</span><h2>Is this your menu icon?</h2>
@@ -429,7 +495,7 @@ function start(session: PickSession) {
   const done = (element: HTMLElement, selector: string) => {
     window.removeEventListener("pointermove", onMove, true);
     window.removeEventListener("click", onPick, true);
-    for (const type of ["pointerdown", "mousedown", "touchstart"])
+    for (const type of SWALLOWED)
       window.removeEventListener(type, swallow, true);
     document.documentElement.removeAttribute(PICKING_ATTR);
     // Let the menu loader on this page use the new icon right away.
@@ -441,14 +507,19 @@ function start(session: PickSession) {
     box.classList.remove("is-locked");
     locked = element;
     outline(element);
+    // The loader sets window.ChopiMenu only when the menu runs on this theme
+    // (published, and the live theme needs a plan that covers it).
     const published = Boolean(document.getElementById("chopi-menu-data"));
+    const running = Boolean(window.ChopiMenu);
     show(
       "happy",
       `<span class="eyebrow">Saved</span><h2>Yay, all set!</h2>
       <p>${
-        published
+        running
           ? "Tap the menu icon to try it: your Chopi menu opens. You can close this window anytime."
-          : "Publish your menu in the app, then this icon opens it for shoppers."
+          : published
+            ? "Your menu will open from this icon. On your live theme it shows once you choose a plan; try it on a draft theme anytime."
+            : "Publish your menu in the app, then this icon opens it for shoppers."
       }</p>`,
       `<button type="button" class="primary" data-finish>Done</button>`,
     );
@@ -459,8 +530,7 @@ function start(session: PickSession) {
 
   window.addEventListener("pointermove", onMove, true);
   window.addEventListener("click", onPick, true);
-  for (const type of ["pointerdown", "mousedown", "touchstart"])
-    window.addEventListener(type, swallow, true);
+  for (const type of SWALLOWED) window.addEventListener(type, swallow, true);
 }
 
 const session = readSession();

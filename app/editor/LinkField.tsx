@@ -1,7 +1,7 @@
 import { useEffect, useId, useState, type ReactNode } from "react";
 import { useFetcher } from "react-router";
 import type { LinkRef, ResourceLink, RouteKey, Screen } from "@chopi/menu-core";
-import { ROUTES, resourceKey } from "@chopi/menu-core";
+import { normalizeLink, ROUTES, resourceKey } from "@chopi/menu-core";
 import type { ResolvedResource } from "@chopi/menu-renderer";
 import { TextField } from "./controls";
 
@@ -269,6 +269,12 @@ export function LinkField({
           />
           {browse}
         </s-grid>
+      )}
+      {value.type === "url" && value.url && !normalizeLink(value.url) && (
+        <s-text tone="critical">
+          This isn&apos;t a link shoppers can open. Start it with https://, or
+          browse your store.
+        </s-text>
       )}
       <s-text color="subdued">
         {sample

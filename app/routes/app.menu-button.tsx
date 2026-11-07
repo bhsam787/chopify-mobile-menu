@@ -4,13 +4,9 @@ import type {
   HeadersFunction,
   LinksFunction,
   LoaderFunctionArgs,
+  ShouldRevalidateFunction,
 } from "react-router";
-import {
-  useFetcher,
-  useLoaderData,
-  useRevalidator,
-  useRouteError,
-} from "react-router";
+import { useFetcher, useLoaderData, useRouteError } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import prisma from "../db.server";
 import { authenticate } from "../shopify.server";
@@ -84,6 +80,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
   const form = await request.formData();
   const intent = form.get("intent");
+  // Polled while the store window is open: only the saved icons, cheaply.
+  if (intent === "buttons")
+    return { ok: true as const, buttons: await readMenuButtons(admin) };
   if (intent === "statuses") {
     const ids = String(form.get("ids") ?? "").split(",");
     try {
@@ -110,11 +109,22 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 };
 
+/** Status checks and polls don't need the page's data reloaded. */
+export const shouldRevalidate: ShouldRevalidateFunction = ({
+  formData,
+  defaultShouldRevalidate,
+}) => {
+  const intent = formData?.get("intent");
+  return intent === "statuses" || intent === "buttons"
+    ? false
+    : defaultShouldRevalidate;
+};
+
 /** The phone-sized store window, centered over the admin. */
 function openStoreWindow(
   shop: string,
   theme: StoreTheme,
-  session: { t: string; api: string },
+  session: { t: string; api: string; n: string },
 ): Window | null {
   const url = new URL(`https://${shop}/`);
   // Always name the theme, the live one too: Shopify otherwise keeps showing
@@ -149,16 +159,26 @@ const STEPS = [
 export default function MenuButtonPage() {
   const { shop, apiKey, published, themes, statuses, buttons, sessions } =
     useLoaderData<typeof loader>();
-  const revalidator = useRevalidator();
   const reset = useFetcher<typeof action>();
   const statusFetcher = useFetcher<typeof action>();
+  const buttonsFetcher = useFetcher<typeof action>();
   /** The theme whose store window is open, waiting for the pick. */
   const [waiting, setWaiting] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [shown, setShown] = useState(DRAFTS_PAGE);
   const [moreStatuses, setMoreStatuses] = useState<EmbedStatuses>({});
+  /** Saved icons: from the page's data, then from polls while picking. */
+  const [current, setCurrent] = useState<MenuButtons>(buttons);
   const storeWindow = useRef<Window | null>(null);
   const before = useRef<MenuButtons>(buttons);
+  /** Ties the store window's messages to this pick (other windows ignored). */
+  const nonce = useRef("");
+
+  useEffect(() => setCurrent(buttons), [buttons]);
+  useEffect(() => {
+    const data = buttonsFetcher.data;
+    if (data && "buttons" in data && data.buttons) setCurrent(data.buttons);
+  }, [buttonsFetcher.data]);
 
   const live = themes.find((theme) => theme.live);
   const editorUrl = (themeId: string) =>
@@ -175,38 +195,45 @@ export default function MenuButtonPage() {
     id in moreStatuses ? moreStatuses[id] : statuses[id];
   const liveEmbed = live ? embedOf(live.id) : null;
 
-  // Load the app embed status of drafts that came into view.
+  // Load the app embed status of drafts that came into view (again once a
+  // request finishes, for any that appeared meanwhile).
   const missing = visible
     .filter((theme) => embedOf(theme.id) === undefined)
     .map((theme) => theme.id)
     .join(",");
+  const requested = useRef("");
   useEffect(() => {
-    if (missing && statusFetcher.state === "idle")
-      statusFetcher.submit(
-        { intent: "statuses", ids: missing },
-        { method: "post" },
-      );
-    // statusFetcher is stable enough here: only `missing` drives requests.
+    if (!missing || statusFetcher.state !== "idle") return;
+    requested.current = missing;
+    statusFetcher.submit(
+      { intent: "statuses", ids: missing },
+      { method: "post" },
+    );
+    // statusFetcher.submit is stable; `missing` and the idle state drive it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [missing]);
+  }, [missing, statusFetcher.state]);
   useEffect(() => {
     const data = statusFetcher.data;
-    if (data && "statuses" in data && data.statuses) {
-      const loaded = data.statuses;
-      // Unknown stays unknown (null), so the same themes aren't asked again.
-      setMoreStatuses((current) => ({
-        ...current,
-        ...Object.fromEntries(
-          missing.split(",").map((id) => [id, loaded[id] ?? null]),
-        ),
-      }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!data || !("statuses" in data) || !data.statuses) return;
+    const loaded = data.statuses;
+    // Exactly the themes asked about; unknown stays null (not asked again).
+    setMoreStatuses((known) => ({
+      ...known,
+      ...Object.fromEntries(
+        requested.current
+          .split(",")
+          .filter(Boolean)
+          .map((id) => [id, loaded[id] ?? null]),
+      ),
+    }));
   }, [statusFetcher.data]);
 
-  // The latest revalidator, for timers that outlive a render.
-  const revalidatorRef = useRef(revalidator);
-  revalidatorRef.current = revalidator;
+  const pollButtons = () =>
+    buttonsFetcher.submit({ intent: "buttons" }, { method: "post" });
+  const pollRef = useRef(pollButtons);
+  pollRef.current = pollButtons;
+  const pollBusy = useRef(false);
+  pollBusy.current = buttonsFetcher.state !== "idle";
 
   // While the store window is open: look for the saved icon every few
   // seconds, and stop waiting as soon as the window is closed. A window
@@ -218,7 +245,7 @@ export default function MenuButtonPage() {
     let lastBeat = 0;
     const stop = () => {
       setWaiting(null);
-      revalidatorRef.current.revalidate();
+      pollRef.current();
     };
     const closed = () => {
       try {
@@ -237,15 +264,19 @@ export default function MenuButtonPage() {
         stop();
     };
     const onMessage = (event: MessageEvent) => {
-      const data = event.data as { type?: string; theme?: string } | null;
-      if (!data || data.theme !== waiting) return;
+      const data = event.data as {
+        type?: string;
+        theme?: string;
+        nonce?: string;
+      } | null;
+      if (!data || data.nonce !== nonce.current || data.theme !== waiting)
+        return;
       if (data.type === "chopi:pick-alive") lastBeat = Date.now();
-      if (data.type === "chopi:pick-saved") revalidatorRef.current.revalidate();
+      if (data.type === "chopi:pick-saved") pollRef.current();
     };
     const checkTimer = window.setInterval(check, 700);
     const pollTimer = window.setInterval(() => {
-      if (revalidatorRef.current.state === "idle")
-        revalidatorRef.current.revalidate();
+      if (!pollBusy.current) pollRef.current();
     }, 2500);
     window.addEventListener("message", onMessage);
     window.addEventListener("focus", check);
@@ -261,12 +292,15 @@ export default function MenuButtonPage() {
 
   useEffect(() => {
     if (!waiting) return;
-    const picked = buttons[waiting];
+    const picked = current[waiting];
     if (picked && picked.pickedAt !== before.current[waiting]?.pickedAt) {
-      shopify.toast.show(`Menu icon saved for ${picked.theme}`);
+      const name = themes.find((theme) => theme.id === waiting)?.name;
+      shopify.toast.show(
+        name ? `Menu icon saved for ${name}` : "Menu icon saved",
+      );
       setWaiting(null);
     }
-  }, [buttons, waiting]);
+  }, [current, waiting, themes]);
 
   useEffect(() => {
     if (reset.state !== "idle" || !reset.data) return;
@@ -276,8 +310,12 @@ export default function MenuButtonPage() {
   }, [reset.state, reset.data]);
 
   const pick = (theme: StoreTheme) => {
-    before.current = buttons;
-    const opened = openStoreWindow(shop, theme, sessions[theme.id]);
+    before.current = current;
+    nonce.current = Math.random().toString(36).slice(2);
+    const opened = openStoreWindow(shop, theme, {
+      ...sessions[theme.id],
+      n: nonce.current,
+    });
     if (!opened) {
       shopify.toast.show(
         "Your browser blocked the store window. Allow pop-ups for Shopify and try again.",
@@ -295,7 +333,7 @@ export default function MenuButtonPage() {
       theme={theme}
       featured={featured}
       embedOn={embedOf(theme.id)}
-      picked={buttons[theme.id]}
+      picked={current[theme.id]}
       waiting={waiting === theme.id}
       busy={Boolean(waiting)}
       resetting={
@@ -313,7 +351,7 @@ export default function MenuButtonPage() {
     />
   );
 
-  const anyPicked = themes.some((theme) => buttons[theme.id]);
+  const anyPicked = themes.some((theme) => current[theme.id]);
 
   return (
     <s-page heading="Menu button" inlineSize="large">

@@ -115,18 +115,27 @@ function start() {
   // The page's own overflow before opening, restored on close.
   let pageOverflow = "";
 
+  /** Opening or open (set before the full menu has loaded). */
+  let opened = false;
+
   const onClose = () => {
+    opened = false;
     document.documentElement.style.overflow = pageOverflow;
     trigger?.setAttribute("aria-expanded", "false");
     trigger?.focus({ preventScroll: true });
   };
 
   const open = async () => {
+    // A second tap while it's opening (or open) must not save the locked
+    // overflow as the page's own: the page would never scroll again.
+    if (opened) return;
+    opened = true;
     try {
       const app = await loadApp(data.appUrl);
       controller ??= app.mount(data.menu, data.context, onClose);
     } catch {
       // Fall back to the theme's own menu rather than leaving the shopper stuck.
+      opened = false;
       fallingBack = true;
       trigger?.click();
       return;

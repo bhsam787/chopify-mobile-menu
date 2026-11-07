@@ -17,6 +17,7 @@
 - Billing: Shopify App Pricing (plans in the Partner Dashboard, hosted plan page). Free = everything, and published menus run on draft themes; the live theme needs Starter (template menus) or Pro (canvas menus), checked by the storefront. Development stores are unrestricted (`livePlan()`). Plans and the gating rule: `app/billing/plans.ts`; plan reads (Partner API `activeSubscription`, 5-minute cache on `Shop`): `app/services/billing.server.ts`. Never create charges with the Billing API. See PLAN.md §8.
 - Header: one per menu, shared by every screen. Ready-made styles live in `packages/menu-core/src/headerStyles.ts`; editor UI in `app/editor/HeaderFields.tsx`. The canvas editor shows the header and footer around the canvas (read-only).
 - Editor: `app/routes/app.menus.$id.tsx` + `app/editor/*`. Polaris form fields go through `app/editor/controls.tsx` (React 18 doesn't wire custom-element change events).
+- Polaris component events (`hide`, `afterhide`, …): React 18 drops `onHide={…}`-style props on custom elements, so they never fire. Use `useElementEvent(ref, "afterhide", handler)` (`app/components/useElementEvent.ts`).
 - Shopify auth/client: `app/shopify.server.ts`. Prisma client: `app/db.server.ts`. Shop rows: `app/models/shop.server.ts`.
 - Database: PostgreSQL (Neon). `DATABASE_URL` (pooled) and `DIRECT_URL` (direct, used by migrations) live in `.env` — never commit or print them.
 - Schema changes: edit `prisma/schema.prisma`, then `npx prisma migrate dev --name <change>`. Never edit an applied migration.

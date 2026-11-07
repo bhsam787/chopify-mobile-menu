@@ -51,7 +51,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   try {
     const { admin } = await unauthenticated.admin(claims.shop);
-    await saveMenuButton(admin, claims.theme, claims.name, selector);
+    await saveMenuButton(admin, claims.theme, selector);
     return reply(200, { ok: true });
   } catch (error) {
     console.error(`Menu button save failed for ${claims.shop}`, error);

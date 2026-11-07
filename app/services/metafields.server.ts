@@ -31,6 +31,8 @@ interface MetafieldIdentifier {
 export interface MetafieldInput extends MetafieldIdentifier {
   type: string;
   value: string;
+  /** Write only if the stored value still has this digest (null: absent). */
+  compareDigest?: string | null;
 }
 
 /** Writes metafields in batches, throwing on any user error. */
@@ -51,6 +53,7 @@ export async function deleteMetafields(
   admin: Admin,
   metafields: MetafieldIdentifier[],
 ) {
+  if (!metafields.length) return;
   const result = await gql(admin, DELETE_METAFIELDS, { metafields });
   assertNoUserErrors(result.metafieldsDelete.userErrors);
 }

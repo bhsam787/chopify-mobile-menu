@@ -15,10 +15,30 @@ export type RichToken =
   | { type: "italic"; children: RichToken[] }
   | { type: "link"; href: string; children: RichToken[] };
 
-const SAFE_URL = /^(https?:\/\/|\/(?!\/)|mailto:|tel:|#)/i;
+const SAFE_URL = /^(https?:\/\/|\/(?!\/)|\?|mailto:|tel:|sms:|#)/i;
 
 export function isSafeUrl(url: string): boolean {
   return SAFE_URL.test(url.trim());
+}
+
+/**
+ * A typed link made usable, or null when it can't be (it could run script,
+ * or it isn't a link). "www.shop.com" gets https://, "products/x" becomes a
+ * path on this store; http(s), store paths, ?query, #anchor, mailto:, tel:
+ * and sms: are kept as they are.
+ */
+export function normalizeLink(url: string | null | undefined): string | null {
+  const value = (url ?? "").trim();
+  if (!value) return null;
+  if (isSafeUrl(value)) return value;
+  // A scheme we don't allow (javascript:, data:, vbscript:…) or "//host".
+  if (/^[a-z][a-z0-9+.-]*:/i.test(value) || value.startsWith("//")) return null;
+  // A bare domain, maybe with a path: "www.shop.com", "shop.com/sale".
+  if (/^[a-z0-9-]+(\.[a-z0-9-]+)+(\/|\?|#|$)/i.test(value))
+    return `https://${value}`;
+  // A path without its leading slash: "products/shirt", "collections/all".
+  if (/^[\w-]+(\/[^\s]*)?$/.test(value)) return `/${value}`;
+  return null;
 }
 
 /** Parses markup into tokens. Unbalanced markers stay as plain text. */
