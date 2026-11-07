@@ -9,7 +9,6 @@ import { spotlight } from "./spotlight";
 import { studio } from "./studio";
 
 export {
-  TEMPLATE_IMAGES,
   TEMPLATE_IMAGE_PATH,
   isTemplateImage,
   replaceTemplateImages,

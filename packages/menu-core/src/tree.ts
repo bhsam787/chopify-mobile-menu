@@ -50,15 +50,7 @@ export function walkDesign(design: Design, visit: (node: Node) => void): void {
   designRoots(design).forEach(walk);
 }
 
-export function findNode(design: Design, id: string): Node | undefined {
-  let found: Node | undefined;
-  walkDesign(design, (node) => {
-    if (!found && node.id === id) found = node;
-  });
-  return found;
-}
-
-/** Returns a copy of the container without hidden descendants. */
+/** A copy of the node without its hidden descendants. */
 export function withoutHidden<T extends Node>(node: T): T {
   const copy = { ...node };
   if (isParentNode(copy) && copy.children) {

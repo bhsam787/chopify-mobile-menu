@@ -1,7 +1,9 @@
 import type { Align } from "./arrange";
 
+type Glyph = Align | "dx" | "dy";
+
 /** Glyphs for Figma's align row: a bar for the edge or center line and two boxes. */
-export const ALIGN_PATHS: Record<Align | "dx" | "dy", string> = {
+const ALIGN_PATHS: Record<Glyph, string> = {
   left: "M3 2v12M5 4h8v3H5zM5 9h5v3H5z",
   hcenter: "M8 2v12M3 4h10v3H3zM5 9h6v3H5z",
   right: "M13 2v12M3 4h8v3H3zM6 9h5v3H6z",
@@ -12,7 +14,7 @@ export const ALIGN_PATHS: Record<Align | "dx" | "dy", string> = {
   dy: "M3 2h10M3 14h10M5 6h6v4H5z",
 };
 
-const LABELS: Record<Align | "dx" | "dy", string> = {
+const LABELS: Record<Glyph, string> = {
   left: "Align left",
   hcenter: "Align horizontal centers",
   right: "Align right",
@@ -22,6 +24,23 @@ const LABELS: Record<Align | "dx" | "dy", string> = {
   dx: "Distribute horizontal spacing",
   dy: "Distribute vertical spacing",
 };
+
+/** One of the align glyphs, shared with the layer box's content-position toggles. */
+export function AlignIcon({ glyph }: { glyph: Glyph }) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.3"
+      aria-hidden="true"
+    >
+      <path d={ALIGN_PATHS[glyph]} />
+    </svg>
+  );
+}
 
 /**
  * Align and distribute, like Figma's toolbar. One layer aligns to its frame
@@ -36,11 +55,7 @@ export function AlignBar({
   onAlign: (align: Align) => void;
   onDistribute: (axis: "x" | "y") => void;
 }) {
-  const button = (
-    key: Align | "dx" | "dy",
-    onClick: () => void,
-    disabled = false,
-  ) => (
+  const button = (key: Glyph, onClick: () => void, disabled = false) => (
     <button
       key={key}
       type="button"
@@ -50,17 +65,7 @@ export function AlignBar({
       disabled={disabled}
       onClick={onClick}
     >
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        aria-hidden="true"
-      >
-        <path d={ALIGN_PATHS[key]} />
-      </svg>
+      <AlignIcon glyph={key} />
     </button>
   );
   return (

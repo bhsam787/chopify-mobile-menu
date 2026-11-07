@@ -141,7 +141,7 @@ export function parentSize(
   entries: LayerEntry[],
   parentId: string,
 ): { w: number; h: number } {
-  if (parentId === canvas.id) return { w: CANVAS_WIDTH, h: canvas.height };
+  // The canvas itself isn't an entry: it falls through to its own size.
   const parent = entries.find((entry) => entry.node.id === parentId);
   return parent
     ? { w: parent.abs.w, h: parent.abs.h }

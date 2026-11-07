@@ -5,7 +5,8 @@ import {
   REFERENCE_CHUNKS,
   REFERENCE_TYPES,
 } from "@chopi/menu-core";
-import { assertNoUserErrors, gql, type Admin } from "./admin-graphql.server";
+import { gql, type Admin } from "./admin-graphql.server";
+import { deleteMetafields, setMetafields } from "./metafields.server";
 
 /**
  * The live menu's linked resources, stored by ID in app-owned shop
@@ -14,7 +15,7 @@ import { assertNoUserErrors, gql, type Admin } from "./admin-graphql.server";
  * renders, so URLs, titles and images are always current: a renamed handle
  * needs no republish, and a deleted resource simply drops out.
  */
-export const REFERENCE_NAMESPACE = "$app:chopi";
+const REFERENCE_NAMESPACE = "$app:chopi";
 
 /** "collection_1" … "collection_4": Liquid reads 50 references per list. */
 const chunkKey = (type: ReferenceType, index: number) => `${type}_${index + 1}`;
@@ -32,24 +33,6 @@ const ALL_KEYS = [
 const SHOP_ID = `#graphql
   query ShopId {
     shop { id }
-  }
-`;
-
-const SET_METAFIELDS = `#graphql
-  mutation SetReferenceMetafields($metafields: [MetafieldsSetInput!]!) {
-    metafieldsSet(metafields: $metafields) {
-      metafields { key }
-      userErrors { field message }
-    }
-  }
-`;
-
-const DELETE_METAFIELDS = `#graphql
-  mutation DeleteReferenceMetafields($metafields: [MetafieldIdentifierInput!]!) {
-    metafieldsDelete(metafields: $metafields) {
-      deletedMetafields { key }
-      userErrors { field message }
-    }
   }
 `;
 
@@ -81,18 +64,16 @@ export async function writeMenuReferences(
       ids: references.productCollections,
     });
 
-  if (lists.size) {
-    const result = await gql(admin, SET_METAFIELDS, {
-      metafields: [...lists].map(([key, list]) => ({
-        ownerId,
-        namespace: REFERENCE_NAMESPACE,
-        key,
-        type: list.type,
-        value: JSON.stringify(list.ids),
-      })),
-    });
-    assertNoUserErrors(result.metafieldsSet.userErrors);
-  }
+  await setMetafields(
+    admin,
+    [...lists].map(([key, list]) => ({
+      ownerId,
+      namespace: REFERENCE_NAMESPACE,
+      key,
+      type: list.type,
+      value: JSON.stringify(list.ids),
+    })),
+  );
   // Lists the menu no longer needs (deleting a missing one is a no-op).
   const unused = ALL_KEYS.filter((key) => !lists.has(key));
   if (unused.length) await deleteKeys(admin, ownerId, unused);
@@ -103,13 +84,9 @@ export async function deleteMenuReferences(admin: Admin) {
   await deleteKeys(admin, await shopId(admin), ALL_KEYS);
 }
 
-async function deleteKeys(admin: Admin, ownerId: string, keys: string[]) {
-  const result = await gql(admin, DELETE_METAFIELDS, {
-    metafields: keys.map((key) => ({
-      ownerId,
-      namespace: REFERENCE_NAMESPACE,
-      key,
-    })),
-  });
-  assertNoUserErrors(result.metafieldsDelete.userErrors);
+function deleteKeys(admin: Admin, ownerId: string, keys: string[]) {
+  return deleteMetafields(
+    admin,
+    keys.map((key) => ({ ownerId, namespace: REFERENCE_NAMESPACE, key })),
+  );
 }

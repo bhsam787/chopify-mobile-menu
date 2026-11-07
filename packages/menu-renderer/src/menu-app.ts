@@ -3,11 +3,10 @@
  * extensions/chopi-menu/assets/chopi-menu-app.js and loaded by the
  * storefront loader when the page is idle, or on the first tap.
  */
-import type { Design } from "@chopi/menu-core";
+import { cleanCustomCss, type Design } from "@chopi/menu-core";
 import { attachBehavior, type MenuController } from "./behavior";
 import type { RenderContext } from "./context";
 import { renderMenu } from "./render";
-import { cleanCustomCss } from "@chopi/menu-core";
 import { MENU_CSS } from "./styles";
 
 export interface MenuApp {

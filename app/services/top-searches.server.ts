@@ -1,4 +1,5 @@
-import { assertNoUserErrors, gql, type Admin } from "./admin-graphql.server";
+import { gql, type Admin } from "./admin-graphql.server";
+import { APP_DATA_NAMESPACE, setMetafields } from "./metafields.server";
 
 /**
  * The store's most searched terms, from Shopify's own search statistics
@@ -11,7 +12,6 @@ import { assertNoUserErrors, gql, type Admin } from "./admin-graphql.server";
  * popular searches only.
  */
 
-const NAMESPACE = "chopi";
 const KEY = "top_searches";
 /** Refresh at most once a day. */
 const MAX_AGE_MS = 24 * 60 * 60 * 1000;
@@ -36,15 +36,6 @@ const CURRENT = `#graphql
     currentAppInstallation {
       id
       metafield(namespace: "chopi", key: "top_searches") { value }
-    }
-  }
-`;
-
-const SET_METAFIELD = `#graphql
-  mutation SetTopSearches($metafields: [MetafieldsSetInput!]!) {
-    metafieldsSet(metafields: $metafields) {
-      metafields { key }
-      userErrors { field message }
     }
   }
 `;
@@ -135,18 +126,15 @@ export async function topSearches(
   try {
     const terms = await queryTopSearches(admin);
     const next: Stored = { terms, updatedAt: new Date().toISOString() };
-    const result = await gql(admin, SET_METAFIELD, {
-      metafields: [
-        {
-          ownerId: installationId,
-          namespace: NAMESPACE,
-          key: KEY,
-          type: "json",
-          value: JSON.stringify(next),
-        },
-      ],
-    });
-    assertNoUserErrors(result.metafieldsSet.userErrors);
+    await setMetafields(admin, [
+      {
+        ownerId: installationId,
+        namespace: APP_DATA_NAMESPACE,
+        key: KEY,
+        type: "json",
+        value: JSON.stringify(next),
+      },
+    ]);
     return { available: true, ...next };
   } catch {
     // No permission (yet) or Shopify's statistics are unavailable: keep what

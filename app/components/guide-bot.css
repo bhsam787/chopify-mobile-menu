@@ -26,9 +26,9 @@
 }
 
 /*
- * Chopi, the helper robot (app/components/GuideBot.tsx). It hangs on the
- * phone's left edge; MenuPreview sets --chm-bot-y (the finger's height) and
- * data-pose (side / up / down). The finger tip sits 37px below its top.
+ * The helper hangs on the phone's left edge; followTarget (GuideBot.tsx) sets
+ * --chm-bot-y (the finger's height) and data-pose (side / up / down / dance).
+ * The finger tip sits 37px below its top.
  */
 .chm-bot {
   --chm-bot-y: 50%;

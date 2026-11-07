@@ -6,7 +6,7 @@
  * Empty or missing entries fall back to the default-language text.
  */
 import { childNodes, walkDesign } from "./tree";
-import type { Design, Node, Screen } from "./types";
+import type { Design, Node } from "./types";
 
 /** Words the menu itself shows (not typed by the merchant), by key. */
 export const UI_TEXT_DEFAULTS = {
@@ -726,70 +726,45 @@ export function collectTexts(design: Design): TextEntry[] {
     if (entry.original.trim()) entries.push(entry);
   };
   const walk = (node: Node, group: string, screenId: string) => {
+    const addText = (
+      key: string,
+      original: string,
+      field: string,
+      rich = false,
+    ) => add({ key, original, field, rich, nodeId: node.id, group, screenId });
     for (const [field, value, rich] of nodeTexts(node))
       if (value)
-        add({
-          // Popular search terms are translated by their own id.
+        addText(
           // List items (popular searches, announcement messages) are
           // translated by their own id.
-          key: /^(popular|announce):/.test(field)
+          /^(popular|announce):/.test(field)
             ? `${field.slice(field.indexOf(":") + 1)}.text`
             : `${node.id}.${field}`,
-          original: value,
-          field: field.startsWith("popular:")
+          value,
+          field.startsWith("popular:")
             ? "Popular search"
             : field.startsWith("announce:")
               ? "Announcement message"
               : (FIELD_NAMES[field] ?? field),
           rich,
-          nodeId: node.id,
-          group,
-          screenId,
-        });
+        );
     if (node.type === "stories" && node.source === "manual")
       for (const item of node.items)
-        add({
-          key: `${item.id}.title`,
-          original: item.title,
-          field: "Circle name",
-          rich: false,
-          nodeId: node.id,
-          group,
-          screenId,
-        });
+        addText(`${item.id}.title`, item.title, "Circle name");
     // Lists of short texts: each item is translated on its own.
-    const itemTexts: [string, string][] =
-      node.type === "perks" || node.type === "ticker"
-        ? node.items.map((item) => [item.id, item.text])
-        : node.type === "contact"
-          ? node.items.map((item) => [item.id, item.label])
-          : [];
-    for (const [id, original] of itemTexts)
-      add({
-        key: `${id}.${node.type === "contact" ? "label" : "text"}`,
-        original,
-        field:
-          node.type === "perks"
-            ? "Perk"
-            : node.type === "ticker"
-              ? "Ticker message"
-              : "Contact button",
-        rich: false,
-        nodeId: node.id,
-        group,
-        screenId,
-      });
+    if (node.type === "perks" || node.type === "ticker")
+      for (const item of node.items)
+        addText(
+          `${item.id}.text`,
+          item.text,
+          node.type === "perks" ? "Perk" : "Ticker message",
+        );
+    if (node.type === "contact")
+      for (const item of node.items)
+        addText(`${item.id}.label`, item.label, "Contact button");
     if (node.type === "tabs")
       for (const tab of node.tabs)
-        add({
-          key: `${tab.id}.label`,
-          original: tab.label,
-          field: "Tab name",
-          rich: false,
-          nodeId: node.id,
-          group,
-          screenId,
-        });
+        addText(`${tab.id}.label`, tab.label, "Tab name");
     childNodes(node).forEach((child) => walk(child, group, screenId));
   };
 
@@ -799,7 +774,7 @@ export function collectTexts(design: Design): TextEntry[] {
   walk(main.root, mainGroup, main.id);
   if (design.footer) walk(design.footer, mainGroup, main.id);
 
-  subMenus.forEach((screen: Screen) => {
+  subMenus.forEach((screen) => {
     const group = `Sub-menu: ${screen.title || "Untitled"}`;
     add({
       key: `${screen.id}.title`,

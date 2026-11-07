@@ -1,8 +1,8 @@
 /*
- * The showcase look shared by Home and the template gallery: a hero card
- * (greeting or title, Chopi on its stage, benefits or a blank-page offer)
- * and template tiles with a phone on a tinted stage. Everything else on
- * those pages stays in Polaris cards.
+ * The showcase look shared by Home, Templates, Pricing, Help and the
+ * editor's publish dialog: a hero card (greeting or title, Chopi on its
+ * stage, benefits) and template tiles with a phone on a tinted stage.
+ * Everything else on those pages stays in Polaris cards.
  */
 .chm-hero {
   --chm-hero-ink: #1d2a14;

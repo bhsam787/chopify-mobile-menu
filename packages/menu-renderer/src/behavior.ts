@@ -29,7 +29,7 @@ export function selectTab(tab: HTMLElement): void {
     });
 }
 
-export interface BehaviorOptions {
+interface BehaviorOptions {
   /** Editor preview: clicks select nodes instead of navigating. */
   editor?: boolean;
   /**
@@ -92,6 +92,10 @@ export function attachBehavior(
     });
     const body = root.querySelector(".chm-body");
     if (body) body.scrollTop = 0;
+    // The button that was tapped is now hidden, so focus would fall out of
+    // the menu (and Escape, Tab would stop working): keep it on the panel.
+    if (!options.editor && menu()?.classList.contains("is-open"))
+      panel()?.focus({ preventScroll: true });
     options.onScreenChange?.(id);
   };
 
@@ -173,7 +177,7 @@ export function attachBehavior(
     // The header has a search field too: its search button goes to the
     // field (unfolding it first when it's tucked away).
     const searchButton = target.closest<HTMLElement>("[data-chm-search-field]");
-    if (searchButton && !options.editor) {
+    if (searchButton) {
       const form = root.querySelector<HTMLElement>(".chm-header__search");
       const field = form?.querySelector<HTMLInputElement>("input[name='q']");
       if (form && field) {

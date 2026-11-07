@@ -27,6 +27,16 @@ export function num(value: unknown, fallback = 0): number {
   return Number.isFinite(number) ? number : fallback;
 }
 
+/** `value` as a number within [min, max]; not a number (or 0) gives `fallback`. */
+export function clamp(
+  value: unknown,
+  min: number,
+  max: number,
+  fallback = 0,
+): number {
+  return Math.min(max, Math.max(min, Number(value) || fallback));
+}
+
 /** A class-name or keyword fragment: letters, digits and dashes only. */
 export function token(value: unknown): string {
   return String(value ?? "").replace(/[^a-zA-Z0-9-]/g, "");
@@ -109,7 +119,7 @@ export function color(value: string | undefined): string {
 }
 
 /** Adds a width to Shopify CDN image URLs so we never download originals. */
-export function sized(url: string, width: number): string {
+function sized(url: string, width: number): string {
   if (!url) return url;
   if (!/cdn\.shopify\.com|\/cdn\/shop\//.test(url)) return url;
   try {

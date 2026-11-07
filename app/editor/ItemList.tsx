@@ -1,5 +1,14 @@
 import type { ReactNode } from "react";
 
+/** `items` with `patch` applied to the one with `id`. */
+export function updateItem<T extends { id: string }>(
+  items: T[],
+  id: string,
+  patch: Partial<T>,
+): T[] {
+  return items.map((item) => (item.id === id ? { ...item, ...patch } : item));
+}
+
 /**
  * Editable list of a widget's items (perks, contact buttons, ticker
  * messages): each in a box with its fields, buttons to move it up or down or

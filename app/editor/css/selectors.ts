@@ -97,7 +97,7 @@ export function layersOf(clicked: Element): Layer[] {
         ? `[data-chm-id="${id}"]`
         : `[data-chm-id="${id}"] ${all}`
       : null;
-    layers.push({ label: labelFor(all), all, one: one === all ? null : one });
+    layers.push({ label: labelFor(all), all, one });
   });
   // The drawer and the scrolling area are rarely what's meant: keep them,
   // but the clicked part is chosen first.

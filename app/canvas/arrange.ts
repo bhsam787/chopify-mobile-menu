@@ -27,7 +27,7 @@ import {
 export type Align = "left" | "hcenter" | "right" | "top" | "vmiddle" | "bottom";
 
 /** The common parent of `ids`, or undefined when they sit in different frames. */
-export function sharedParent(design: Design, ids: string[]) {
+function sharedParent(design: Design, ids: string[]) {
   const parents = ids.map((id) => locate(design, id)?.parent);
   const first = parents[0];
   return first && parents.every((parent) => parent?.id === first.id)
@@ -214,10 +214,7 @@ export function setFrames(
 }
 
 /** The free tabs whose panel is `panelId`, if it is a tab panel. */
-export function tabsOfPanel(
-  design: Design,
-  panelId: string,
-): TabsNode | undefined {
+function tabsOfPanel(design: Design, panelId: string): TabsNode | undefined {
   let found: TabsNode | undefined;
   walkDesign(design, (node) => {
     if (
@@ -266,18 +263,16 @@ export function placeCopy(
 ): Frame {
   const free = (candidate: Frame) =>
     !siblings.some((sibling) => overlaps(candidate, sibling));
-  const right = { ...frame, x: frame.x + frame.w + gap };
-  if (scrolls || (right.x + right.w <= width + 0.5 && free(right))) {
-    if (scrolls) {
-      // At the end of the row.
-      const end = Math.max(
-        frame.x + frame.w,
-        ...siblings.map((sibling) => sibling.x + sibling.w),
-      );
-      return { ...frame, x: end + gap };
-    }
-    return right;
+  if (scrolls) {
+    // At the end of the row.
+    const end = Math.max(
+      frame.x + frame.w,
+      ...siblings.map((sibling) => sibling.x + sibling.w),
+    );
+    return { ...frame, x: end + gap };
   }
+  const right = { ...frame, x: frame.x + frame.w + gap };
+  if (right.x + right.w <= width + 0.5 && free(right)) return right;
   const rowStart = Math.min(
     frame.x,
     ...siblings

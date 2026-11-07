@@ -19,7 +19,7 @@ import {
   type GuideLine,
 } from "../components/GuideBot";
 import { SEARCH_RESULTS_TARGET } from "./LiveSearchFields";
-import { previewSearchResults as sampleSearch } from "./searchPreview";
+import { useSearchSample } from "./searchPreview";
 
 /**
  * A design dialog's body: the settings on the left and the real menu on the
@@ -86,9 +86,7 @@ export function DesignWorkspace({
     setLine({
       id: current.id,
       caption: change.group,
-      text: backToStart
-        ? `You put ${field} back`
-        : `You changed ${field}`,
+      text: backToStart ? `You put ${field} back` : `You changed ${field}`,
       from: backToStart ? undefined : current.from,
       to: change.to,
     });
@@ -119,14 +117,9 @@ export function DesignWorkspace({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId, focusTarget]);
   const guide = useGuidePrefs().shown;
-  // Working on the search results: the phone shows them, with samples.
-  const showSearch = focus?.target === SEARCH_RESULTS_TARGET;
-  const previewContext = useMemo(
-    () =>
-      showSearch
-        ? { ...context, searchSample: sampleSearch(context) }
-        : context,
-    [context, showSearch],
+  const previewContext = useSearchSample(
+    context,
+    focus?.target === SEARCH_RESULTS_TARGET,
   );
   return (
     <DesignFocusContext.Provider value={focusApi}>

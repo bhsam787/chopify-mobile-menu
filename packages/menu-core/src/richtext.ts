@@ -22,7 +22,7 @@ export function isSafeUrl(url: string): boolean {
 }
 
 /** Parses markup into tokens. Unbalanced markers stay as plain text. */
-export function parseRich(markup: string): RichToken[] {
+function parseRich(markup: string): RichToken[] {
   const tokens: RichToken[] = [];
   let text = "";
   const flush = () => {

@@ -16,7 +16,7 @@ import {
   removeNode,
 } from "@chopi/menu-core";
 import { areaOf, growToFit } from "./arrange";
-import { CANVAS_ELEMENTS, SIDE_MARGIN } from "./elements";
+import { CANVAS_ELEMENTS, SAMPLE_LINK, SIDE_MARGIN } from "./elements";
 import {
   isList,
   itemTitle,
@@ -33,13 +33,6 @@ import {
  * design out. After every change the list is laid out again and its frame,
  * tab or canvas grows to fit.
  */
-
-/** Where new sample items go until the merchant picks a link. */
-export const SAMPLE_LINK = {
-  type: "route",
-  route: "all_products",
-  sample: true,
-} as const;
 
 /** Lays a list out again (and makes room for it). */
 export function relayout(design: Design, listId: string): Design {
@@ -254,9 +247,10 @@ export function createSubMenu(
   if (!item) return null;
   const title = itemTitle(item) || "Sub-menu";
   // Inside a list: the sub-menu's list looks like it. Otherwise a link list.
-  const list = listOf(design, itemId) ?? defaultLinkList();
+  const parentList = listOf(design, itemId);
+  const list = parentList ?? defaultLinkList();
   if (!list?.frame) return null;
-  const model = listOf(design, itemId) ? item : list.children?.[0];
+  const model = parentList ? item : list.children?.[0];
   if (!model) return null;
 
   const items = [1, 2, 3].map((number) =>
@@ -268,7 +262,7 @@ export function createSubMenu(
   // with the usual side margins. A sideways row runs to the edges and
   // starts its first item at the margin, so it can still scroll.
   const inner = CANVAS_WIDTH - SIDE_MARGIN * 2;
-  const row = list.list?.direction === "row";
+  const row = list.list.direction === "row";
   const subList: ShapeNode = {
     ...cloneWithNewIds({ ...list, children: [] }),
     children: row

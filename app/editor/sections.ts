@@ -15,7 +15,7 @@ import {
  */
 
 /** Node types edited as rows of a section's item list. */
-export const ITEM_TYPES = new Set<Node["type"]>([
+const ITEM_TYPES = new Set<Node["type"]>([
   "card",
   "row",
   "chip",
@@ -47,7 +47,7 @@ const ITEM_NOUNS: Partial<Record<Node["type"], [string, string]>> = {
   button: ["button", "Buttons"],
 };
 
-export const SECTION_ICONS: Record<Node["type"], string> = {
+const SECTION_ICONS: Record<Node["type"], string> = {
   container: "layout-columns-2",
   tabs: "menu-horizontal",
   header: "layout-header",

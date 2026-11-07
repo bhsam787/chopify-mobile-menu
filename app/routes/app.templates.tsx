@@ -21,7 +21,11 @@ import {
   type TemplateFeature,
 } from "@chopi/menu-core";
 import { authenticate } from "../shopify.server";
-import { cleanMenuName, MENU_NAME_MAX } from "../models/menu-name";
+import {
+  cleanMenuName,
+  freeMenuName,
+  MENU_NAME_MAX,
+} from "../models/menu-name";
 import { uniqueMenuName } from "../models/menu.server";
 import prisma from "../db.server";
 import { MenuPreview } from "../components/MenuPreview";
@@ -87,36 +91,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           : "My menu",
     ));
 
-  if (templateId === "blank") {
-    const design = blankSections();
-    const menu = await prisma.menu.create({
-      data: {
-        name,
-        schemaVersion: design.schemaVersion,
-        draft: design as unknown as Prisma.InputJsonValue,
-        shop: { connect: { shop: session.shop } },
-      },
-    });
-    return redirect(`/app/menus/${menu.id}`);
-  }
-
-  if (!template) {
-    const design = blankCanvas();
-    const canvasId = design.screens[0].root.children[0].id;
-    const menu = await prisma.menu.create({
-      data: {
-        name,
-        schemaVersion: design.schemaVersion,
-        draft: design as unknown as Prisma.InputJsonValue,
-        shop: { connect: { shop: session.shop } },
-      },
-    });
-    // The editor opens the full-screen canvas editor right away.
-    return redirect(`/app/menus/${menu.id}?canvas=${canvasId}`);
-  }
-
-  // Remembered so a canvas made from it can be reverted to the stock template.
-  const design = { ...template.build(), template: template.id };
+  const design = template
+    ? // Remembered so a canvas made from it can be reverted to the stock template.
+      { ...template.build(), template: template.id }
+    : templateId === "canvas"
+      ? blankCanvas()
+      : blankSections();
   const menu = await prisma.menu.create({
     data: {
       name,
@@ -125,16 +105,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       shop: { connect: { shop: session.shop } },
     },
   });
-  return redirect(`/app/menus/${menu.id}`);
+  // A new canvas opens straight in the full-screen canvas editor.
+  return redirect(
+    templateId === "canvas"
+      ? `/app/menus/${menu.id}?canvas=${design.screens[0].root.children[0].id}`
+      : `/app/menus/${menu.id}`,
+  );
 };
-
-/** `base`, or "base 2", "base 3"… when a menu already has that name. */
-function freeName(base: string, taken: string[]): string {
-  if (!taken.includes(base)) return base;
-  let number = 2;
-  while (taken.includes(`${base} ${number}`)) number++;
-  return `${base} ${number}`;
-}
 
 export default function Templates() {
   const { templates, context, existingNames } = useLoaderData<typeof loader>();
@@ -156,7 +133,7 @@ export default function Templates() {
 
   const startNaming = (id: string, base: string) => {
     setNaming({ id, label: base });
-    setName(freeName(base, existingNames));
+    setName(freeMenuName(base, existingNames));
     nameModal.current?.showOverlay();
   };
   const create = () => {
@@ -176,14 +153,6 @@ export default function Templates() {
   useEffect(() => {
     if (previewing) previewModal.current?.showOverlay();
   }, [previewing]);
-  // Home links here with #blank (empty section menu) or #canvas.
-  useEffect(() => {
-    if (window.location.hash === "#blank") startNaming("blank", "My menu");
-    if (window.location.hash === "#canvas")
-      startNaming("canvas", "Canvas menu");
-    // Only on arrival.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const shown = filter
     ? templates.filter((template) => template.features.includes(filter))

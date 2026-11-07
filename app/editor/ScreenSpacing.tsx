@@ -34,23 +34,17 @@ export function ScreenSpacingFields({
   const [vertical, horizontal] = verticalHorizontal(root.box?.padding);
   const targets = new Set(targetScreenIds);
 
-  const apply = (
-    update: (
-      gap: number | undefined,
-      v: number,
-      h: number,
-    ) => {
-      gap?: number;
-      vertical?: number;
-      horizontal?: number;
-    },
-  ) =>
+  /** Sets the changed values on every target screen; each keeps the others. */
+  const apply = (next: {
+    gap?: number;
+    vertical?: number;
+    horizontal?: number;
+  }) =>
     onChange({
       ...design,
       screens: design.screens.map((screen) => {
         if (!targets.has(screen.id)) return screen;
         const [v, h] = verticalHorizontal(screen.root.box?.padding);
-        const next = update(screen.root.gap, v, h);
         const nextV = next.vertical ?? v;
         const nextH = next.horizontal ?? h;
         return {
@@ -79,19 +73,19 @@ export function ScreenSpacingFields({
         label="Space between sections"
         value={root.gap ?? 0}
         max={48}
-        onChange={(gap) => apply(() => ({ gap: gap ?? 0 }))}
+        onChange={(gap) => apply({ gap: gap ?? 0 })}
       />
       <SliderField
         label="Side margin"
         value={horizontal}
         max={40}
-        onChange={(value) => apply(() => ({ horizontal: value ?? 0 }))}
+        onChange={(value) => apply({ horizontal: value ?? 0 })}
       />
       <SliderField
         label="Top and bottom margin"
         value={vertical}
         max={40}
-        onChange={(value) => apply(() => ({ vertical: value ?? 0 }))}
+        onChange={(value) => apply({ vertical: value ?? 0 })}
       />
     </DesignGroup>
   );

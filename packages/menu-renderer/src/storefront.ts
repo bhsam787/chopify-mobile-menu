@@ -25,7 +25,6 @@ declare global {
   interface Window {
     Shopify?: { theme?: { role?: string; schema_name?: string } };
     ChopiMenu?: { open: () => void; close: () => void };
-    __chopiMenuApp?: MenuApp;
   }
 }
 

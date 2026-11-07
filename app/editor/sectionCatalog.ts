@@ -48,7 +48,7 @@ export interface SectionPreset {
   screens: Screen[];
 }
 
-export interface CatalogStyle {
+interface CatalogStyle {
   id: string;
   label: string;
   /** Fresh ids on every call (adding the same section twice is fine). */
@@ -72,14 +72,6 @@ export interface CatalogEntry {
 // ---------------------------------------------------------------------------
 // Basic sections, with style choices
 // ---------------------------------------------------------------------------
-
-const WIDGET_GROUP: Record<WidgetDefinition["group"], CatalogGroup> = {
-  Layout: "Layout",
-  Navigation: "Navigation",
-  Promotion: "Promotion",
-  Store: "Store",
-  Content: "Content",
-};
 
 const KEYWORDS: Partial<Record<Node["type"], string>> = {
   container: "group panel box columns",
@@ -191,7 +183,7 @@ const basicEntries = (): CatalogEntry[] =>
     id: `widget:${widget.type}:${widget.label}`,
     label: widget.label,
     description: widget.description,
-    group: WIDGET_GROUP[widget.group],
+    group: widget.group,
     keywords: KEYWORDS[widget.type] ?? "",
     styles: stylesFor(widget).map((style) => ({
       id: style.id,

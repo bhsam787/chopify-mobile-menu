@@ -20,14 +20,14 @@ export function isResourceLink(
 }
 
 /** "gid://shopify/Collection/123" → "123" */
-export function numericId(gid: string): string {
+function numericId(gid: string): string {
   return gid.slice(gid.lastIndexOf("/") + 1);
 }
 
 /**
  * Key the storefront uses to look up a resource's current URL and data:
- * "<type>:<numeric id>". The theme builds the same key from the hidden links
- * menu (`link.type` without "_link" + `link.object.id`).
+ * "<type>:<numeric id>". The theme builds the same key from the resources it
+ * loads through the reference metafields (e.g. "collection:" + collection.id).
  */
 export function resourceKey(type: ResourceType, gid: string): string {
   return `${type}:${numericId(gid)}`;

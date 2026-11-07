@@ -47,25 +47,20 @@
   animation: chm-flash 1.4s ease-out both;
 }
 
-/* Gallery tiles and library tiles come in one after another. */
-.chm-lib__tile,
-.chm-tile {
+/* Library tiles come in one after another. */
+.chm-lib__tile {
   animation: chm-enter 260ms cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
 }
-.chm-lib__tile:nth-child(2),
-.chm-tile:nth-child(2) {
+.chm-lib__tile:nth-child(2) {
   animation-delay: 30ms;
 }
-.chm-lib__tile:nth-child(3),
-.chm-tile:nth-child(3) {
+.chm-lib__tile:nth-child(3) {
   animation-delay: 60ms;
 }
-.chm-lib__tile:nth-child(4),
-.chm-tile:nth-child(4) {
+.chm-lib__tile:nth-child(4) {
   animation-delay: 90ms;
 }
-.chm-lib__tile:nth-child(n + 5),
-.chm-tile:nth-child(n + 5) {
+.chm-lib__tile:nth-child(n + 5) {
   animation-delay: 120ms;
 }
 
@@ -97,7 +92,6 @@
   .chm-enter,
   .chm-flash,
   .chm-lib__tile,
-  .chm-tile,
   .chm-stage,
   .chm-fan {
     animation: none;

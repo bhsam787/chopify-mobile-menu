@@ -1,6 +1,7 @@
 import type { Design } from "@chopi/menu-core";
 import { isTemplateImage, replaceTemplateImages } from "@chopi/menu-core";
 import { assertNoUserErrors, gql, type Admin } from "./admin-graphql.server";
+import { wait } from "./files.server";
 
 /**
  * Template sample images are served by the app (`/templates/…`) for previews.
@@ -30,8 +31,6 @@ const FILE_URLS = `#graphql
     }
   }
 `;
-
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function templateImagePaths(design: Design): string[] {
   const paths = new Set<string>();

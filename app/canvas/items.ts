@@ -20,24 +20,21 @@ export type ListFrame = ShapeNode & { list: ListLayout };
 export const isList = (node: Node | undefined): node is ListFrame =>
   node?.type === "shape" && Boolean(node.list);
 
-/** The first text in a frame of layers (depth-first, in layer order). */
-function firstText(node: Node): Node | undefined {
-  if (node.type === "text" || node.type === "heading") return node;
+/** The first layer of a frame matching `test` (depth-first, in layer order). */
+function findFirst(
+  node: Node,
+  test: (node: Node) => boolean,
+): Node | undefined {
+  if (test(node)) return node;
   for (const child of childNodes(node)) {
-    const found = firstText(child);
+    const found = findFirst(child, test);
     if (found) return found;
   }
   return undefined;
 }
 
-function firstImage(node: Node): Node | undefined {
-  if (node.type === "image") return node;
-  for (const child of childNodes(node)) {
-    const found = firstImage(child);
-    if (found) return found;
-  }
-  return undefined;
-}
+const firstText = (node: Node) =>
+  findFirst(node, (layer) => layer.type === "text" || layer.type === "heading");
 
 /** Plain title of an item (bold/italic markers removed). */
 export function itemTitle(node: Node): string {
@@ -99,7 +96,7 @@ export function setItemLink(node: Node, link: LinkRef): Node {
 export function itemImage(node: Node): ImageRef | undefined {
   if ("image" in node && node.image && typeof node.image === "object")
     return node.image as ImageRef;
-  const image = firstImage(node);
+  const image = findFirst(node, (layer) => layer.type === "image");
   return image?.type === "image" ? image.image : undefined;
 }
 

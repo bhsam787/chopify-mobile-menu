@@ -77,14 +77,12 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .chm-search--underline input:focus { background: var(--chm-sf-bg, none); box-shadow: none; }
 .chm-search--underline .chm-search__box > .chm-icon { inset-inline-start: 2px; }
 .chm-search__clear { position: absolute; inset-inline-end: 8px; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: inherit; opacity: .7; }
-.chm-search__clear[hidden] { display: none; }
 .chm-search__cancel { display: none; flex: none; padding: 8px 2px; font: inherit; font-size: 15px; font-weight: 600; color: var(--chm-sr-accent); }
 .chm-searching .chm-search__cancel { display: block; animation: chm-sr-in .2s var(--chm-ease, ease); }
 
 /* Live search panel: covers the menu while the shopper searches. */
 .chm-root.chm-searching .chm-screens, .chm-root.chm-searching .chm-footer { display: none; }
 .chm-sr { --chm-sr-accent: var(--chm-accent); display: flex; flex-direction: column; gap: 22px; padding: 18px 16px 28px; min-height: 100%; background: var(--chm-sr-bg, var(--chm-bg)); color: var(--chm-sr-text, var(--chm-text)); animation: chm-sr-in .2s var(--chm-ease, ease); }
-.chm-sr[hidden] { display: none; }
 .chm-sr.has-query .chm-sr__start { display: none; }
 .chm-sr__start, .chm-sr__results { display: flex; flex-direction: column; gap: 22px; }
 .chm-sr__results:empty { display: none; }

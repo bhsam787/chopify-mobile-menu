@@ -28,7 +28,7 @@ export interface ShopLocale {
  * Shop name, currency and published languages. Languages need
  * `read_locales`; without it we fall back to none.
  */
-export async function fetchShopBasics(admin: Admin): Promise<{
+async function fetchShopBasics(admin: Admin): Promise<{
   shopName: string;
   currency: string;
   locales: ShopLocale[];

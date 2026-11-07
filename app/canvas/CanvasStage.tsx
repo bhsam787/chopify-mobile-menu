@@ -743,6 +743,8 @@ export function CanvasStage({
     return entryOf(parentId)?.abs;
   })();
   const editing = Boolean(editingId);
+  /** Handles and labels keep their screen size at any zoom. */
+  const unscaled = { transform: `scale(${1 / zoom})` };
 
   return (
     <div
@@ -800,10 +802,7 @@ export function CanvasStage({
             ))}
           {selectionBox && (
             <div className="cve-box is-selected" style={boxStyle(selectionBox)}>
-              <span
-                className="cve-box__size"
-                style={{ transform: `scale(${1 / zoom})` }}
-              >
+              <span className="cve-box__size" style={unscaled}>
                 {selection.length} layers
               </span>
             </div>
@@ -821,17 +820,14 @@ export function CanvasStage({
             >
               {!editing && !selected.node.locked && !selected.fixed && (
                 <>
-                  <span
-                    className="cve-box__size"
-                    style={{ transform: `scale(${1 / zoom})` }}
-                  >
+                  <span className="cve-box__size" style={unscaled}>
                     {selected.abs.w} × {selected.abs.h}
                   </span>
                   {HANDLES.map((handle) => (
                     <span
                       key={handle}
                       className={`cve-handle cve-handle--${handle}`}
-                      style={{ transform: `scale(${1 / zoom})` }}
+                      style={unscaled}
                       onPointerDown={(event) =>
                         start(event, {
                           kind: "resize",
@@ -872,10 +868,7 @@ export function CanvasStage({
             ),
           )}
           {canvas.children.length === 0 && !dropping && (
-            <div
-              className="cve-empty"
-              style={{ transform: `scale(${1 / zoom})` }}
-            >
+            <div className="cve-empty" style={unscaled}>
               Drag elements here from the left
             </div>
           )}
@@ -892,7 +885,7 @@ export function CanvasStage({
               key: `height:${Date.now()}`,
             })
           }
-          style={{ transform: `scale(${1 / zoom})` }}
+          style={unscaled}
         >
           ⇕
         </button>

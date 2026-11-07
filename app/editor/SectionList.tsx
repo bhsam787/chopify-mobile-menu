@@ -21,6 +21,7 @@ import {
 } from "@chopi/menu-core";
 import type { ResolvedResource } from "@chopi/menu-renderer";
 import { SwitchField } from "./controls";
+import { linkToPicked, type PickedResource } from "./LinkField";
 import { reorder, SortableItem, SortableList } from "./Sortable";
 import {
   isItemList,
@@ -47,7 +48,7 @@ export interface ListContext {
 }
 
 /** Image shown for a node in lists: its own image, else the linked collection/product image. */
-export function thumbnailOf(
+function thumbnailOf(
   node: Node,
   resources: Record<string, ResolvedResource>,
 ): string | undefined {
@@ -63,14 +64,6 @@ export function thumbnailOf(
 // ---------------------------------------------------------------------------
 // Adding items
 // ---------------------------------------------------------------------------
-
-interface PickedResource {
-  id: string;
-  handle: string;
-  title: string;
-  image?: { originalSrc?: string; url?: string } | null;
-  images?: { originalSrc?: string; url?: string }[];
-}
 
 /** A new item styled like the container's existing items (falls back to the library default). */
 function newItemLike(
@@ -130,29 +123,10 @@ async function pickMany(
     action: "add",
     multiple: true,
   })) as PickedResource[] | undefined;
-  return (selection ?? []).map((picked) => {
-    const url = `/${type === "collection" ? "collections" : "products"}/${picked.handle}`;
-    const image =
-      picked.image?.originalSrc ??
-      picked.image?.url ??
-      picked.images?.[0]?.originalSrc ??
-      picked.images?.[0]?.url;
-    onResource(resourceKey(type, picked.id), {
-      url,
-      title: picked.title,
-      image,
-    });
-    return {
-      title: picked.title,
-      link: {
-        type,
-        id: picked.id,
-        handle: picked.handle,
-        title: picked.title,
-        url,
-      } as LinkRef,
-    };
-  });
+  return (selection ?? []).map((picked) => ({
+    title: picked.title,
+    link: linkToPicked(type, picked, onResource) as LinkRef,
+  }));
 }
 
 // ---------------------------------------------------------------------------
@@ -285,12 +259,10 @@ function ItemRow({
 export function NodeList({
   container,
   ctx,
-  depth = 0,
   insideFoldOut = false,
 }: {
   container: ContainerNode;
   ctx: ListContext;
-  depth?: number;
   /** The links inside a fold-out: they can't fold out again. */
   insideFoldOut?: boolean;
 }) {
@@ -419,11 +391,7 @@ export function NodeList({
                               </s-button>
                             </s-stack>
                           </s-grid>
-                          <NodeList
-                            container={node}
-                            ctx={ctx}
-                            depth={depth + 1}
-                          />
+                          <NodeList container={node} ctx={ctx} />
                         </s-stack>
                       </s-box>
                     );
@@ -472,7 +440,6 @@ export function NodeList({
                               <NodeList
                                 container={node.child}
                                 ctx={ctx}
-                                depth={depth + 1}
                                 insideFoldOut
                               />
                             </s-box>
@@ -540,7 +507,7 @@ export function NodeList({
 // Section cards
 // ---------------------------------------------------------------------------
 
-export interface SectionCardProps {
+interface SectionCardProps {
   node: Node;
   number: number;
   /** Arrows are hidden for fixed sections (header, footer). */

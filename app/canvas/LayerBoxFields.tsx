@@ -1,6 +1,6 @@
 import type { LayerBox, Spacing } from "@chopi/menu-core";
 import { ColorField, FieldRow, NumberField } from "../editor/controls";
-import { ALIGN_PATHS } from "./AlignBar";
+import { AlignIcon } from "./AlignBar";
 
 type Side = 0 | 1 | 2 | 3;
 const SIDES: { side: Side; label: string }[] = [
@@ -77,17 +77,7 @@ export function LayerBoxFields({
           apply(current === option.value ? undefined : option.value)
         }
       >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 16 16"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.3"
-          aria-hidden="true"
-        >
-          <path d={ALIGN_PATHS[option.icon]} />
-        </svg>
+        <AlignIcon glyph={option.icon} />
       </button>
     ));
 

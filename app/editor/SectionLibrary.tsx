@@ -60,9 +60,8 @@ export function SectionLibrary({
     root.current?.scrollIntoView({ block: "start" });
   }, [group, query]);
 
-  const found = searchCatalog(catalog, query).filter(
-    (entry) => !group || entry.group === group,
-  );
+  const matching = searchCatalog(catalog, query);
+  const found = matching.filter((entry) => !group || entry.group === group);
   const shownGroups = CATALOG_GROUPS.filter((name) =>
     found.some((entry) => entry.group === name),
   );
@@ -92,9 +91,8 @@ export function SectionLibrary({
               {name ?? "All"}
               <span className="chm-lib__count">
                 {
-                  searchCatalog(catalog, query).filter(
-                    (entry) => !name || entry.group === name,
-                  ).length
+                  matching.filter((entry) => !name || entry.group === name)
+                    .length
                 }
               </span>
             </button>

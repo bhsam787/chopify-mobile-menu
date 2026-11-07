@@ -8,12 +8,7 @@ import type {
   ShapeNode,
   TextStyle,
 } from "@chopi/menu-core";
-import {
-  CANVAS_WIDTH,
-  newId,
-  nodeLabel,
-  SHAPE_ICONS,
-} from "@chopi/menu-core";
+import { CANVAS_WIDTH, newId, nodeLabel, SHAPE_ICONS } from "@chopi/menu-core";
 import {
   MENU_CSS,
   renderFragment,
@@ -67,6 +62,17 @@ function hasBox(style: CSSStyleDeclaration): boolean {
       !style.backgroundImage.startsWith("url")) ||
     px(style.borderTopWidth) > 0,
   );
+}
+
+/** A shape's fill, corners and border, read from a rendered element. */
+function shapeBoxOf(style: CSSStyleDeclaration) {
+  const borderWidth = px(style.borderTopWidth);
+  return {
+    fill: visibleColor(style.backgroundColor),
+    radius: px(style.borderTopLeftRadius) || undefined,
+    borderWidth: borderWidth || undefined,
+    borderColor: borderWidth ? style.borderTopColor : undefined,
+  };
 }
 
 const WEIGHTS = [400, 500, 600, 700, 800] as const;
@@ -216,16 +222,11 @@ export function layersFromElement(root: Element): Node[] {
         layers.push({
           id: newId("sh"),
           type: "shape",
-          fill: visibleColor(style.backgroundColor),
+          ...shapeBoxOf(style),
           gradient:
             style.backgroundImage !== "none"
               ? style.backgroundImage
               : undefined,
-          radius: px(style.borderTopLeftRadius) || undefined,
-          borderWidth: px(style.borderTopWidth) || undefined,
-          borderColor: px(style.borderTopWidth)
-            ? style.borderTopColor
-            : undefined,
           link: { type: "none" },
           frame: frameOf(rect),
         });
@@ -282,17 +283,12 @@ export function detachToLayers(
       id: newId("sh"),
       type: "shape",
       name: nodeLabel(node),
-      fill: visibleColor(rootStyle.backgroundColor),
+      ...shapeBoxOf(rootStyle),
       gradient:
         rootStyle.backgroundImage !== "none" &&
         !rootStyle.backgroundImage.startsWith("url")
           ? rootStyle.backgroundImage
           : undefined,
-      radius: px(rootStyle.borderTopLeftRadius) || undefined,
-      borderWidth: px(rootStyle.borderTopWidth) || undefined,
-      borderColor: px(rootStyle.borderTopWidth)
-        ? rootStyle.borderTopColor
-        : undefined,
       clip: true,
       link: linkOf(node),
       frame,

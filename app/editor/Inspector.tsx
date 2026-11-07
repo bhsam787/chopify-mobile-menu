@@ -1,28 +1,7 @@
 import { isValidElement, useState, type ReactNode } from "react";
 
-/**
- * A stable key for a field in a list where fields come and go (a switch
- * shows or hides one above): its own key or label, so stateful fields below
- * keep their state instead of being reused for a different field.
- */
-function fieldKey(field: ReactNode, index: number): string {
-  if (!isValidElement(field)) return `#${index}`;
-  if (field.key != null) return `k:${field.key}`;
-  const label = (field.props as { label?: unknown }).label;
-  return typeof label === "string" ? `l:${label}` : `#${index}`;
-}
-
-/** Fields wrapped for a stack, keyed by `fieldKey` (made unique). */
-function keyedFields(list: ReactNode[]) {
-  const seen = new Set<string>();
-  return list.filter(Boolean).map((field, index) => {
-    let key = fieldKey(field, index);
-    if (seen.has(key)) key = `${key}#${index}`;
-    seen.add(key);
-    return <div key={key}>{field}</div>;
-  });
-}
 import type {
+  Badge,
   ContainerNode,
   Design,
   IconName,
@@ -43,7 +22,6 @@ import {
   contactHref,
   NO_LINK,
   ICON_NAMES,
-  NODE_LABELS,
   SHAPE_ICONS,
   SOCIAL_NETWORKS,
   newId,
@@ -77,10 +55,33 @@ import { isPanel } from "./sections";
 import { ScreenSpacingFields } from "./ScreenSpacing";
 import { HeaderFields } from "./HeaderFields";
 import { SearchDesignFields } from "./LiveSearchFields";
-import { ItemList } from "./ItemList";
+import { ItemList, updateItem } from "./ItemList";
 import { CollectionField } from "./CollectionField";
 import { addTab, fillLikeFirstTab, placeTabs } from "../canvas/tabPlacement";
 import type { PreviewContext } from "../components/MenuPreview";
+
+/**
+ * A stable key for a field in a list where fields come and go (a switch
+ * shows or hides one above): its own key or label, so stateful fields below
+ * keep their state instead of being reused for a different field.
+ */
+function fieldKey(field: ReactNode, index: number): string {
+  if (!isValidElement(field)) return `#${index}`;
+  if (field.key != null) return `k:${field.key}`;
+  const label = (field.props as { label?: unknown }).label;
+  return typeof label === "string" ? `l:${label}` : `#${index}`;
+}
+
+/** Fields wrapped for a stack, keyed by `fieldKey` (made unique). */
+function keyedFields(list: ReactNode[]) {
+  const seen = new Set<string>();
+  return list.filter(Boolean).map((field, index) => {
+    let key = fieldKey(field, index);
+    if (seen.has(key)) key = `${key}#${index}`;
+    seen.add(key);
+    return <div key={key}>{field}</div>;
+  });
+}
 
 export interface InspectorContext {
   design: Design;
@@ -245,12 +246,12 @@ const ARROW_OPTIONS = [
 export function Inspector({
   node,
   context,
-  part = "all",
+  part,
 }: {
   node: Node;
   context: InspectorContext;
-  /** content: what "Customize" shows · design: what "Design" shows · all: both, with the layer name. */
-  part?: "content" | "design" | "all";
+  /** content: what "Customize" shows · design: what "Design" shows. */
+  part: "content" | "design";
 }) {
   const { design, locale, primaryLocale } = context;
   const translating = locale !== primaryLocale;
@@ -332,6 +333,20 @@ export function Inspector({
     />
   );
 
+  /** The badge's text (translation-aware) and colors. */
+  const badge = (value: Badge | undefined) => (
+    <BadgeFields
+      key="badge"
+      value={value}
+      onChange={(next) => set({ badge: next })}
+      text={text("badge", "Badge", {
+        value: value?.text ?? "",
+        onChange: (next) =>
+          set({ badge: next ? { ...value, text: next } : undefined }),
+      })}
+    />
+  );
+
   const image = (
     value: ImageRef | undefined,
     label = "Image",
@@ -366,6 +381,13 @@ export function Inspector({
 
   switch (node.type) {
     case "container":
+      style.push(
+        <BoxFields
+          key="box"
+          value={node.box}
+          onChange={(box) => set({ box })}
+        />,
+      );
       // A group of sections: they always stack. Arranging whole sections in
       // a grid squeezes them (e.g. tabs into a third of the width).
       if (groupsSections(node)) {
@@ -400,13 +422,6 @@ export function Inspector({
               row, open that section&apos;s Design.
             </s-text>
           </DesignGroup>,
-        );
-        style.push(
-          <BoxFields
-            key="box"
-            value={node.box}
-            onChange={(box) => set({ box })}
-          />,
         );
         break;
       }
@@ -464,13 +479,6 @@ export function Inspector({
             onChange={(gap) => set({ gap })}
           />
         </DesignGroup>,
-      );
-      style.push(
-        <BoxFields
-          key="box"
-          value={node.box}
-          onChange={(box) => set({ box })}
-        />,
       );
       break;
 
@@ -530,13 +538,7 @@ export function Inspector({
                 key: `${tab.id}.label`,
                 value: tab.label,
                 onChange: (label) =>
-                  set({
-                    tabs: node.tabs.map((candidate) =>
-                      candidate.id === tab.id
-                        ? { ...candidate, label }
-                        : candidate,
-                    ),
-                  }),
+                  set({ tabs: updateItem(node.tabs, tab.id, { label }) }),
               })}
             </s-box>
             {index > 0 && childNodes(tab.child).length === 0 && (
@@ -821,11 +823,9 @@ export function Inspector({
                 options={ICON_OPTIONS.filter((option) => option.value)}
                 onChange={(icon) =>
                   set({
-                    items: node.items.map((candidate) =>
-                      candidate.id === item.id
-                        ? { ...candidate, icon: icon as IconName }
-                        : candidate,
-                    ),
+                    items: updateItem(node.items, item.id, {
+                      icon: icon as IconName,
+                    }),
                   })
                 }
               />
@@ -834,11 +834,7 @@ export function Inspector({
                 value: item.text,
                 onChange: (value) =>
                   set({
-                    items: node.items.map((candidate) =>
-                      candidate.id === item.id
-                        ? { ...candidate, text: value }
-                        : candidate,
-                    ),
+                    items: updateItem(node.items, item.id, { text: value }),
                   }),
               })}
             </>
@@ -895,12 +891,7 @@ export function Inspector({
       const setItem = (
         id: string,
         patch: Partial<ContactNode["items"][number]>,
-      ) =>
-        set({
-          items: node.items.map((candidate) =>
-            candidate.id === id ? { ...candidate, ...patch } : candidate,
-          ),
-        });
+      ) => set({ items: updateItem(node.items, id, patch) });
       content.push(
         text("title", "Title"),
         <ItemList
@@ -1089,11 +1080,7 @@ export function Inspector({
               value: item.text,
               onChange: (value) =>
                 set({
-                  items: node.items.map((candidate) =>
-                    candidate.id === item.id
-                      ? { ...candidate, text: value }
-                      : candidate,
-                  ),
+                  items: updateItem(node.items, item.id, { text: value }),
                 }),
             })
           }
@@ -1207,18 +1194,7 @@ export function Inspector({
         />,
         text("title", "Title"),
         text("subtitle", "Subtitle"),
-        <BadgeFields
-          key="badge"
-          value={node.badge}
-          onChange={(badge) => set({ badge })}
-          text={text("badge", "Badge", {
-            value: node.badge?.text ?? "",
-            onChange: (value) =>
-              set({
-                badge: value ? { ...node.badge, text: value } : undefined,
-              }),
-          })}
-        />,
+        badge(node.badge),
         link(node.link),
         image(
           node.image,
@@ -1300,18 +1276,7 @@ export function Inspector({
         />,
         text("title", "Title"),
         text("subtitle", "Subtitle"),
-        <BadgeFields
-          key="badge"
-          value={node.badge}
-          onChange={(badge) => set({ badge })}
-          text={text("badge", "Badge", {
-            value: node.badge?.text ?? "",
-            onChange: (value) =>
-              set({
-                badge: value ? { ...node.badge, text: value } : undefined,
-              }),
-          })}
-        />,
+        badge(node.badge),
         link(node.link),
         node.variant === "thumb"
           ? image(
@@ -1443,20 +1408,7 @@ export function Inspector({
         node.variant === "highlight" || node.variant === "feature"
           ? text("cta", "Button label")
           : null,
-        node.variant === "highlight" ? (
-          <BadgeFields
-            key="badge"
-            value={node.badge}
-            onChange={(badge) => set({ badge })}
-            text={text("badge", "Badge", {
-              value: node.badge?.text ?? "",
-              onChange: (value) =>
-                set({
-                  badge: value ? { ...node.badge, text: value } : undefined,
-                }),
-            })}
-          />
-        ) : null,
+        node.variant === "highlight" ? badge(node.badge) : null,
         link(node.link),
         image(node.image),
       );
@@ -1721,13 +1673,7 @@ export function Inspector({
                   key: `${item.id}.title`,
                   value: item.title,
                   onChange: (title) =>
-                    set({
-                      items: node.items.map((candidate) =>
-                        candidate.id === item.id
-                          ? { ...candidate, title }
-                          : candidate,
-                      ),
-                    }),
+                    set({ items: updateItem(node.items, item.id, { title }) }),
                 })}
                 <LinkField
                   label="Link"
@@ -1756,11 +1702,7 @@ export function Inspector({
                   value={item.image}
                   onChange={(next) =>
                     set({
-                      items: node.items.map((candidate) =>
-                        candidate.id === item.id
-                          ? { ...candidate, image: next }
-                          : candidate,
-                      ),
+                      items: updateItem(node.items, item.id, { image: next }),
                     })
                   }
                 />
@@ -2371,10 +2313,8 @@ export function Inspector({
       break;
   }
 
-  const fields = (list: ReactNode[]) => keyedFields(list);
-
   if (part === "content") {
-    const shown = fields(content);
+    const shown = keyedFields(content);
     return shown.length ? (
       <s-stack gap="base">{shown}</s-stack>
     ) : (
@@ -2383,44 +2323,18 @@ export function Inspector({
       </s-text>
     );
   }
-  if (part === "design") {
-    const shown = fields(style);
-    if (translating)
-      return (
-        <s-text color="subdued">
-          Design is shared by all languages. Switch to the default language to
-          change it.
-        </s-text>
-      );
-    return shown.length ? (
-      <s-stack gap="base">{shown}</s-stack>
-    ) : (
-      <s-text color="subdued">This section has no design settings.</s-text>
+  if (translating)
+    return (
+      <s-text color="subdued">
+        Design is shared by all languages. Switch to the default language to
+        change it.
+      </s-text>
     );
-  }
-
-  return (
-    <s-stack gap="base">
-      <s-stack direction="inline" gap="small-200" alignItems="center">
-        <s-badge>{NODE_LABELS[node.type]}</s-badge>
-        {node.hidden && <s-badge tone="warning">Hidden</s-badge>}
-      </s-stack>
-      <TextField
-        label="Layer name"
-        value={node.name ?? ""}
-        placeholder={NODE_LABELS[node.type]}
-        onChange={(name) => set({ name: name || undefined })}
-      />
-      {content.filter(Boolean).length > 0 && (
-        <Group title="Content">{keyedFields(content)}</Group>
-      )}
-      {!translating && style.filter(Boolean).length > 0 && (
-        <>
-          <s-divider />
-          <Group title="Design">{keyedFields(style)}</Group>
-        </>
-      )}
-    </s-stack>
+  const shown = keyedFields(style);
+  return shown.length ? (
+    <s-stack gap="base">{shown}</s-stack>
+  ) : (
+    <s-text color="subdued">This section has no design settings.</s-text>
   );
 }
 
@@ -2438,7 +2352,8 @@ export function DesignSettings({
   design: Design;
   screen: Screen;
   onChange: (design: Design) => void;
-  onRemoveScreen: () => void;
+  /** Sub-menus only: deletes the screen. */
+  onRemoveScreen?: () => void;
   translating: boolean;
   locale: string;
   setTranslation: (key: string, value: string) => void;

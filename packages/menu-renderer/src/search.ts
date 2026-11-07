@@ -67,7 +67,7 @@ const WORD_KEYS: (keyof SearchWords)[] = [
   "soldOut",
 ];
 
-export function searchWords(state: State): SearchWords {
+function searchWords(state: State): SearchWords {
   return Object.fromEntries(
     WORD_KEYS.map((key) => [
       key,
@@ -228,6 +228,16 @@ export function popularTerms(
   return terms;
 }
 
+/** Search terms as chips that search for them; recent ones get a clock. */
+function termChips(terms: string[], recent = false): string {
+  return `<div class="chm-sr__chips">${terms
+    .map(
+      (term) =>
+        `<button type="button" class="chm-sr__chip${recent ? " chm-sr__chip--recent" : ""}" data-chm-sr-term="${esc(term)}">${recent ? ICONS.clock : ""}<span>${esc(term)}</span></button>`,
+    )
+    .join("")}</div>`;
+}
+
 /** What the panel shows before typing: recent and popular searches. */
 export function searchStart(
   words: SearchWords,
@@ -235,19 +245,12 @@ export function searchStart(
   recent: string[],
   showRecent: boolean,
 ): string {
-  const chips = (terms: string[], extra = "") =>
-    `<div class="chm-sr__chips">${terms
-      .map(
-        (term) =>
-          `<button type="button" class="chm-sr__chip${extra}" data-chm-sr-term="${esc(term)}">${extra ? ICONS.clock : ""}<span>${esc(term)}</span></button>`,
-      )
-      .join("")}</div>`;
   const recentHtml =
     showRecent && recent.length
-      ? `<section class="chm-sr__section"><header class="chm-sr__head"><h3>${esc(words.recent)}</h3><button type="button" class="chm-sr__clear" data-chm-sr-clear-recent>${esc(words.clear)}</button></header>${chips(recent, " chm-sr__chip--recent")}</section>`
+      ? `<section class="chm-sr__section"><header class="chm-sr__head"><h3>${esc(words.recent)}</h3><button type="button" class="chm-sr__clear" data-chm-sr-clear-recent>${esc(words.clear)}</button></header>${termChips(recent, true)}</section>`
       : "";
   const popularHtml = popular.length
-    ? `<section class="chm-sr__section"><header class="chm-sr__head"><h3>${esc(words.popular)}</h3></header>${chips(popular)}</section>`
+    ? `<section class="chm-sr__section"><header class="chm-sr__head"><h3>${esc(words.popular)}</h3></header>${termChips(popular)}</section>`
     : "";
   return `<div class="chm-sr__start">${recentHtml}${popularHtml}</div>`;
 }
@@ -375,17 +378,8 @@ export function searchResultsHtml(
   if (!parts.length && !loading) {
     const popular = options.popular ?? [];
     return `<div class="chm-sr__empty"><p>${esc(words.noResults)} “${esc(query)}”</p>${
-      popular.length
-        ? `<div class="chm-sr__chips">${popular
-            .map(
-              (term) =>
-                `<button type="button" class="chm-sr__chip" data-chm-sr-term="${esc(term)}"><span>${esc(term)}</span></button>`,
-            )
-            .join("")}</div>`
-        : ""
+      popular.length ? termChips(popular) : ""
     }<a class="chm-sr__all" href="${esc(all)}" data-chm-sr-pick>${esc(words.seeAll)}${ICONS.arrow}</a></div>`;
   }
   return `${parts.join("")}<a class="chm-sr__all" href="${esc(all)}" data-chm-sr-pick><span>${esc(words.seeAll)} <span class="chm-sr__q">“${esc(query)}”</span></span>${ICONS.arrow}</a>`;
 }
-
-export type { LiveSearch };

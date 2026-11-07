@@ -10,8 +10,9 @@ import { findTemplate } from "@chopi/menu-core";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 import { unpublishMenu } from "../services/publish.server";
-import { menuStats } from "../services/menu-stats.server";
+import { countUnlinked } from "../services/menu-stats.server";
 import { currentPlan, liveMenuCovered } from "../services/billing.server";
+import { usesCanvas } from "../billing/plans";
 import { buildPreviewContext } from "../services/preview-context.server";
 import galleryStyles from "../components/gallery.css?url";
 import showcaseStyles from "../components/showcase.css?url";
@@ -78,7 +79,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     id: menu.id,
     name: menu.name,
     published: Boolean(menu.publishedAt),
-    usesCanvas: menuStats(menu.draft as unknown as Design).usesCanvas,
+    usesCanvas: usesCanvas(menu.draft as unknown as Design),
     updatedAt: menu.updatedAt.toISOString(),
   }));
 
@@ -111,7 +112,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           id: featuredRow.id,
           design: featuredDesign!,
           publishedAt: featuredRow.publishedAt?.toISOString() ?? null,
-          stats: menuStats(featuredDesign!),
+          unlinked: countUnlinked(featuredDesign!),
         }
       : null,
     welcome,
@@ -178,6 +179,8 @@ export default function Home() {
     ? menus.find((menu) => menu.id === featured.id)
     : undefined;
   const embedUrl = embedEditorUrl(shop, apiKey);
+  // Published, but the plan doesn't cover the live theme yet.
+  const draftThemesOnly = Boolean(liveNotCovered);
   const guide = (
     <SetupGuide
       hasMenu={hasMenu}
@@ -185,7 +188,7 @@ export default function Home() {
       published={published}
       embed={embed}
       embedUrl={embedUrl}
-      draftThemesOnly={Boolean(liveNotCovered)}
+      draftThemesOnly={draftThemesOnly}
     />
   );
 
@@ -224,7 +227,7 @@ export default function Home() {
         <HomeHero
           shopName={context.shopName}
           menus={menus}
-          draftThemesOnly={Boolean(liveNotCovered)}
+          draftThemesOnly={draftThemesOnly}
         />
 
         {!hasMenu && <WelcomeCard templates={welcome} context={context} />}
@@ -232,24 +235,22 @@ export default function Home() {
         {!published && guide}
 
         {featured && featuredMenu && (
-          <>
-            <FeaturedMenu
-              menu={featuredMenu}
-              design={featured.design}
-              context={context}
-              publishedAt={featured.publishedAt}
-              unlinked={featured.stats.unlinked}
-              embed={embed}
-              shop={shop}
-              draftThemesOnly={Boolean(liveNotCovered)}
-            />
-          </>
+          <FeaturedMenu
+            menu={featuredMenu}
+            design={featured.design}
+            context={context}
+            publishedAt={featured.publishedAt}
+            unlinked={featured.unlinked}
+            embed={embed}
+            shop={shop}
+            draftThemesOnly={draftThemesOnly}
+          />
         )}
 
         {hasMenu && (
           <MenusTable
             menus={menus}
-            draftThemesOnly={Boolean(liveNotCovered)}
+            draftThemesOnly={draftThemesOnly}
             onDelete={(menu) => {
               setDeleting(menu);
               deleteModal.current?.showOverlay();

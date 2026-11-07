@@ -1,4 +1,5 @@
 /** Small builders that keep the template files close to the Figma designs they come from. */
+import { NO_LINK } from "../links";
 import { newId } from "../tree";
 import type {
   AccountBarNode,
@@ -22,9 +23,7 @@ import type {
 import { SCHEMA_VERSION } from "../types";
 import { templateImage, type TemplateImageName } from "./images";
 
-export const NONE: LinkRef = { type: "none" };
-export const ALL_PRODUCTS: LinkRef = { type: "route", route: "all_products" };
-export const ALL_COLLECTIONS: LinkRef = { type: "route", route: "collections" };
+const ALL_PRODUCTS: LinkRef = { type: "route", route: "all_products" };
 
 export function stack(
   children: Node[],
@@ -81,7 +80,7 @@ export function card(
     variant,
     title,
     image: templateImage(image, title),
-    link: NONE,
+    link: NO_LINK,
     arrow: "light",
     ...options,
   };
@@ -94,7 +93,7 @@ export function row(title: string, options: Partial<RowNode> = {}): RowNode {
     variant: "plain",
     title,
     chevron: true,
-    link: NONE,
+    link: NO_LINK,
     ...options,
   };
 }
@@ -145,7 +144,7 @@ export function banner(
     type: "banner",
     variant,
     title,
-    link: NONE,
+    link: NO_LINK,
     ...options,
   };
 }
@@ -156,7 +155,7 @@ export function pill(text: string, options: Partial<PillNode> = {}): PillNode {
     type: "pill",
     icon: "gift",
     text,
-    link: NONE,
+    link: NO_LINK,
     ...options,
   };
 }
@@ -271,7 +270,7 @@ function sampleSubMenu(item: RowNode | CardNode): Screen {
       subtitle: undefined,
       badge: undefined,
       chevron: false,
-      link: NONE,
+      link: NO_LINK,
     }));
     // Rows without a background are separated by thin lines, like their parent.
     children = lined
@@ -300,7 +299,7 @@ function sampleSubMenu(item: RowNode | CardNode): Screen {
       thumbSize: 56,
       thumbRadius: 10,
       chevron: false,
-      link: NONE,
+      link: NO_LINK,
       box: {
         background: item.box?.background ?? "#F5F5F5",
         radius: 12,

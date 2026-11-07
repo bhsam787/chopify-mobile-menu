@@ -128,8 +128,8 @@ A Figma frame maps almost 1:1 onto this tree, which keeps templates faithful to 
 
 1. Reads `app.metafields.chopi.menu` and `.entitlement`. Outputs nothing if the menu is unpublished.
 2. Resolves dynamic data **in Liquid** into a `<script type="application/json">` block:
-   - link URLs from `linklists['chopi-menu-links']`
-   - widget data: products/collections for story circles and cards (`collections[handle].products`, limited counts), with images through `image_url: width:`
+   - linked collections, products, pages and posts by ID, from the reference-list metafields `shop.metafields["$app:chopi"]` (current URL, title and image per render; deleted ones drop out)
+   - widget data: story-circle collections from `product_collections` (`collection.products limit:`), with images through `image_url: width:`
    - the active locale's texts (`request.locale.iso_code`), plus `localization` for the country/language picker
    - `customer`, `cart.item_count`, `routes.*`
 3. Loads `chopi-menu.js` with `defer`, plus a small CSS file.
@@ -249,11 +249,11 @@ Launch set, each rebuilt as a **brand-neutral** design. The Figma files contain 
 | Mono Grid | Huel-style frames | black/white bottom-label cards, referral banner, plain rows, promo pill |
 | Accordion | Control menu | heading, chips row, image rows with accordion, split banners, footer bar |
 
-**Decided 2026-11-03:** templates are **pre-filled sample designs** (texts + images following the Figma frames), not filled from the shop's data, so previews always look finished. Images are served from `public/templates/` (WebP) for previews and copied to the merchant's Shopify Files on the first save. The sample photos are original generated stand-ins (same subjects and crops as the Figma frames, invented labels such as GROVE and NORTH, no client brand marks). Prompts are in `packages/menu-core/src/templates/images.json`. Each app menu creates its own Shopify navigation menu "<name> (Chopi - Menu)" on save; deleting the app menu deletes it (never the store's own menus).
+**Decided 2026-11-03:** templates are **pre-filled sample designs** (texts + images following the Figma frames), not filled from the shop's data, so previews always look finished. Images are served from `public/templates/` (WebP) for previews and copied to the merchant's Shopify Files on the first save. The sample photos are original generated stand-ins (same subjects and crops as the Figma frames, invented labels such as GROVE and NORTH, no client brand marks). Prompts are in `packages/menu-core/src/templates/images.json`.
 
 Other template rules:
 
-- A template is a `Design` with placeholders (`{{shop.main_menu}}`, `{{shop.bestsellers}}`) that are resolved when it's applied.
+- Applying a template copies its design into a new menu (fresh ids); sample links are then replaced by the merchant.
 - Gallery thumbnails are rendered by the same renderer.
 
 ## 8. Billing and plan gating
@@ -282,7 +282,7 @@ Other template rules:
 
 - Mandatory compliance webhooks: `customers/data_request` and `customers/redact` (we store no customer data, so acknowledge them), and `shop/redact` (delete the shop's rows).
 - `app/uninstalled`: delete sessions and mark the shop as uninstalled. The metafields go with the app installation.
-- Scopes (minimal): `read_products`, `read_content`, `read_legal_policies`, `write_online_store_navigation` (hidden links menu), `read_themes` (adapter detection, embed status from the backend), `read_files`/`write_files` (images), `read_locales`. The template's `write_metaobjects*` scopes are removed.
+- Scopes (minimal): `read_products`, `read_content`, `read_legal_policies`, `read_reports` (top searches for live search), `read_themes` (adapter detection, embed status from the backend), `write_files` (images; includes read), `read_locales`. The template's `write_metaobjects*` scopes are removed.
 - Remove template leftovers: the demo product metafield, the demo metaobject, the `product-price-change` event and the example routes.
 - Polaris web components for every admin screen except the editor canvas. Loading, empty and error states throughout.
 - Listing assets: screenshots, a demo video and a theme compatibility list.
@@ -296,7 +296,6 @@ Other template rules:
 | The 128 KB metafield limit | Compile the largest template and measure. Text-heavy designs with 5+ locales are the worst case |
 | Liquid limits for widget data (product lookups per page) | Story circles from a collection with N ≤ 12 |
 | Lighthouse impact | Run before and after on Dawn |
-| Hidden links menu acceptance | Check the App Store guidance. Fallback: store handles and resolve them through `collections[handle]` / `pages[handle]` |
 
 ## 11. Phases
 

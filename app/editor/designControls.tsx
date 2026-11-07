@@ -21,11 +21,6 @@ export interface DesignFocus {
   label: string;
 }
 
-/**
- * Design dialogs: which part of the selected item the settings being used
- * change. Hovering shows it for a moment; touching (click, typing, slider)
- * keeps it highlighted until another part is touched.
- */
 /** One setting changed, in words: "Spacing › Top and bottom: 16 px → 28 px". */
 export interface DesignChange {
   /** The card it's in ("Spacing"), if any. */
@@ -35,6 +30,11 @@ export interface DesignChange {
   to: GuideValue;
 }
 
+/**
+ * Design dialogs: which part of the selected item the settings being used
+ * change. Hovering shows it for a moment; touching (click, typing, slider)
+ * keeps it highlighted until another part is touched.
+ */
 export const DesignFocusContext = createContext<{
   hover: (focus: DesignFocus | null) => void;
   touch: (focus: DesignFocus) => void;

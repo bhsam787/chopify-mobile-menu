@@ -1132,13 +1132,6 @@
 .chm-field__top .chm-reset + .chm-field__number {
   margin-left: 0;
 }
-.chm-field__top--end {
-  justify-content: flex-end;
-  min-height: 0;
-}
-.chm-field__top--end:empty {
-  display: none;
-}
 .chm-swatches .chm-reset {
   margin-left: 4px;
   align-self: center;

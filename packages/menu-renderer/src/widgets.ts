@@ -11,12 +11,18 @@ import type {
   TickerNode,
 } from "@chopi/menu-core";
 import { contactHref, resourceKey, UI_TEXT_DEFAULTS } from "@chopi/menu-core";
-import { boxCss, color, css, esc, img, styleAttr, textCss } from "./html";
+import {
+  boxCss,
+  clamp,
+  color,
+  css,
+  esc,
+  img,
+  styleAttr,
+  textCss,
+} from "./html";
 import { ICONS, icon } from "./icons";
-import { href, isGone, nodeAttr, t, type State } from "./state";
-
-const clamp = (value: unknown, min: number, max: number, fallback: number) =>
-  Math.max(min, Math.min(max, Number(value) || fallback));
+import { href, nodeAttr, t, type State } from "./state";
 
 export function products(state: State, node: ProductsNode): string {
   const limit = clamp(node.limit, 1, 12, 6);
@@ -104,7 +110,8 @@ function contactLink(
   item: ContactNode["items"][number],
 ): string | null {
   if (item.kind !== "link") return contactHref(item.kind, item.value);
-  return item.link && !isGone(state, item.link) ? href(state, item.link) : null;
+  // href() is null for a deleted resource too.
+  return item.link ? href(state, item.link) : null;
 }
 
 export function contact(state: State, node: ContactNode): string {

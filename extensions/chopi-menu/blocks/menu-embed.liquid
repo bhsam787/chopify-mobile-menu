@@ -25,7 +25,7 @@
       "designMode": {{ request.design_mode | json }},
       "triggerOverride": {{ block.settings.trigger_selector | json }},
       "context": {
-        "locale": {{ request.locale.iso_code | json }},
+        "locale": {{ locale_code | json }},
         "shopName": {{ shop.name | json }},
         "customerLoggedIn": {% if customer %}true{% else %}false{% endif %},
         "currency": {{ cart.currency.iso_code | json }},

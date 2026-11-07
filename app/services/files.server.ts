@@ -16,11 +16,7 @@ const STAGE_UPLOAD = `#graphql
 const CREATE_FILE = `#graphql
   mutation CreateImageFile($files: [FileCreateInput!]!) {
     fileCreate(files: $files) {
-      files {
-        id
-        fileStatus
-        ... on MediaImage { image { url } }
-      }
+      files { id }
       userErrors { field message }
     }
   }
@@ -37,7 +33,7 @@ const FILE_STATUS = `#graphql
   }
 `;
 
-export const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 const ALLOWED_TYPES = [
   "image/jpeg",
   "image/png",
@@ -46,7 +42,8 @@ const ALLOWED_TYPES = [
   "image/svg+xml",
 ];
 
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+export const wait = (ms: number) =>
+  new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Uploads an image to Shopify Files and returns its CDN URL once processed. */
 export async function uploadImage(

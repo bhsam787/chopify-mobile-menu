@@ -19,7 +19,7 @@ import {
   useSearchParams,
 } from "react-router";
 import type { Prisma } from "@prisma/client";
-import type { ContainerNode, Design, Node } from "@chopi/menu-core";
+import type { ContainerNode, Design, Node, Screen } from "@chopi/menu-core";
 import {
   addScreen,
   compile,
@@ -42,8 +42,8 @@ import type { ResolvedResource } from "@chopi/menu-renderer";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 import { MenuPreview } from "../components/MenuPreview";
-import { GuideBot } from "../components/GuideBot";
 import {
+  GuideBot,
   setGuidePref,
   useGuidePrefs,
   type GuideLine,
@@ -75,7 +75,7 @@ import { NodeList, SectionCard, type ListContext } from "../editor/SectionList";
 import { isItemList, isPanel, sectionTitle } from "../editor/sections";
 import { DesignWorkspace, lowerFirst } from "../editor/DesignWorkspace";
 import { SEARCH_RESULTS_TARGET } from "../editor/LiveSearchFields";
-import { previewSearchResults as sampleSearch } from "../editor/searchPreview";
+import { useSearchSample } from "../editor/searchPreview";
 import { TranslationsPanel } from "../editor/TranslationsPanel";
 import {
   DesignFocusContext,
@@ -273,11 +273,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       error instanceof MenuTooLargeError ||
       error instanceof TooManyLinksError ||
       error instanceof ShopifyUserError ||
-      error instanceof ImagesProcessingError
+      error instanceof ImagesProcessingError ||
+      (error instanceof Error && error.name === "InvalidDesignError")
         ? error.message
-        : error instanceof Error && error.name === "InvalidDesignError"
-          ? error.message
-          : "Something went wrong. Please try again.";
+        : "Something went wrong. Please try again.";
     if (
       !(error instanceof MenuTooLargeError) &&
       !(error instanceof TooManyLinksError)
@@ -354,6 +353,21 @@ function applyChangedFields(
   return target as unknown as Node;
 }
 
+/** Applies `patch` to each of `nodes` the way `applyChangedFields` does. */
+function applyToAll(
+  design: Design,
+  nodes: Node[],
+  before: Node,
+  patch: Partial<Node>,
+): Design {
+  let next = design;
+  for (const node of nodes)
+    next = mapNode(next, node.id, (current) =>
+      applyChangedFields(current, before, patch),
+    );
+  return next;
+}
+
 /** Whether two items share the same design (the style properties). */
 function sameItemDesign(a: Node, b: Node): boolean {
   const left = a as unknown as Record<string, unknown>;
@@ -385,10 +399,7 @@ interface Outline {
 }
 
 /** Sections in storefront order: fixed header, the screen's blocks, fixed footer blocks. */
-function buildOutline(design: Design, screenId: string): Outline {
-  const screen =
-    design.screens.find((candidate) => candidate.id === screenId) ??
-    design.screens[0];
+function buildOutline(design: Design, screen: Screen): Outline {
   const children = screen.root.children;
   return {
     header: {
@@ -429,6 +440,22 @@ function buildOutline(design: Design, screenId: string): Outline {
 }
 
 type ModalElement = HTMLElementTagNameMap["s-modal"];
+
+const maxModal = (id: string) =>
+  document.getElementById(id) as UIModalElement | null;
+
+/**
+ * Opens an App Bridge max modal on `src`. The src is set on the element right
+ * before showing (not through React), with a fresh `v`, so the page always
+ * loads the latest saved draft, also when the same one is reopened.
+ */
+function showMaxModal(id: string, src: string) {
+  const modal = maxModal(id);
+  if (!modal) return;
+  modal.src = `${src}?v=${Date.now()}`;
+  if (modal.show) void modal.show();
+  else void shopify.modal.show(id);
+}
 
 function Modal({
   id,
@@ -599,42 +626,21 @@ export default function MenuEditor() {
   const fetcher = useFetcher<typeof action>();
   const revalidator = useRevalidator();
   const [searchParams, setSearchParams] = useSearchParams();
-  const canvasModal = () =>
-    document.getElementById("canvas-editor") as UIModalElement | null;
-  /** Set when the canvas editor closes: the next loader data replaces the design. */
+  /** Set when the canvas or CSS editor closes: the next loader data replaces the design. */
   const reloadFromServer = useRef(false);
   /** Canvas to open once the pending save finishes (the canvas editor works on the saved draft). */
   const pendingCanvas = useRef<string | null>(null);
-  /**
-   * Opens the canvas editor. The src is set on the element right before
-   * showing (not through React), with a fresh `v` so the modal always loads the
-   * latest saved draft, also when the same canvas is reopened.
-   */
+  /** The CSS editor opens once the pending save finishes (it works on the saved draft too). */
+  const pendingCss = useRef(false);
   const showCanvas = useCallback(
-    (canvasId: string) => {
-      const modal = canvasModal();
-      if (!modal) return;
-      modal.src = `/app/canvas/${data.menu.id}/${canvasId}?v=${Date.now()}`;
-      if (modal.show) void modal.show();
-      else void shopify.modal.show("canvas-editor");
-    },
+    (canvasId: string) =>
+      showMaxModal("canvas-editor", `/app/canvas/${data.menu.id}/${canvasId}`),
     [data.menu.id],
   );
-
-  /**
-   * Opens the custom CSS editor (a full page in a max modal, like the
-   * canvas). It works on the saved draft, so unsaved changes are saved first.
-   */
-  const pendingCss = useRef(false);
-  const showCss = useCallback(() => {
-    const modal = document.getElementById(
-      "css-editor",
-    ) as UIModalElement | null;
-    if (!modal) return;
-    modal.src = `/app/css/${data.menu.id}?v=${Date.now()}`;
-    if (modal.show) void modal.show();
-    else void shopify.modal.show("css-editor");
-  }, [data.menu.id]);
+  const showCss = useCallback(
+    () => showMaxModal("css-editor", `/app/css/${data.menu.id}`),
+    [data.menu.id],
+  );
 
   const itemModal = useRef<ModalElement>(null);
   const designModal = useRef<ModalElement>(null);
@@ -786,7 +792,7 @@ export default function MenuEditor() {
     [design, history],
   );
 
-  /** Opens the full-screen canvas editor; unsaved changes are saved first. */
+  /** Opens the full-screen CSS editor; unsaved changes are saved first. */
   const openCss = () => {
     if (design !== savedDesign) {
       pendingCss.current = true;
@@ -822,17 +828,15 @@ export default function MenuEditor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // The canvas editor saves to the database; reload the design when it closes.
+  // The canvas and CSS editors save to the database; reload the design when
+  // one closes.
   useEffect(() => {
-    const modal = canvasModal();
-    const cssModal = document.getElementById("css-editor");
+    const modal = maxModal("canvas-editor");
+    const cssModal = maxModal("css-editor");
     const onDone = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
-      if (event.data?.type === "chopi:canvas-done") canvasModal()?.hide?.();
-      if (event.data?.type === "chopi:css-done")
-        (
-          document.getElementById("css-editor") as UIModalElement | null
-        )?.hide?.();
+      if (event.data?.type === "chopi:canvas-done") modal?.hide?.();
+      if (event.data?.type === "chopi:css-done") cssModal?.hide?.();
     };
     const onHide = () => {
       reloadFromServer.current = true;
@@ -848,7 +852,7 @@ export default function MenuEditor() {
     };
   }, [revalidator]);
 
-  // After the canvas editor closes, take over the design it saved.
+  // After the canvas or CSS editor closes, take over the design it saved.
   useEffect(() => {
     if (!reloadFromServer.current) return;
     reloadFromServer.current = false;
@@ -867,17 +871,19 @@ export default function MenuEditor() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const setTranslation = (key: string, value: string) =>
+  const translate = (language: string, key: string, value: string) =>
     history.set(
       (current) => ({
         ...current,
         translations: {
           ...current.translations,
-          [locale]: { ...current.translations[locale], [key]: value },
+          [language]: { ...current.translations[language], [key]: value },
         },
       }),
-      `t:${locale}:${key}`,
+      `t:${language}:${key}`,
     );
+  const setTranslation = (key: string, value: string) =>
+    translate(locale, key, value);
 
   const inspectorContext = (
     overrides: Partial<InspectorContext> = {},
@@ -939,7 +945,7 @@ export default function MenuEditor() {
   const listContext: ListContext = {
     design,
     resources,
-    change: (next) => change(next),
+    change,
     editItem,
     designSection,
     onResource,
@@ -947,15 +953,20 @@ export default function MenuEditor() {
     undo: history.undo,
   };
 
-  const outline = buildOutline(design, screen.id);
-  const stepIds = new Set(
-    [
-      outline.header,
-      ...outline.footer,
-      ...outline.blocks.flatMap((block) =>
-        block.kind === "step" ? [block.step] : block.steps,
-      ),
-    ].map((step) => step.node.id),
+  const outline = buildOutline(design, screen);
+  const steps = [
+    outline.header,
+    ...outline.blocks.flatMap((block) =>
+      block.kind === "step" ? [block.step] : block.steps,
+    ),
+    ...outline.footer,
+  ];
+  const stepIds = new Set(steps.map((step) => step.node.id));
+  // Numbers follow the storefront, top to bottom: header, sections, footer.
+  // Worked out up front: rows render through drag-and-drop render props,
+  // so a counter increased while rendering would skip and repeat.
+  const numbers = new Map(
+    steps.map((step, index) => [step.node.id, index + 1]),
   );
   const toggleSection = (id: string, open: boolean) => {
     setOpenSections((current) => {
@@ -1056,13 +1067,9 @@ export default function MenuEditor() {
   const [touchFocus, setTouchFocus] = useState<PreviewFocus | null>(null);
   const previewFocus = hoverFocus ?? touchFocus;
   // Working on the search results: the phone shows them, with samples.
-  const showSearchSample = previewFocus?.target === SEARCH_RESULTS_TARGET;
-  const previewContext = useMemo(
-    () =>
-      showSearchSample
-        ? { ...context, searchSample: sampleSearch(context) }
-        : context,
-    [context, showSearchSample],
+  const previewContext = useSearchSample(
+    context,
+    previewFocus?.target === SEARCH_RESULTS_TARGET,
   );
   /** What the preview outlines, scrolls to and the helper points at. */
   const previewSelectedId = previewFocus?.nodeId ?? editingId ?? pointedId;
@@ -1159,18 +1166,6 @@ export default function MenuEditor() {
     }
   };
 
-  // Numbers follow the storefront, top to bottom: header, sections, footer.
-  // Worked out up front: rows render through drag-and-drop render props,
-  // so a counter increased while rendering would skip and repeat.
-  const numbers = new Map(
-    [
-      outline.header,
-      ...outline.blocks.flatMap((block) =>
-        block.kind === "step" ? [block.step] : block.steps,
-      ),
-      ...outline.footer,
-    ].map((step, index) => [step.node.id, index + 1]),
-  );
   const renderStep = (step: Step, handle?: ReactNode) => {
     const number = numbers.get(step.node.id) ?? 0;
     return (
@@ -1195,20 +1190,19 @@ export default function MenuEditor() {
     );
   };
 
-  /** Sections of one group; movable ones can be dragged within their group. */
-  const renderSteps = (steps: Step[]) => {
-    const movable = steps.filter((step) => step.movable);
-    if (movable.length < 2)
-      return steps.map((step) => (
+  /** Sections of one group: they can be dragged within their group. */
+  const renderGroupSteps = (groupSteps: Step[]) => {
+    if (groupSteps.length < 2)
+      return groupSteps.map((step) => (
         <div key={step.node.id}>{renderStep(step)}</div>
       ));
     return (
       <SortableList
-        ids={movable.map((step) => step.node.id)}
+        ids={groupSteps.map((step) => step.node.id)}
         onReorder={(active, over) => change(reorder(design, active, over))}
       >
         <s-stack gap="base">
-          {steps.map((step) => (
+          {groupSteps.map((step) => (
             <SortableItem
               key={step.node.id}
               id={step.node.id}
@@ -1617,7 +1611,7 @@ export default function MenuEditor() {
                               </span>
                             </s-stack>
                           </s-grid>
-                          {renderSteps(block.steps)}
+                          {renderGroupSteps(block.steps)}
                         </s-stack>
                       </s-box>
                     )}
@@ -1666,7 +1660,7 @@ export default function MenuEditor() {
                 design={design}
                 screenId={screen.id}
                 context={context}
-                onChange={(next, key) => change(next, key)}
+                onChange={change}
               />
             </s-section>
           )}
@@ -1816,12 +1810,7 @@ export default function MenuEditor() {
                 <>
                   <s-divider />
                   <s-stack gap="base">
-                    <s-grid
-                      gridTemplateColumns="minmax(0, 1fr) auto"
-                      alignItems="center"
-                    >
-                      <s-heading>Design</s-heading>
-                    </s-grid>
+                    <s-heading>Design</s-heading>
                     {editingSiblings.length > 1 && (
                       <s-stack gap="small-200">
                         <Segmented
@@ -1867,18 +1856,13 @@ export default function MenuEditor() {
                               // Every item like this one gets the changed setting.
                               update: (_id, patch) =>
                                 history.set(
-                                  (current) => {
-                                    let next = current;
-                                    for (const sibling of editingSiblings)
-                                      next = mapNode(next, sibling.id, (node) =>
-                                        applyChangedFields(
-                                          node,
-                                          editing.node,
-                                          patch,
-                                        ),
-                                      );
-                                    return next;
-                                  },
+                                  (current) =>
+                                    applyToAll(
+                                      current,
+                                      editingSiblings,
+                                      editing.node,
+                                      patch,
+                                    ),
                                   `all-items:${editing.node.id}:${Object.keys(patch).join(",")}`,
                                 ),
                             })
@@ -1954,23 +1938,18 @@ export default function MenuEditor() {
                         // Every change applies to all items of the same type in this section.
                         update: (_id, patch) =>
                           history.set(
-                            (current) => {
-                              const type = designing.children[0].type;
-                              let next = current;
-                              for (const child of designing.children) {
-                                if (child.type === type)
-                                  // Only the changed setting: each item keeps
-                                  // its own colors.
-                                  next = mapNode(next, child.id, (node) =>
-                                    applyChangedFields(
-                                      node,
-                                      designing.children[0],
-                                      patch,
-                                    ),
-                                  );
-                              }
-                              return next;
-                            },
+                            (current) =>
+                              // Only the changed setting: each item keeps
+                              // its own colors.
+                              applyToAll(
+                                current,
+                                designing.children.filter(
+                                  (child) =>
+                                    child.type === designing.children[0].type,
+                                ),
+                                designing.children[0],
+                                patch,
+                              ),
                             `all:${designing.id}:${Object.keys(patch).join(",")}`,
                           ),
                       })}
@@ -2033,21 +2012,7 @@ export default function MenuEditor() {
             context={context}
             languages={data.locales}
             device={device}
-            onTranslate={(language, key, value) =>
-              history.set(
-                (current) => ({
-                  ...current,
-                  translations: {
-                    ...current.translations,
-                    [language]: {
-                      ...current.translations[language],
-                      [key]: value,
-                    },
-                  },
-                }),
-                `t:${language}:${key}`,
-              )
-            }
+            onTranslate={translate}
           />
         )}
       </Modal>
@@ -2078,7 +2043,6 @@ export default function MenuEditor() {
               locale={locale}
               setTranslation={setTranslation}
               onChange={(next) => change(next, "settings")}
-              onRemoveScreen={() => undefined}
             />
           </DesignWorkspace>
         )}

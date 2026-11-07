@@ -79,7 +79,7 @@ body {
 }
 .cve__tabs {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   background: #fff;
   border-bottom: 1px solid #e3e3e3;
 }
@@ -478,7 +478,7 @@ body {
   touch-action: none;
 }
 
-/* Element tiles: a live preview (rendered at 280px, shown at half size) + label. */
+/* Element tiles: a live preview (rendered at the design width, scaled down to fit) + label. */
 .cve__tile-preview {
   position: relative;
   display: block;

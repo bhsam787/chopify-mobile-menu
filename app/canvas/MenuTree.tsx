@@ -52,18 +52,16 @@ function screenContent(design: Design, screenId: string) {
  */
 export function MenuTree({
   design,
-  currentScreenId,
   onOpenScreen,
   onSelectItem,
   onAddItem,
   onAddSubMenu,
 }: {
   design: Design;
-  currentScreenId: string | undefined;
   onOpenScreen: (screenId: string) => void;
   onSelectItem: (screenId: string, itemId: string) => void;
-  onAddItem: (screenId: string, listId: string) => void;
-  onAddSubMenu: (screenId: string, itemId: string) => void;
+  onAddItem: (listId: string) => void;
+  onAddSubMenu: (itemId: string) => void;
 }) {
   const main = design.screens[0];
   if (!main) return null;
@@ -97,7 +95,7 @@ export function MenuTree({
               type="button"
               className="cve-tree__action"
               title="Give it a sub-menu with its own items"
-              onClick={() => onAddSubMenu(screenId, item.node.id)}
+              onClick={() => onAddSubMenu(item.node.id)}
             >
               + Sub-menu
             </button>
@@ -140,7 +138,7 @@ export function MenuTree({
               <button
                 type="button"
                 className="cve-tree__action"
-                onClick={() => onAddItem(screenId, list.id)}
+                onClick={() => onAddItem(list.id)}
               >
                 + Add item
               </button>
@@ -161,9 +159,7 @@ export function MenuTree({
         Your menu as a map: items, the sub-menus they open, and theirs. Click a
         name to select it on the canvas.
       </p>
-      <div
-        className={`cve-tree__screen${currentScreenId === main.id ? " is-current" : ""}`}
-      >
+      <div>
         <button
           type="button"
           className="cve-tree__title"

@@ -203,7 +203,7 @@ function matchLinks(links: SearchLink[], query: string): SearchLink[] {
     .slice(0, 4);
 }
 
-export interface LiveSearchHandle {
+interface LiveSearchHandle {
   /** Leaves search (Escape, Cancel); false when it wasn't active. */
   exit(): boolean;
   destroy(): void;

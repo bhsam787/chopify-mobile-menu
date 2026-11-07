@@ -18,6 +18,7 @@ import {
   searchStart,
   type SearchWords,
 } from "@chopi/menu-renderer";
+import { PICTURE_CSS } from "../components/FragmentPreview";
 import type { PreviewContext } from "../components/MenuPreview";
 import {
   ColorPicker,
@@ -27,7 +28,7 @@ import {
   Segmented,
   SliderField,
 } from "./designControls";
-import { ItemList } from "./ItemList";
+import { ItemList, updateItem } from "./ItemList";
 import { ColorField, FieldRow, SwitchField } from "./controls";
 import { sampleResults } from "./searchPreview";
 
@@ -50,12 +51,15 @@ const LAYOUTS: { key: LiveSearchLayout; name: string; description: string }[] =
     },
   ];
 
+/** The base when the field's look or design is set before live search was ever turned on. */
+export const LIVE_SEARCH_OFF: LiveSearch = { enabled: false, layout: "list" };
+
 /** What live search starts with when it's turned on. */
-export function defaultLiveSearch(field: LiveSearch["field"]): LiveSearch {
+function defaultLiveSearch(): LiveSearch {
   return {
     enabled: true,
     layout: "list",
-    field: field ?? "pill",
+    field: "pill",
     productLimit: 6,
     menuLinks: true,
     suggestions: true,
@@ -144,7 +148,7 @@ function LayoutPreview({
     const accent = live.accent ? `--chm-sr-accent:${live.accent};` : "";
     // A picture only: its sample links must never be clickable (the tile
     // around it is the button).
-    shadow.innerHTML = `<style>${MENU_CSS} :host{pointer-events:none} .chm-root,.chm-root *{pointer-events:none!important} .chm-fragment{padding:0} .chm-sr{min-height:0;padding:14px;animation:none} .chm-sr__all{display:none}</style>${frame.replace(
+    shadow.innerHTML = `<style>${MENU_CSS} ${PICTURE_CSS} .chm-fragment{padding:0} .chm-sr{min-height:0;padding:14px;animation:none} .chm-sr__all{display:none}</style>${frame.replace(
       /<\/div>$/,
       `<div class="chm-sr chm-sr--${layout}" style="${accent}">${body}</div></div>`,
     )}`;
@@ -189,7 +193,7 @@ export function LiveSearchFields({
   const on = Boolean(live?.enabled);
   const update = (patch: Partial<LiveSearch>) =>
     set({
-      liveSearch: { ...(live ?? defaultLiveSearch(undefined)), ...patch },
+      liveSearch: { ...(live ?? defaultLiveSearch()), ...patch },
     });
   const hasEntry = node.searchBar || (node.icons ?? []).includes("search");
 
@@ -230,7 +234,7 @@ export function LiveSearchFields({
             liveSearch: enabled
               ? live
                 ? { ...live, enabled: true }
-                : defaultLiveSearch(node.liveSearch?.field)
+                : defaultLiveSearch()
               : live && { ...live, enabled: false },
             // Live search needs a way in: show the search field if there's none.
             ...(enabled && !hasEntry ? { searchBar: true } : {}),
@@ -324,11 +328,7 @@ export function LiveSearchFields({
             {(term, index) =>
               termText(term.id, term.text, `Term ${index + 1}`, (text) =>
                 update({
-                  popular: (live.popular ?? []).map((candidate) =>
-                    candidate.id === term.id
-                      ? { ...candidate, text }
-                      : candidate,
-                  ),
+                  popular: updateItem(live.popular ?? [], term.id, { text }),
                 }),
               )
             }
@@ -448,7 +448,7 @@ export function SearchDesignFields({
   const update = (patch: Partial<LiveSearchDesign>) =>
     set({
       liveSearch: {
-        ...(live ?? { enabled: false, layout: "list" }),
+        ...(live ?? LIVE_SEARCH_OFF),
         design: { ...design, ...patch },
       },
     });

@@ -38,6 +38,7 @@ import { CanvasStage, ELEMENT_MIME } from "./CanvasStage";
 import {
   CANVAS_ELEMENTS,
   elementPreview,
+  type CanvasElement,
   placeElement,
   SIDE_MARGIN,
   searchElements,
@@ -105,9 +106,41 @@ export interface CanvasEditorProps {
   locales: { locale: string; name: string; primary: boolean }[];
 }
 
+/** Shows a thrown error to the merchant (its message, else `fallback`). */
+function toastError(error: unknown, fallback: string) {
+  shopify.toast.show(error instanceof Error ? error.message : fallback, {
+    isError: true,
+  });
+}
+
+type LeftTab = "elements" | "layers" | "menu" | "templates";
+const LEFT_TABS: [LeftTab, string][] = [
+  ["elements", "Elements"],
+  ["layers", "Layers"],
+  ["menu", "Menu"],
+  ["templates", "Templates"],
+];
+
 interface SaveResult {
   ok: boolean;
   error?: string;
+}
+
+/** A canvas holding just `element` at its default size, for the Elements panel previews. */
+function previewCanvas(
+  element: CanvasElement,
+  prefix: string,
+  rich: boolean,
+): CanvasNode {
+  const { w, h } = element.size;
+  return {
+    id: `${prefix}-${element.key}`,
+    type: "canvas",
+    height: h,
+    children: [
+      { ...elementPreview(element, { rich }), frame: { x: 0, y: 0, w, h } },
+    ],
+  };
 }
 
 function isEmptyCanvas(design: Design, canvasId: string): boolean {
@@ -165,16 +198,17 @@ export function CanvasEditor({
   const [previewScreen, setPreviewScreen] = useState<string | null>(null);
   /** Phone the canvas is previewed on (it scales to the phone's width). */
   const [device, setDevice] = useState<Device>(DEFAULT_DEVICE);
+  /** Design px to screen px: the zoom times the phone's width over the design width. */
+  const stageScale = zoom * deviceScale(device);
   // The Translations manager renders on first open only.
   const [translationsOpened, setTranslationsOpened] = useState(false);
   const translationsModal = useRef<HTMLElementTagNameMap["s-modal"]>(null);
   /** Search in the Elements panel. */
   const [elementQuery, setElementQuery] = useState("");
-  const [tab, setTab] = useState<"elements" | "templates" | "layers" | "menu">(
+  const [tab, setTab] = useState<LeftTab>(
     // An empty canvas opens on Templates, so starting from a design is the first choice.
     isEmptyCanvas(initial, openedCanvasId) ? "templates" : "elements",
   );
-  /** Template waiting for "Replace current canvas?" confirmation. */
   /**
    * A template shown on the phone before it replaces the canvas: its
    * converted canvas and the design it came from.
@@ -265,12 +299,7 @@ export function CanvasEditor({
         history.set(converted.design);
         setCanvasId(converted.canvasId);
       } catch (error) {
-        shopify.toast.show(
-          error instanceof Error
-            ? error.message
-            : "Couldn't open this sub-menu",
-          { isError: true },
-        );
+        toastError(error, "Couldn't open this sub-menu");
         return;
       }
     }
@@ -354,14 +383,16 @@ export function CanvasEditor({
   const screenFitHeight = () => {
     const scroller = document.querySelector<HTMLElement>("[data-cve-scroller]");
     if (!scroller) return null;
-    const unit = zoom * deviceScale(device);
     // The back bar and footer scroll with the canvas: leave room for them.
     const others = [
       ...scroller.querySelectorAll<HTMLElement>(
         ":scope > .cve-backbar, :scope > .cve__chrome",
       ),
     ].reduce((sum, child) => sum + child.getBoundingClientRect().height, 0);
-    return Math.max(80, Math.floor((scroller.clientHeight - others) / unit));
+    return Math.max(
+      80,
+      Math.floor((scroller.clientHeight - others) / stageScale),
+    );
   };
 
   const detachContext = useMemo(
@@ -492,17 +523,14 @@ export function CanvasEditor({
       new Map(
         CANVAS_ELEMENTS.map((element) => {
           const { w, h } = element.size;
-          const node: CanvasNode = {
-            id: `preview-${element.key}`,
-            type: "canvas",
-            height: h,
-            children: [
-              { ...elementPreview(element), frame: { x: 0, y: 0, w, h } },
-            ],
-          };
           return [
             element.key,
-            { node, w, h, scale: Math.min(0.6, 128 / w, 74 / Math.max(h, 1)) },
+            {
+              node: previewCanvas(element, "preview", false),
+              w,
+              h,
+              scale: Math.min(0.6, 128 / w, 74 / Math.max(h, 1)),
+            },
           ];
         }),
       ),
@@ -512,21 +540,10 @@ export function CanvasEditor({
   const hoverPreviews = useMemo(
     () =>
       new Map(
-        CANVAS_ELEMENTS.map((element) => {
-          const { w, h } = element.size;
-          const node: CanvasNode = {
-            id: `hover-${element.key}`,
-            type: "canvas",
-            height: h,
-            children: [
-              {
-                ...elementPreview(element, { rich: true }),
-                frame: { x: 0, y: 0, w, h },
-              },
-            ],
-          };
-          return [element.key, node];
-        }),
+        CANVAS_ELEMENTS.map((element) => [
+          element.key,
+          previewCanvas(element, "hover", true),
+        ]),
       ),
     [],
   );
@@ -555,10 +572,6 @@ export function CanvasEditor({
     [],
   );
 
-  /**
-   * Fills the canvas with a template: its main screen is measured and turned
-   * into canvas elements; its colors and sub-menus come along.
-   */
   /** The template's main screen measured and turned into a canvas. */
   const templateCanvas = (
     template: Template,
@@ -627,10 +640,7 @@ export function CanvasEditor({
       setSelectedIds([]);
       setTemplatePreview({ ...templateCanvas(sourceTemplate), revert: true });
     } catch (error) {
-      shopify.toast.show(
-        error instanceof Error ? error.message : "Couldn't load the template",
-        { isError: true },
-      );
+      toastError(error, "Couldn't load the template");
     }
   };
 
@@ -646,10 +656,7 @@ export function CanvasEditor({
         setTemplatePreview(prepared);
       } else applyTemplate(prepared);
     } catch (error) {
-      shopify.toast.show(
-        error instanceof Error ? error.message : "Couldn't load the template",
-        { isError: true },
-      );
+      toastError(error, "Couldn't load the template");
     }
   };
 
@@ -1026,7 +1033,6 @@ export function CanvasEditor({
     const entries: MenuEntry[] = [
       {
         label: "Paste here",
-        keys: "",
         onSelect: pasteHere,
         disabled: !clipboard.current.length,
       },
@@ -1125,6 +1131,18 @@ export function CanvasEditor({
     return entries;
   };
 
+  const setTranslation = (language: string, key: string, value: string) =>
+    history.set(
+      (current) => ({
+        ...current,
+        translations: {
+          ...current.translations,
+          [language]: { ...current.translations[language], [key]: value },
+        },
+      }),
+      `t:${language}:${key}`,
+    );
+
   const inspectorContext: InspectorContext = {
     preview: previewContext,
     design,
@@ -1135,17 +1153,7 @@ export function CanvasEditor({
         (current) => updateNode(current, id, patch),
         `${id}:${Object.keys(patch).join(",")}`,
       ),
-    setTranslation: (key, value) =>
-      history.set(
-        (current) => ({
-          ...current,
-          translations: {
-            ...current.translations,
-            [locale]: { ...current.translations[locale], [key]: value },
-          },
-        }),
-        `t:${locale}:${key}`,
-      ),
+    setTranslation: (key, value) => setTranslation(locale, key, value),
     // Sub-menus made here are canvases, so they're designed the same way.
     createScreen: (title) => {
       const result = addCanvasScreen(design, title);
@@ -1216,6 +1224,25 @@ export function CanvasEditor({
       { ...selected.frame, ...patch },
       `frame:${selected.id}`,
     );
+
+  /** Duplicate and delete, beside the heading of the selection's settings. */
+  const layerActions = (
+    <s-stack direction="inline" gap="small-200">
+      <s-button
+        icon="duplicate"
+        variant="tertiary"
+        accessibilityLabel="Duplicate"
+        onClick={duplicate}
+      />
+      <s-button
+        icon="delete"
+        variant="tertiary"
+        tone="critical"
+        accessibilityLabel="Delete"
+        onClick={removeSelected}
+      />
+    </s-stack>
+  );
 
   return (
     <div className="cve">
@@ -1354,38 +1381,17 @@ export function CanvasEditor({
         {/* Tabs and the element search stay in view while the list scrolls. */}
         <div className="cve__left-head">
           <div className="cve__tabs" role="tablist">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === "elements"}
-              onClick={() => setTab("elements")}
-            >
-              Elements
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === "layers"}
-              onClick={() => setTab("layers")}
-            >
-              Layers
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === "menu"}
-              onClick={() => setTab("menu")}
-            >
-              Menu
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === "templates"}
-              onClick={() => setTab("templates")}
-            >
-              Templates
-            </button>
+            {LEFT_TABS.map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={tab === id}
+                onClick={() => setTab(id)}
+              >
+                {label}
+              </button>
+            ))}
           </div>
           {tab === "elements" && (
             <div className="cve__search">
@@ -1409,17 +1415,15 @@ export function CanvasEditor({
           <div className="cve__panel">
             <MenuTree
               design={design}
-              currentScreenId={currentScreenId}
               onOpenScreen={openScreen}
               onSelectItem={(screenId, itemId) => {
                 if (screenId !== currentScreenId) openScreen(screenId);
                 setSelectedIds([itemId]);
               }}
-              onAddItem={(_screenId, listId) => {
-                const result = addItem(design, listId);
-                history.set(result.design);
-              }}
-              onAddSubMenu={(_screenId, itemId) => addSubMenu(itemId)}
+              onAddItem={(listId) =>
+                history.set(addItem(design, listId).design)
+              }
+              onAddSubMenu={addSubMenu}
             />
           </div>
         ) : tab === "templates" ? (
@@ -1500,55 +1504,66 @@ export function CanvasEditor({
                 <div className="cve__tiles">
                   {found
                     .filter((element) => element.group === group)
-                    .map((element) => (
-                      <button
-                        key={element.key}
-                        type="button"
-                        className="cve__tile"
-                        draggable
-                        onDragStart={(event) => {
-                          hideHover();
-                          event.dataTransfer.setData(ELEMENT_MIME, element.key);
-                          event.dataTransfer.effectAllowed = "copy";
-                        }}
-                        onMouseEnter={(event) =>
-                          showHover(element.key, event.currentTarget)
-                        }
-                        onMouseLeave={hideHover}
-                        onFocus={(event) =>
-                          showHover(element.key, event.currentTarget)
-                        }
-                        onBlur={hideHover}
-                        onClick={() => {
-                          hideHover();
-                          addElement(element.key);
-                        }}
-                      >
-                        <span className="cve__tile-preview">
-                          <span
-                            className="cve__tile-scale"
-                            style={{
-                              width: previews.get(element.key)!.w,
-                              height: previews.get(element.key)!.h,
-                              transform: `translate(-50%, -50%) scale(${previews.get(element.key)!.scale})`,
-                            }}
-                          >
-                            {/* The canvas renders at its design width; the tile crops to the element. */}
+                    .map((element) => {
+                      const preview = previews.get(element.key)!;
+                      return (
+                        <button
+                          key={element.key}
+                          type="button"
+                          className="cve__tile"
+                          draggable
+                          onDragStart={(event) => {
+                            hideHover();
+                            event.dataTransfer.setData(
+                              ELEMENT_MIME,
+                              element.key,
+                            );
+                            event.dataTransfer.effectAllowed = "copy";
+                          }}
+                          onMouseEnter={(event) =>
+                            showHover(element.key, event.currentTarget)
+                          }
+                          onMouseLeave={hideHover}
+                          onFocus={(event) =>
+                            showHover(element.key, event.currentTarget)
+                          }
+                          onBlur={hideHover}
+                          onClick={() => {
+                            hideHover();
+                            addElement(element.key);
+                          }}
+                        >
+                          <span className="cve__tile-preview">
                             <span
-                              style={{ display: "block", width: CANVAS_WIDTH }}
+                              className="cve__tile-scale"
+                              style={{
+                                width: preview.w,
+                                height: preview.h,
+                                transform: `translate(-50%, -50%) scale(${preview.scale})`,
+                              }}
                             >
-                              <FragmentPreview
-                                bare
-                                design={design}
-                                node={previews.get(element.key)!.node}
-                                context={previewContext}
-                              />
+                              {/* The canvas renders at its design width; the tile crops to the element. */}
+                              <span
+                                style={{
+                                  display: "block",
+                                  width: CANVAS_WIDTH,
+                                }}
+                              >
+                                <FragmentPreview
+                                  bare
+                                  design={design}
+                                  node={preview.node}
+                                  context={previewContext}
+                                />
+                              </span>
                             </span>
                           </span>
-                        </span>
-                        <span className="cve__tile-label">{element.label}</span>
-                      </button>
-                    ))}
+                          <span className="cve__tile-label">
+                            {element.label}
+                          </span>
+                        </button>
+                      );
+                    })}
                 </div>
               </div>
             ))}
@@ -1608,7 +1623,7 @@ export function CanvasEditor({
 
       <main className="cve__stage">
         <div className="cve-mode">
-          {currentScreenId && currentScreenId !== design.screens[0]?.id && (
+          {isSubMenu && currentScreenId && (
             // In a sub-menu: the way back, like the menu's own back button.
             <nav className="cve-crumbs" aria-label="Sub-menu path">
               {(() => {
@@ -1711,7 +1726,7 @@ export function CanvasEditor({
                   design={design}
                   node={design.header}
                   context={previewContext}
-                  zoom={zoom * deviceScale(device)}
+                  zoom={stageScale}
                 />
                 <div className="cve__screen" data-cve-scroller>
                   {!templatePreview && isSubMenu && currentScreenId && (
@@ -1729,7 +1744,7 @@ export function CanvasEditor({
                         style={{
                           display: "block",
                           width: CANVAS_WIDTH,
-                          zoom: zoom * deviceScale(device),
+                          zoom: stageScale,
                         }}
                       >
                         <BackBarPreview
@@ -1745,7 +1760,7 @@ export function CanvasEditor({
                     <div
                       style={{
                         width: CANVAS_WIDTH,
-                        zoom: zoom * deviceScale(device),
+                        zoom: stageScale,
                       }}
                     >
                       <FragmentPreview
@@ -1760,7 +1775,7 @@ export function CanvasEditor({
                       design={design}
                       canvas={canvas}
                       context={context}
-                      zoom={zoom * deviceScale(device)}
+                      zoom={stageScale}
                       selectedIds={selectedIds}
                       canEditText={!translating}
                       view={view}
@@ -1794,7 +1809,7 @@ export function CanvasEditor({
                       design={design}
                       node={design.footer}
                       context={previewContext}
-                      zoom={zoom * deviceScale(device)}
+                      zoom={stageScale}
                     />
                   )}
                 </div>
@@ -1834,21 +1849,7 @@ export function CanvasEditor({
               alignItems="center"
             >
               <s-heading>{selectedNodes.length} layers selected</s-heading>
-              <s-stack direction="inline" gap="small-200">
-                <s-button
-                  icon="duplicate"
-                  variant="tertiary"
-                  accessibilityLabel="Duplicate"
-                  onClick={duplicate}
-                />
-                <s-button
-                  icon="delete"
-                  variant="tertiary"
-                  tone="critical"
-                  accessibilityLabel="Delete"
-                  onClick={removeSelected}
-                />
-              </s-stack>
+              {layerActions}
             </s-stack>
             <AlignBar
               count={selectedNodes.length}
@@ -1899,21 +1900,7 @@ export function CanvasEditor({
               alignItems="center"
             >
               <s-heading>{nodeLabel(selected)}</s-heading>
-              <s-stack direction="inline" gap="small-200">
-                <s-button
-                  icon="duplicate"
-                  variant="tertiary"
-                  accessibilityLabel="Duplicate"
-                  onClick={duplicate}
-                />
-                <s-button
-                  icon="delete"
-                  variant="tertiary"
-                  tone="critical"
-                  accessibilityLabel="Delete"
-                  onClick={removeSelected}
-                />
-              </s-stack>
+              {layerActions}
             </s-stack>
             {activeList && !translating && (
               <>
@@ -2144,21 +2131,7 @@ export function CanvasEditor({
             context={baseContext}
             languages={locales}
             device={device}
-            onTranslate={(language, key, value) =>
-              history.set(
-                (current) => ({
-                  ...current,
-                  translations: {
-                    ...current.translations,
-                    [language]: {
-                      ...current.translations[language],
-                      [key]: value,
-                    },
-                  },
-                }),
-                `t:${language}:${key}`,
-              )
-            }
+            onTranslate={setTranslation}
           />
         )}
         <s-button

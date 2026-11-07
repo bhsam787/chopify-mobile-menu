@@ -1,72 +1,63 @@
 import { MENU_CSS } from "@chopi/menu-renderer";
 
-/** The menu's main parts, in plain words, for autocomplete and quick insert. */
-export const MENU_PARTS: { selector: string; label: string; group: string }[] =
-  [
-    { selector: ".chm-panel", label: "The whole drawer", group: "Menu" },
-    {
-      selector: ".chm-body",
-      label: "Scrolling area under the header",
-      group: "Menu",
-    },
-    { selector: ".chm-head__body", label: "Header", group: "Header" },
-    {
-      selector: ".chm-header__brand",
-      label: "Logo or store name",
-      group: "Header",
-    },
-    {
-      selector: ".chm-header__icon",
-      label: "Header buttons (search, account, cart)",
-      group: "Header",
-    },
-    { selector: ".chm-close", label: "Close button", group: "Header" },
-    {
-      selector: ".chm-header__announce",
-      label: "Announcement line",
-      group: "Header",
-    },
-    {
-      selector: ".chm-header__search input",
-      label: "Search field",
-      group: "Search",
-    },
-    { selector: ".chm-sr", label: "Search results panel", group: "Search" },
-    {
-      selector: ".chm-sr__product",
-      label: "Product in search results",
-      group: "Search",
-    },
-    {
-      selector: ".chm-sr__all",
-      label: "“See all results” button",
-      group: "Search",
-    },
-    { selector: ".chm-tabs__list", label: "Tab bar", group: "Sections" },
-    { selector: ".chm-tab", label: "Tab", group: "Sections" },
-    {
-      selector: '.chm-tab[aria-selected="true"]',
-      label: "Selected tab",
-      group: "Sections",
-    },
-    { selector: ".chm-card", label: "Category card", group: "Sections" },
-    { selector: ".chm-card__title", label: "Card title", group: "Sections" },
-    { selector: ".chm-row", label: "Link row", group: "Sections" },
-    { selector: ".chm-row__title", label: "Link row title", group: "Sections" },
-    { selector: ".chm-acc", label: "Accordion", group: "Sections" },
-    { selector: ".chm-chip", label: "Chip (quick link)", group: "Sections" },
-    { selector: ".chm-banner", label: "Banner", group: "Sections" },
-    { selector: ".chm-btn", label: "Button", group: "Sections" },
-    { selector: ".chm-heading", label: "Heading", group: "Sections" },
-    { selector: ".chm-text", label: "Text", group: "Sections" },
-    { selector: ".chm-product", label: "Product card", group: "Store" },
-    { selector: ".chm-perks", label: "Perks", group: "Store" },
-    { selector: ".chm-contact__item", label: "Contact button", group: "Store" },
-    { selector: ".chm-discount", label: "Discount code", group: "Store" },
-    { selector: ".chm-ticker", label: "Ticker", group: "Store" },
-    { selector: ".chm-back", label: "Sub-menu back bar", group: "Sub-menus" },
-    { selector: ".chm-footer", label: "Footer", group: "Menu" },
-  ];
+/** The menu's main parts, in plain words, for autocomplete and the picked-layer names. */
+export const MENU_PARTS: { selector: string; label: string }[] = [
+  { selector: ".chm-panel", label: "The whole drawer" },
+  {
+    selector: ".chm-body",
+    label: "Scrolling area under the header",
+  },
+  { selector: ".chm-head__body", label: "Header" },
+  {
+    selector: ".chm-header__brand",
+    label: "Logo or store name",
+  },
+  {
+    selector: ".chm-header__icon",
+    label: "Header buttons (search, account, cart)",
+  },
+  { selector: ".chm-close", label: "Close button" },
+  {
+    selector: ".chm-header__announce",
+    label: "Announcement line",
+  },
+  {
+    selector: ".chm-header__search input",
+    label: "Search field",
+  },
+  { selector: ".chm-sr", label: "Search results panel" },
+  {
+    selector: ".chm-sr__product",
+    label: "Product in search results",
+  },
+  {
+    selector: ".chm-sr__all",
+    label: "“See all results” button",
+  },
+  { selector: ".chm-tabs__list", label: "Tab bar" },
+  { selector: ".chm-tab", label: "Tab" },
+  {
+    selector: '.chm-tab[aria-selected="true"]',
+    label: "Selected tab",
+  },
+  { selector: ".chm-card", label: "Category card" },
+  { selector: ".chm-card__title", label: "Card title" },
+  { selector: ".chm-row", label: "Link row" },
+  { selector: ".chm-row__title", label: "Link row title" },
+  { selector: ".chm-acc", label: "Accordion" },
+  { selector: ".chm-chip", label: "Chip (quick link)" },
+  { selector: ".chm-banner", label: "Banner" },
+  { selector: ".chm-btn", label: "Button" },
+  { selector: ".chm-heading", label: "Heading" },
+  { selector: ".chm-text", label: "Text" },
+  { selector: ".chm-product", label: "Product card" },
+  { selector: ".chm-perks", label: "Perks" },
+  { selector: ".chm-contact__item", label: "Contact button" },
+  { selector: ".chm-discount", label: "Discount code" },
+  { selector: ".chm-ticker", label: "Ticker" },
+  { selector: ".chm-back", label: "Sub-menu back bar" },
+  { selector: ".chm-footer", label: "Footer" },
+];
 
 /** Every class the menu uses (from its stylesheet), for autocomplete. */
 export const MENU_CLASSES: string[] = [

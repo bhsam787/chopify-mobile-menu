@@ -26,7 +26,6 @@ export function screenPath(design: Design, screenId: string): Screen[] {
     walkDesign(
       {
         ...design,
-        header: { ...design.header },
         footer: undefined,
         screens: [screen],
       },

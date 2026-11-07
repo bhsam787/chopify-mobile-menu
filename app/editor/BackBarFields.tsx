@@ -6,6 +6,7 @@ import {
   renderBackBar,
   type RenderContext,
 } from "@chopi/menu-renderer";
+import { PICTURE_CSS } from "../components/FragmentPreview";
 import { ColorField, FieldRow, SwitchField, TextField } from "./controls";
 
 const STYLE_NAMES: Record<BackBar["style"], string> = {
@@ -35,7 +36,7 @@ export function BackBarPreview({
     const element = host.current;
     if (!element) return;
     const shadow = element.shadowRoot ?? element.attachShadow({ mode: "open" });
-    shadow.innerHTML = `<style>${MENU_CSS} :host{pointer-events:none} .chm-root,.chm-root *{pointer-events:none!important}</style>${renderBackBar(
+    shadow.innerHTML = `<style>${MENU_CSS} ${PICTURE_CSS}</style>${renderBackBar(
       design,
       screenId,
       { ...context, editor: true },

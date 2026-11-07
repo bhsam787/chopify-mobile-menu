@@ -22,7 +22,6 @@ import {
 export interface CanvasElement {
   key: string;
   label: string;
-  icon: string;
   group:
     | "Text"
     | "Shapes"
@@ -43,8 +42,8 @@ export interface CanvasElement {
 }
 
 const NO_LINK: LinkRef = { type: "none" };
-/** Placeholder link for sample items (the editor marks it to be replaced). */
-const SAMPLE_LINK: LinkRef = {
+/** Where new sample items go until the merchant picks a link (the editor marks it to be replaced). */
+export const SAMPLE_LINK: LinkRef = {
   type: "route",
   route: "all_products",
   sample: true,
@@ -370,7 +369,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "heading",
     label: "Heading",
-    icon: "text-title",
     description: "A large title, e.g. “Shop by category”.",
     group: "Text",
     size: { w: 300, h: 36 },
@@ -384,7 +382,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "text",
     label: "Text",
-    icon: "text-block",
     description: "A paragraph with bold, italic and links.",
     group: "Text",
     size: { w: 300, h: 48 },
@@ -393,7 +390,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "shape",
     label: "Frame",
-    icon: "blank",
     description: "A colored box. Drop layers into it to group them.",
     group: "Shapes",
     size: { w: 160, h: 100 },
@@ -408,7 +404,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "image",
     label: "Image",
-    icon: "image",
     description: "A photo from your store’s files, optionally linked.",
     group: "Media",
     size: { w: 350, h: 200 },
@@ -422,7 +417,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "button",
     label: "Button",
-    icon: "button",
     description: "A call to action, e.g. “All products”.",
     group: "Buttons & links",
     size: { w: 350, h: 50 },
@@ -431,7 +425,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "divider",
     label: "Line",
-    icon: "minus",
     description: "A thin line to separate areas.",
     group: "Shapes",
     size: { w: 350, h: 2 },
@@ -470,7 +463,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
     {
       key: `card-${style}`,
       label,
-      icon: "image",
       description: `${description} Change its Style any time.`,
       group: "Navigation",
       size: { w: 169, h: CARD_HEIGHT[style] },
@@ -483,7 +475,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
     {
       key: `grid-${style}`,
       label: `${label} grid`,
-      icon: "layout-columns-2",
       description: `Four ${label.toLowerCase()}s in two columns. Add, reorder and give each a sub-menu.`,
       group: "Layouts",
       size: { w: 350, h: CARD_HEIGHT[style] * 2 + 12 },
@@ -494,7 +485,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "icon-list",
     label: "Menu list",
-    icon: "list-bulleted",
     description:
       "Rows with an arrow and thin lines between, like Sliding Menu and Mono. Icons can be turned off in its settings.",
     group: "Layouts",
@@ -515,7 +505,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "story-band",
     label: "Story band",
-    icon: "star",
     description:
       "Round photos with a thin ring on a colored band that swipes sideways, like Sliding Menu.",
     group: "Store",
@@ -546,7 +535,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "tabs",
     label: "Tabs",
-    icon: "tab-horizontal",
     description:
       "Tabs that switch between panels. Each tab is its own free area: drop anything into it.",
     group: "Layouts",
@@ -607,7 +595,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "accordion",
     label: "Accordion",
-    icon: "chevron-down",
     description:
       "A row that opens on tap to show more links, pushing what's below down.",
     group: "Layouts",
@@ -644,7 +631,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "chip-row",
     label: "Chip row",
-    icon: "filter",
     description: "Quick links in pills that scroll sideways.",
     group: "Layouts",
     size: { w: 390, h: 36 },
@@ -673,7 +659,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "carousel",
     label: "Card carousel",
-    icon: "slideshow",
     description: "Cards in a row that scroll sideways, like a slider.",
     group: "Layouts",
     size: { w: 390, h: 196 },
@@ -695,7 +680,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "card-grid",
     label: "Card grid",
-    icon: "layout-columns-2",
     description: "Category cards in two columns.",
     group: "Layouts",
     size: { w: 350, h: 358 },
@@ -710,7 +694,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "link-list",
     label: "Link list",
-    icon: "list-bulleted",
     description:
       "Links one under the other. Add items, reorder them and give each its own sub-menu.",
     group: "Layouts",
@@ -728,7 +711,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "card",
     label: "Category card",
-    icon: "collection",
     description:
       "A category card with photo, title and arrow. Every part is its own layer.",
     group: "Navigation",
@@ -739,7 +721,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "row",
     label: "Link row",
-    icon: "list-bulleted",
     description:
       "A link with thumbnail, title, subtitle and chevron. Every part is its own layer.",
     group: "Navigation",
@@ -750,7 +731,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "chip",
     label: "Chip",
-    icon: "link",
     description: "A small rounded quick link.",
     group: "Navigation",
     size: { w: 130, h: 40 },
@@ -759,7 +739,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "banner",
     label: "Banner",
-    icon: "megaphone",
     description:
       "A promo banner. Its image, texts and button are layers you can edit, move or replace.",
     group: "Promotion",
@@ -770,7 +749,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "banner-highlight",
     label: "Deal banner",
-    icon: "megaphone",
     description:
       "A dark highlight with a label, badge, button and photo, like Spotlight.",
     group: "Promotion",
@@ -797,7 +775,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "banner-split",
     label: "Split banner",
-    icon: "megaphone",
     description:
       "A colored half with a title and a photo half, like Accordion.",
     group: "Promotion",
@@ -817,7 +794,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "banner-feature",
     label: "Feature banner",
-    icon: "megaphone",
     description:
       "A photo with a small label, title, text and outlined button, like Studio's looks.",
     group: "Promotion",
@@ -841,7 +817,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "side-tabs",
     label: "Side tabs",
-    icon: "layout-sidebar-left",
     description:
       "Categories in a column on the left, their content on the right: the way big stores organise a phone menu.",
     group: "Layouts",
@@ -884,7 +859,7 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
           activeBackground: "#F1F1F1",
           activeColor: INK,
           inactiveBackground: "transparent",
-          inactiveColor: "#6B6B6B",
+          inactiveColor: MUTED,
           text: { size: 13, weight: 600 },
         },
         tabs: [
@@ -909,7 +884,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "products",
     label: "Product cards",
-    icon: "product",
     description:
       "Products from a collection with photo, title and price, always current and in the shopper's currency.",
     group: "Store",
@@ -920,7 +894,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "perks",
     label: "Perks",
-    icon: "shield-check-mark",
     description: "Shipping, returns and secure checkout, each with an icon.",
     group: "Promotion",
     size: { w: 350, h: 84 },
@@ -930,7 +903,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "contact",
     label: "Contact & help",
-    icon: "chat",
     description:
       "Buttons to call, email or message the store, or open a help page.",
     group: "Store",
@@ -941,7 +913,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "discount",
     label: "Discount code",
-    icon: "discount-code",
     description: "A code shoppers copy with one tap, or apply to their cart.",
     group: "Promotion",
     size: { w: 350, h: 150 },
@@ -951,7 +922,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "ticker",
     label: "Ticker",
-    icon: "text-in-rows",
     description:
       "A thin strip of short messages that scrolls sideways in a loop.",
     group: "Promotion",
@@ -962,7 +932,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "countdown",
     label: "Countdown",
-    icon: "clock",
     description: "A sale banner with a live timer.",
     group: "Promotion",
     size: { w: 350, h: 72 },
@@ -971,7 +940,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "pill",
     label: "Promo pill",
-    icon: "discount",
     description: "A short highlighted message, e.g. a free gift.",
     group: "Promotion",
     size: { w: 220, h: 34 },
@@ -981,7 +949,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "proof",
     label: "Social proof",
-    icon: "person-list",
     description: "Avatars with a trust message.",
     group: "Promotion",
     size: { w: 350, h: 44 },
@@ -990,7 +957,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "review",
     label: "Review",
-    icon: "text-quote",
     description: "A customer quote with stars. Every part is its own layer.",
     group: "Promotion",
     size: { w: 350, h: 170 },
@@ -1000,7 +966,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "stories",
     label: "Story circles",
-    icon: "star",
     description:
       "Round product photos that scroll sideways, like Instagram stories.",
     group: "Store",
@@ -1010,7 +975,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "account",
     label: "Account & socials",
-    icon: "person",
     description: "Log-in link and social media icons.",
     group: "Store",
     size: { w: 350, h: 56 },
@@ -1019,7 +983,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "localization",
     label: "Country & language",
-    icon: "globe",
     description: "Country/currency and language switchers.",
     group: "Store",
     size: { w: 350, h: 48 },
@@ -1030,7 +993,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "title",
     label: "Big title",
-    icon: "text-title",
     description: "An eye-catching display title for a campaign or season.",
     group: "Text",
     size: { w: 340, h: 44 },
@@ -1045,7 +1007,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "label",
     label: "Small label",
-    icon: "text",
     description:
       "A small uppercase label above a title, e.g. “NEW COLLECTION”.",
     group: "Text",
@@ -1061,7 +1022,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "list",
     label: "Check list",
-    icon: "list-bulleted",
     description: "Short selling points, one per line.",
     group: "Text",
     size: { w: 300, h: 78 },
@@ -1076,7 +1036,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "price",
     label: "Price",
-    icon: "cash-dollar",
     description: "A price or offer line with a bold amount.",
     group: "Text",
     size: { w: 160, h: 26 },
@@ -1092,7 +1051,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "circle",
     label: "Circle",
-    icon: "circle",
     description: "A round shape: dots, backgrounds behind photos, highlights.",
     group: "Shapes",
     size: { w: 100, h: 100 },
@@ -1109,7 +1067,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "outline",
     label: "Outline box",
-    icon: "square",
     description: "A box with only a border. Holds layers like a frame.",
     group: "Shapes",
     size: { w: 160, h: 100 },
@@ -1127,7 +1084,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "gradient",
     label: "Gradient",
-    icon: "color",
     description: "A soft two-color background. Change the colors and angle.",
     group: "Shapes",
     size: { w: 350, h: 140 },
@@ -1144,7 +1100,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "shade",
     label: "Photo shade",
-    icon: "image",
     description:
       "A dark fade to put over a photo, so white text on it stays readable.",
     group: "Shapes",
@@ -1163,7 +1118,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "vline",
     label: "Vertical line",
-    icon: "minus",
     description: "A thin upright line, e.g. between two links.",
     group: "Shapes",
     size: { w: 2, h: 80 },
@@ -1180,7 +1134,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "circle-image",
     label: "Round photo",
-    icon: "image",
     description: "A photo cut into a circle.",
     group: "Media",
     size: { w: 120, h: 120 },
@@ -1196,7 +1149,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "icon",
     label: "Icon",
-    icon: "star",
     description: "One icon: star, gift, truck, heart, search, bag and more.",
     group: "Media",
     size: { w: 32, h: 32 },
@@ -1206,7 +1158,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "icon-circle",
     label: "Icon in circle",
-    icon: "gift",
     description: "An icon on a round background, e.g. next to a perk.",
     group: "Media",
     size: { w: 48, h: 48 },
@@ -1219,7 +1170,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "social",
     label: "Social icons",
-    icon: "social-post",
     description: "Linked icons for your social media profiles.",
     group: "Media",
     size: { w: 152, h: 26 },
@@ -1252,7 +1202,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "button-outline",
     label: "Outline button",
-    icon: "button",
     description: "A lighter button with a border.",
     group: "Buttons & links",
     size: { w: 200, h: 44 },
@@ -1270,7 +1219,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "button-small",
     label: "Small button",
-    icon: "button",
     description: "A compact pill button, e.g. “View all”.",
     group: "Buttons & links",
     size: { w: 110, h: 34 },
@@ -1289,7 +1237,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "text-link",
     label: "Text link",
-    icon: "link",
     description: "Underlined text that links anywhere.",
     group: "Buttons & links",
     size: { w: 140, h: 24 },
@@ -1310,7 +1257,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "arrow-button",
     label: "Arrow button",
-    icon: "arrow-right",
     description: "A round button with an arrow.",
     group: "Buttons & links",
     size: { w: 48, h: 48 },
@@ -1329,7 +1275,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "badge",
     label: "Badge",
-    icon: "label-printer",
     description: "A small colored tag, e.g. NEW or -20%.",
     group: "Buttons & links",
     size: { w: 56, h: 22 },
@@ -1352,7 +1297,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "search",
     label: "Search bar",
-    icon: "search",
     description: "Opens your store’s search.",
     group: "Buttons & links",
     size: { w: 350, h: 42 },
@@ -1378,7 +1322,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "cart-link",
     label: "Cart link",
-    icon: "cart",
     description: "A bag icon with “Cart”, linking to the cart.",
     group: "Buttons & links",
     size: { w: 96, h: 28 },
@@ -1404,7 +1347,6 @@ export const CANVAS_ELEMENTS: CanvasElement[] = [
   {
     key: "account-link",
     label: "Log-in link",
-    icon: "person",
     description: "A person icon with “Log in”, linking to the account page.",
     group: "Buttons & links",
     size: { w: 110, h: 28 },
@@ -1520,7 +1462,10 @@ export function placeElement(
   const side = Math.min(margin, bounds.w / 4);
   const room = bounds.w - side * 2;
   const scale = Math.min(1, room / element.size.w);
-  const node = elementSample(element);
+  // Exactly as its hover preview shows it: complete sample content (e.g. six
+  // story circles), so it looks finished. Sample images are copied to the
+  // store's Shopify Files on save.
+  const node = elementPreview(element, { rich: true });
   const w = Math.round(element.size.w * scale);
   const x = Math.round(
     Math.min(Math.max(side, cx - w / 2), Math.max(side, bounds.w - side - w)),
@@ -1577,9 +1522,6 @@ function scaleLayers(node: Node, scale: number): Node {
   };
 }
 
-const sample = (name: Parameters<typeof templateImage>[0]) =>
-  templateImage(name);
-
 const STORY_SAMPLES = [
   ["Jackets", "fashion/jacket-classic"],
   ["Tuxedos", "fashion/smoking"],
@@ -1620,12 +1562,16 @@ function fillSample(node: Node, rich: boolean): Node {
     case "shape":
       return { ...node, fill: "#E7EEDC", radius: 16 };
     case "image":
-      return { ...node, image: sample("fashion/look-summer"), ratio: 0.5 };
+      return {
+        ...node,
+        image: templateImage("fashion/look-summer"),
+        ratio: 0.5,
+      };
     case "card":
       return {
         ...node,
         title: "Suits",
-        image: sample("fashion/suits"),
+        image: templateImage("fashion/suits"),
         ratio: 0.7,
       };
     case "row":
@@ -1633,17 +1579,17 @@ function fillSample(node: Node, rich: boolean): Node {
         ...node,
         title: "Shirts",
         subtitle: "Slim & regular fit",
-        image: sample("fashion/shirts"),
+        image: templateImage("fashion/shirts"),
       };
     case "chip":
       return {
         ...node,
         label: "Sale",
-        image: sample("fashion/outlet"),
+        image: templateImage("fashion/outlet"),
         box: { ...node.box, borderWidth: 1, borderColor: "#DDDDDD" },
       };
     case "banner":
-      return { ...node, image: sample("botanical/bundle") };
+      return { ...node, image: templateImage("botanical/bundle") };
     case "stories":
       return {
         ...node,
@@ -1652,7 +1598,7 @@ function fillSample(node: Node, rich: boolean): Node {
         items: STORY_SAMPLES.slice(0, rich ? 6 : 3).map(([title, image]) => ({
           id: newId("i"),
           title,
-          image: sample(image),
+          image: templateImage(image),
           link: { type: "none" },
         })),
       };
@@ -1667,17 +1613,8 @@ function fillSample(node: Node, rich: boolean): Node {
         ],
       };
     case "divider":
-      return { ...node, color: "#1A1A1A", thickness: 2 };
+      return { ...node, color: INK, thickness: 2 };
     default:
       return node;
   }
-}
-
-/**
- * A new element exactly as its hover preview shows it: complete sample
- * content (e.g. six story circles), so it looks finished on the canvas.
- * Sample images are copied to the store's Shopify Files on save.
- */
-export function elementSample(element: CanvasElement): Node {
-  return element.ready ? element.create() : fillSample(element.create(), true);
 }

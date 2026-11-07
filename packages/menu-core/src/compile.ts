@@ -168,14 +168,21 @@ export function compile(design: Design): CompileResult {
 
   const resources = new Map<string, ResourceNeed>();
   let localization = design.header.showLanguage === true;
+  let productLimit = 0;
   walkDesign(menu, (node) => {
     if (node.type === "localization") localization = true;
     // Stand-in products are for the editor only (nodes here are copies).
     if (node.type === "products") delete node.sample;
+    const productsCollection = productsCollectionOf(node);
+    if (productsCollection)
+      productLimit = Math.max(
+        productLimit,
+        (node as { limit?: number }).limit ?? 8,
+      );
     for (const link of linksOf(node)) {
       if (!isResourceLink(link) || !link.id) continue;
       const key = resourceKey(link.type, link.id);
-      const withProducts = productsCollectionOf(node)?.id === link.id;
+      const withProducts = productsCollection?.id === link.id;
       const existing = resources.get(key);
       if (existing) {
         existing.withProducts ||= withProducts;
@@ -202,14 +209,6 @@ export function compile(design: Design): CompileResult {
     if ((REFERENCE_TYPES as readonly string[]).includes(need.type))
       references.ids[need.type as ReferenceType].push(need.id);
   }
-  let productLimit = 0;
-  walkDesign(menu, (node) => {
-    if (productsCollectionOf(node))
-      productLimit = Math.max(
-        productLimit,
-        (node as { limit?: number }).limit ?? 8,
-      );
-  });
   menu.meta = { localization, ...(productLimit ? { productLimit } : {}) };
 
   const size = (value: unknown) =>

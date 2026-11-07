@@ -96,8 +96,7 @@ function notifyDone() {
   );
 }
 
-/** The page itself (exported for tests that render it without the app shell). */
-export function CssEditorPage() {
+function CssEditorPage() {
   const data = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
   const [design, setDesign] = useState<Design>(data.design);

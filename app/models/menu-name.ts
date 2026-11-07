@@ -9,3 +9,12 @@ export function cleanMenuName(raw: FormDataEntryValue | null): string | null {
     .slice(0, MENU_NAME_MAX);
   return name || null;
 }
+
+/** `base`, or "base 2", "base 3"… when a menu already has that name. */
+export function freeMenuName(base: string, taken: Iterable<string>): string {
+  const names = new Set(taken);
+  if (!names.has(base)) return base;
+  let number = 2;
+  while (names.has(`${base} ${number}`)) number++;
+  return `${base} ${number}`;
+}

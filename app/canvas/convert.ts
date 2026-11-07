@@ -9,6 +9,9 @@ import type {
   TabsNode,
 } from "@chopi/menu-core";
 import { CANVAS_WIDTH, newId, NODE_LABELS, TAB_GAP } from "@chopi/menu-core";
+import { MENU_CSS, renderMenu, type RenderContext } from "@chopi/menu-renderer";
+import { layersFromElement } from "./detach";
+import { PREVIEW_FONT } from "./layers";
 
 /** Widgets that, repeated in a grid or stack, make a smart list. */
 const LIST_ITEMS = new Set<Node["type"]>([
@@ -18,13 +21,6 @@ const LIST_ITEMS = new Set<Node["type"]>([
   "button",
   "banner",
 ]);
-import { layersFromElement } from "./detach";
-import { PREVIEW_FONT } from "./layers";
-import {
-  MENU_CSS,
-  renderMenu,
-  type RenderContext,
-} from "@chopi/menu-renderer";
 
 /**
  * Converts a screen built from sections (stacks, grids, cards, banners…) into a

@@ -7,7 +7,6 @@ const PICKED_IMAGES = `#graphql
     nodes(ids: $ids) {
       ... on MediaImage {
         id
-        fileStatus
         alt
         image { url altText }
       }
@@ -17,7 +16,6 @@ const PICKED_IMAGES = `#graphql
 
 interface PickedImage {
   id?: string;
-  fileStatus?: string;
   alt?: string | null;
   image?: { url: string; altText: string | null } | null;
 }

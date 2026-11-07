@@ -17,6 +17,7 @@ import {
   planForHandle,
 } from "../billing/plans";
 import { ChopiStage } from "../home/HomeHero";
+import { CHECK } from "../components/TemplateDetails";
 import showcaseStyles from "../components/showcase.css?url";
 
 export const links: LinksFunction = () => [
@@ -91,19 +92,6 @@ const QUESTIONS: { question: string; answer: string }[] = [
       "On your live theme, your theme's own menu shows again, and your theme itself is never changed. If you cancel but keep the app, your designs stay saved and keep working on draft themes, ready to go live again whenever you pick a plan.",
   },
 ];
-
-const CHECK = (
-  <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
-    <path
-      d="m3.5 8.5 3 3 6-7"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
 
 export default function Pricing() {
   const {

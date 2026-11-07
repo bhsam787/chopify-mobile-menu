@@ -7,7 +7,15 @@ import {
 } from "@chopi/menu-renderer";
 import { cleanCustomCss } from "@chopi/menu-core";
 
-const PREVIEW_FONT = `-apple-system, BlinkMacSystemFont, "San Francisco", "Segoe UI", Roboto, "Helvetica Neue", sans-serif`;
+import { PREVIEW_FONT } from "./MenuPreview";
+
+/**
+ * For renderer output shown as a picture: nothing in it can be clicked into.
+ * The menu's editor styles turn clicks back on (.chm-editor), and a link
+ * clicked in the admin would navigate it.
+ */
+export const PICTURE_CSS =
+  ":host{pointer-events:none} .chm-root,.chm-root *{pointer-events:none!important}";
 
 /** Renders one node with the storefront renderer (no drawer around it), isolated in a shadow root. */
 export function FragmentPreview({
@@ -28,13 +36,10 @@ export function FragmentPreview({
     const element = host.current;
     if (!element) return;
     const shadow = element.shadowRoot ?? element.attachShadow({ mode: "open" });
-    // Previews are pictures: no clicks into links, tabs or accordions.
     const bareCss = bare
       ? ".chm-fragment{padding:0;background:transparent;display:block}"
       : "";
-    // The menu's editor styles turn clicks back on (.chm-editor); a picture
-    // must never be clicked into (its links would navigate the admin).
-    shadow.innerHTML = `<style>${MENU_CSS} :host{pointer-events:none} .chm-root,.chm-root *{pointer-events:none!important}${bareCss}${cleanCustomCss(design.customCss)}</style>${renderFragment(design, [node], { ...context, editor: true })}`;
+    shadow.innerHTML = `<style>${MENU_CSS} ${PICTURE_CSS}${bareCss}${cleanCustomCss(design.customCss)}</style>${renderFragment(design, [node], { ...context, editor: true })}`;
   }, [design, node, context, bare]);
 
   // Never follow a link of the menu inside the editor.

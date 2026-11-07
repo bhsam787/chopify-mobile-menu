@@ -78,7 +78,7 @@ const TITLE = {
 const tagFor = (tag: "new" | "save" | null) =>
   tag === "new" ? NEW : tag === "save" ? SAVE : undefined;
 
-/** Kategorie-Karte: title + tag on top, photo filling the bottom with a soft fade. */
+/** Category card: title + tag on top, photo filling the bottom with a soft fade. */
 const productCard = ([
   title,
   image,
@@ -91,14 +91,14 @@ const productCard = ([
     titleStyle: TITLE,
   });
 
-/** Anwendungs-Karte: photo fading into dark green, white title and arrow. */
+/** Goal tile: photo fading into dark green, white title and arrow. */
 const goalTile = ([title, image]: (typeof GOALS)[number]): CardNode =>
   card("tile", title, image, {
     box: { background: DARK_GREEN, radius: 16 },
     titleStyle: { ...TITLE, color: "#FFFFFF" },
   });
 
-/** Kategorie-Karte C: title above a round photo. */
+/** Circle card (variant C): title above a round photo. */
 const circleCard = ([title, image, tag]: (typeof PRODUCTS)[number]): CardNode =>
   card("circle", title, image, {
     badge: tagFor(tag),

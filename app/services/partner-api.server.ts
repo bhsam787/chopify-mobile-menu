@@ -38,7 +38,7 @@ export function billingConfigured(): boolean {
   );
 }
 
-export class PartnerApiError extends Error {
+class PartnerApiError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "PartnerApiError";

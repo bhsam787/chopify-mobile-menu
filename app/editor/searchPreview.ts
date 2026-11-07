@@ -1,9 +1,6 @@
+import { useMemo } from "react";
 import { templateImage, type ImageRef } from "@chopi/menu-core";
-import type {
-  RenderContext,
-  SearchResults,
-  SearchSource,
-} from "@chopi/menu-renderer";
+import type { RenderContext, SearchResults } from "@chopi/menu-renderer";
 
 type Context = Omit<RenderContext, "editor">;
 type StoreResults = Omit<SearchResults, "links">;
@@ -104,11 +101,6 @@ export function previewSearch(
   };
 }
 
-/** Live search in the admin preview: answers like the store would, instantly. */
-export function previewSearchSource(context: Context): SearchSource {
-  return async (query, limit) => previewSearch(context, query, limit);
-}
-
 /** Results for the style tiles: a typical search with every kind of result. */
 export function sampleResults(context: Context, limit: number): StoreResults {
   const { products, collections } = catalog(context);
@@ -120,7 +112,7 @@ export function sampleResults(context: Context, limit: number): StoreResults {
 }
 
 /** A full set of sample results (links, suggestion, collections, products) for design previews. */
-export function previewSearchResults(context: Context): SearchResults {
+function previewSearchResults(context: Context): SearchResults {
   const { products, collections } = catalog(context);
   const first = products[0]?.title.split(/\s+/)[0]?.toLowerCase() ?? "shirt";
   return {
@@ -129,4 +121,18 @@ export function previewSearchResults(context: Context): SearchResults {
     collections: collections.slice(0, 3),
     products: products.slice(0, 4),
   };
+}
+
+/**
+ * `context` with sample search results while `shown` (the search results are
+ * being designed), so the phone opens the results panel with them.
+ */
+export function useSearchSample(context: Context, shown: boolean): Context {
+  return useMemo(
+    () =>
+      shown
+        ? { ...context, searchSample: previewSearchResults(context) }
+        : context,
+    [context, shown],
+  );
 }

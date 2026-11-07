@@ -50,6 +50,7 @@ import { liveSearchOn, searchField, searchPanel } from "./search";
 import { countdownText, remaining } from "./countdown";
 import {
   boxCss,
+  clamp,
   color,
   css,
   esc,
@@ -373,7 +374,7 @@ function stories(state: State, node: StoriesNode): string {
       .slice(0, node.limit ?? 8)
       .map((product, index) => ({
         title: product.title,
-        url: product.url,
+        url: safeUrl(product.url) ?? undefined,
         image: product.image,
         key: String(index),
       }));
@@ -403,7 +404,7 @@ function stories(state: State, node: StoriesNode): string {
   return `<div class="chm-stories"${nodeAttr(state, node)}>${items
     .map(
       (item) =>
-        `${safeUrl(item.url) ? `<a class="chm-story" href="${esc(item.url)}"` : '<div class="chm-story"'} style="width:${num(size) + 8}px"><span class="chm-story__ring" style="${esc(ring)}">${img(
+        `${item.url ? `<a class="chm-story" href="${esc(item.url)}"` : '<div class="chm-story"'} style="width:${num(size) + 8}px"><span class="chm-story__ring" style="${esc(ring)}">${img(
           item.image,
           size * 2,
           "",
@@ -601,7 +602,7 @@ const HEADER_ICON_SVG: Record<HeaderIcon, string> = {
 function headerIcon(
   state: State,
   name: HeaderIcon,
-  searchField = false,
+  hasSearchField: boolean,
 ): string {
   const { routes } = state.ctx;
   const href =
@@ -613,11 +614,12 @@ function headerIcon(
           ? routes.account
           : routes.account_login;
   // With a search field in the header, the search button jumps to it.
-  const jump = name === "search" && searchField ? " data-chm-search-field" : "";
+  const jump =
+    name === "search" && hasSearchField ? " data-chm-search-field" : "";
   return `<a class="chm-header__icon" href="${esc(href)}"${jump} aria-label="${esc(t(state, "ui", name, UI_TEXT_DEFAULTS[name]))}">${HEADER_ICON_SVG[name]}</a>`;
 }
 
-export function renderHeader(state: State, node: HeaderNode): string {
+function renderHeader(state: State, node: HeaderNode): string {
   const logo = node.logo?.url || state.ctx.logo?.url;
   const brand = node.hideBrand
     ? ""
@@ -642,16 +644,12 @@ export function renderHeader(state: State, node: HeaderNode): string {
       ? Boolean(language)
       : (node.icons ?? []).includes(button),
   );
+  // Live search with only a search button keeps a folded field to open.
+  const field = Boolean(node.searchBar) || liveSearchOn(node);
   const buttons = (list: HeaderButton[]) =>
     list
       .map((button) =>
-        button === "language"
-          ? language
-          : headerIcon(
-              state,
-              button,
-              Boolean(node.searchBar) || liveSearchOn(node),
-            ),
+        button === "language" ? language : headerIcon(state, button, field),
       )
       .join("");
 
@@ -679,7 +677,7 @@ export function renderHeader(state: State, node: HeaderNode): string {
     : node.announcementMode === "ticker"
       ? `<div class="chm-header__announce chm-header__announce--ticker"${announceColors}>${ticker(
           // Part of the header: no id of its own (a click selects the header).
-          { ...state, ctx: { ...state.ctx, editor: false } },
+          withoutEditor(state),
           {
             id: `${node.id}-announce`,
             type: "ticker",
@@ -695,14 +693,12 @@ export function renderHeader(state: State, node: HeaderNode): string {
         )}</div>`
       : `<p class="chm-header__announce"${announceColors}>${esc(announcementText)}</p>`;
   const iconColor = node.iconColor ? `color:${color(node.iconColor)}` : "";
-  // Live search with only a search button keeps a folded field to open.
-  const field = node.searchBar || liveSearchOn(node);
   return `<div class="chm-head"${nodeAttr(state, node)}>${announcement}<div class="chm-head__body"${styleAttr(boxCss(node.box), iconColor)}>${row}${
     field ? searchField(state, node) : ""
   }</div></div>`;
 }
 
-export function renderNode(state: State, node: Node): string {
+function renderNode(state: State, node: Node): string {
   if (node.hidden && !state.ctx.editor) return "";
   if (
     LINK_ITEMS.has(node.type) &&
@@ -752,8 +748,8 @@ function layerCss(node: Node): string {
       `text-align:${TEXT_ALIGN[layer.alignX]}`,
     );
   }
-  const css = parts.filter(Boolean).join(";");
-  return css ? `;${css}` : "";
+  const value = css(...parts);
+  return value ? `;${value}` : "";
 }
 
 function layerClasses(node: Node): string {
@@ -769,10 +765,7 @@ const SHADOWS = {
   strong: "drop-shadow(0 12px 32px rgba(0,0,0,.28))",
 } as const;
 
-/** Opacity, rotation, shadow, blur and flip of a canvas layer, applied to its placement box. */
 const BLENDS = new Set(["multiply", "screen", "overlay", "darken", "lighten"]);
-const clamp = (value: unknown, min: number, max: number) =>
-  Math.min(max, Math.max(min, Number(value) || 0));
 
 /**
  * Opacity, rotation, shadow, blur, glass and blend of a canvas layer, applied
@@ -828,7 +821,8 @@ function placed(
   state: State,
   children: Node[],
 ): { html: string; extra: number } {
-  const { frames, extra } = canvasLayout(children, isOpen(state));
+  const open = isOpen(state);
+  const { frames, extra } = canvasLayout(children, open);
   const flowing = children.some(
     (child) => child.type === "shape" && child.collapsible,
   );
@@ -844,7 +838,7 @@ function placed(
             num(child.collapsible.height),
             num(child.frame.h),
           );
-          attrs += ` data-chm-collapse="${closed}" data-chm-full="${num(child.frame.h)}"${child.collapsible.open ? " data-chm-default-open" : ""}${isOpen(state)(child) ? " data-chm-open" : ""}`;
+          attrs += ` data-chm-collapse="${closed}" data-chm-full="${num(child.frame.h)}"${child.collapsible.open ? " data-chm-default-open" : ""}${open(child) ? " data-chm-open" : ""}`;
         }
       }
       return `<div class="chm-canvas__item${layerClasses(child)}"${attrs} style="${esc(`left:${num(frame.x)}px;top:${num(frame.y)}px;width:${num(frame.w)}px;height:${num(frame.h)}px${effectsCss(child)}${layerCss(child)}`)}">${renderNode(state, child)}</div>`;
@@ -899,12 +893,9 @@ function shape(state: State, node: ShapeNode): string {
   const hit =
     node.link.type === "none"
       ? ""
-      : tappable(
-          { ...state, ctx: { ...state.ctx, editor: false } },
-          node,
-          node.link,
-          "chm-shape__hit",
-        ).join("");
+      : tappable(withoutEditor(state), node, node.link, "chm-shape__hit").join(
+          "",
+        );
   // A frame that opens a sub-menu shows an arrow, unless it has one of its own.
   const more =
     node.link.type === "screen" && !hasArrowLayer(children)
@@ -997,6 +988,18 @@ function renderVisible(state: State, node: Node): string {
   }
 }
 
+function createState(design: Design, ctx: RenderContext): State {
+  return { design, ctx, texts: resolveTexts(design.translations, ctx.locale) };
+}
+
+/**
+ * The same state as the storefront sees it: for parts rendered inside another
+ * node, which the editor selects as a whole.
+ */
+function withoutEditor(state: State): State {
+  return { ...state, ctx: { ...state.ctx, editor: false } };
+}
+
 function tokenVars(design: Design): string {
   const { tokens } = design;
   return css(
@@ -1014,10 +1017,6 @@ function tokenVars(design: Design): string {
   );
 }
 
-/**
- * Just the given nodes (no drawer, header or footer), styled with the
- * design's tokens. Used for widget previews in the editor's section library.
- */
 /** For each sub-menu, the screen whose item opens it (first one, in menu order). */
 function parentScreens(design: Design): Map<string, Screen> {
   const parents = new Map<string, Screen>();
@@ -1103,11 +1102,7 @@ export function renderBackBar(
   ctx: RenderContext,
   override?: BackBar,
 ): string {
-  const state: State = {
-    design,
-    ctx,
-    texts: resolveTexts(design.translations, ctx.locale),
-  };
+  const state = createState(design, ctx);
   const screen = design.screens.find((candidate) => candidate.id === screenId);
   if (!screen) return "";
   const shown = override ? { ...screen, back: override } : screen;
@@ -1118,20 +1113,20 @@ export function renderBackBar(
   )}</div>`;
 }
 
+/**
+ * Just the given nodes (no drawer, header or footer), styled with the
+ * design's tokens. Used for widget previews in the editor's section library.
+ */
 export function renderFragment(
   design: Design,
   nodes: Node[],
   ctx: RenderContext,
 ): string {
-  const state: State = {
-    design,
-    ctx,
-    texts: resolveTexts(design.translations, ctx.locale),
-  };
+  const state = createState(design, ctx);
   return `<div class="chm-root chm-editor chm-fragment" style="${esc(tokenVars(design))}">${nodes.map((node) => renderNode(state, node)).join("")}</div>`;
 }
 
-export interface RenderOptions {
+interface RenderOptions {
   /** Screen to show first (editor). Defaults to the main screen. */
   screenId?: string;
 }
@@ -1142,11 +1137,7 @@ export function renderMenu(
   ctx: RenderContext,
   options: RenderOptions = {},
 ): string {
-  const state: State = {
-    design,
-    ctx,
-    texts: resolveTexts(design.translations, ctx.locale),
-  };
+  const state = createState(design, ctx);
   const activeScreen =
     options.screenId &&
     design.screens.some((screen) => screen.id === options.screenId)

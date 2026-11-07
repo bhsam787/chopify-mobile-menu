@@ -2,7 +2,13 @@ import type { Prisma } from "@prisma/client";
 import type { Design } from "@chopi/menu-core";
 import { compile } from "@chopi/menu-core";
 import prisma from "../db.server";
-import { assertNoUserErrors, gql, type Admin } from "./admin-graphql.server";
+import { gql, type Admin } from "./admin-graphql.server";
+import {
+  APP_DATA_NAMESPACE,
+  deleteMetafields,
+  setMetafields,
+  type MetafieldInput,
+} from "./metafields.server";
 import { deleteMenuReferences, writeMenuReferences } from "./references.server";
 import {
   ImagesProcessingError,
@@ -16,30 +22,9 @@ import {
   type PlanKey,
 } from "../billing/plans";
 
-/** Namespace of the app-data metafields the theme embed reads (`app.metafields.chopi.*`). */
-export const METAFIELD_NAMESPACE = "chopi";
-
 const APP_INSTALLATION = `#graphql
   query AppInstallation {
     currentAppInstallation { id }
-  }
-`;
-
-const SET_METAFIELDS = `#graphql
-  mutation SetMenuMetafields($metafields: [MetafieldsSetInput!]!) {
-    metafieldsSet(metafields: $metafields) {
-      metafields { key }
-      userErrors { field message }
-    }
-  }
-`;
-
-const DELETE_METAFIELDS = `#graphql
-  mutation DeleteMenuMetafields($metafields: [MetafieldIdentifierInput!]!) {
-    metafieldsDelete(metafields: $metafields) {
-      deletedMetafields { key }
-      userErrors { field message }
-    }
   }
 `;
 
@@ -53,10 +38,20 @@ async function installationId(admin: Admin): Promise<string> {
  * whenever the plan changes): the live menu needs a plan that covers it, so
  * a canvas menu stops showing after a downgrade to Starter.
  */
-export function entitlementValue(plan: PlanKey, liveMenuUsesCanvas: boolean) {
+function entitlementMetafield(
+  ownerId: string,
+  plan: PlanKey,
+  liveMenuUsesCanvas: boolean,
+): MetafieldInput {
   return {
-    plan: plan.toLowerCase(),
-    live_allowed: planAllows(plan, liveMenuUsesCanvas ? "PRO" : "STARTER"),
+    ownerId,
+    namespace: APP_DATA_NAMESPACE,
+    key: "entitlement",
+    type: "json",
+    value: JSON.stringify({
+      plan: plan.toLowerCase(),
+      live_allowed: planAllows(plan, liveMenuUsesCanvas ? "PRO" : "STARTER"),
+    }),
   };
 }
 
@@ -65,18 +60,9 @@ export async function writeEntitlement(
   plan: PlanKey,
   liveMenuUsesCanvas: boolean,
 ) {
-  const result = await gql(admin, SET_METAFIELDS, {
-    metafields: [
-      {
-        ownerId: await installationId(admin),
-        namespace: METAFIELD_NAMESPACE,
-        key: "entitlement",
-        type: "json",
-        value: JSON.stringify(entitlementValue(plan, liveMenuUsesCanvas)),
-      },
-    ],
-  });
-  assertNoUserErrors(result.metafieldsSet.userErrors);
+  await setMetafields(admin, [
+    entitlementMetafield(await installationId(admin), plan, liveMenuUsesCanvas),
+  ]);
 }
 
 /**
@@ -114,30 +100,20 @@ export async function publishMenu(
   await writeMenuReferences(admin, references);
 
   const ownerId = await installationId(admin);
-  const result = await gql(admin, SET_METAFIELDS, {
-    metafields: [
-      {
-        ownerId,
-        namespace: METAFIELD_NAMESPACE,
-        key: "menu",
-        type: "json",
-        value: JSON.stringify(published),
-      },
-      {
-        ownerId,
-        namespace: METAFIELD_NAMESPACE,
-        key: "entitlement",
-        type: "json",
-        value: JSON.stringify(
-          entitlementValue(
-            livePlan(menu.shop.plan, menu.shop.isDevStore),
-            usesCanvas(published),
-          ),
-        ),
-      },
-    ],
-  });
-  assertNoUserErrors(result.metafieldsSet.userErrors);
+  await setMetafields(admin, [
+    {
+      ownerId,
+      namespace: APP_DATA_NAMESPACE,
+      key: "menu",
+      type: "json",
+      value: JSON.stringify(published),
+    },
+    entitlementMetafield(
+      ownerId,
+      livePlan(menu.shop.plan, menu.shop.isDevStore),
+      usesCanvas(published),
+    ),
+  ]);
 
   // The menu is live from here: record it before the translations, so a
   // failed translation write (retried by publishing again) never leaves the
@@ -174,16 +150,15 @@ export async function publishMenu(
 /** Takes the menu off the storefront; the theme's own menu shows again. */
 export async function unpublishMenu(admin: Admin) {
   const ownerId = await installationId(admin);
-  const result = await gql(admin, DELETE_METAFIELDS, {
-    metafields: [{ ownerId, namespace: METAFIELD_NAMESPACE, key: "menu" }],
-  });
-  assertNoUserErrors(result.metafieldsDelete.userErrors);
+  await deleteMetafields(admin, [
+    { ownerId, namespace: APP_DATA_NAMESPACE, key: "menu" },
+  ]);
   await deleteMenuReferences(admin);
   await writeTranslations(admin, ownerId, {});
 }
 
 /** Metafield key of one language's texts ("t_de", "t_pt-BR"). */
-export const translationKey = (locale: string) => `t_${locale}`;
+const translationKey = (locale: string) => `t_${locale}`;
 
 const TRANSLATION_KEYS = `#graphql
   query MenuTranslationKeys {
@@ -206,18 +181,12 @@ async function writeTranslations(
 ) {
   const wanted = Object.entries(translations).map(([locale, texts]) => ({
     ownerId,
-    namespace: METAFIELD_NAMESPACE,
+    namespace: APP_DATA_NAMESPACE,
     key: translationKey(locale),
     type: "json",
     value: JSON.stringify(texts),
   }));
-  // metafieldsSet takes 25 at a time.
-  for (let index = 0; index < wanted.length; index += 25) {
-    const result = await gql(admin, SET_METAFIELDS, {
-      metafields: wanted.slice(index, index + 25),
-    });
-    assertNoUserErrors(result.metafieldsSet.userErrors);
-  }
+  await setMetafields(admin, wanted);
   const existing = await gql<{
     currentAppInstallation: { metafields: { nodes: { key: string }[] } };
   }>(admin, TRANSLATION_KEYS);
@@ -225,14 +194,9 @@ async function writeTranslations(
   const stale = existing.currentAppInstallation.metafields.nodes
     .map((metafield) => metafield.key)
     .filter((key) => key.startsWith("t_") && !keep.has(key));
-  if (stale.length) {
-    const result = await gql(admin, DELETE_METAFIELDS, {
-      metafields: stale.map((key) => ({
-        ownerId,
-        namespace: METAFIELD_NAMESPACE,
-        key,
-      })),
-    });
-    assertNoUserErrors(result.metafieldsDelete.userErrors);
-  }
+  if (stale.length)
+    await deleteMetafields(
+      admin,
+      stale.map((key) => ({ ownerId, namespace: APP_DATA_NAMESPACE, key })),
+    );
 }

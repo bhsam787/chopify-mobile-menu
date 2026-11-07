@@ -1,4 +1,5 @@
 import prisma from "../db.server";
+import { freeMenuName } from "./menu-name";
 
 /**
  * `base`, or "base 2", "base 3"… when the shop already has a menu with that
@@ -12,10 +13,8 @@ export async function uniqueMenuName(
     where: { shop: { shop: shopDomain }, name: { startsWith: base } },
     select: { name: true },
   });
-  const taken = new Set(existing.map((menu) => menu.name));
-  if (!taken.has(base)) return base;
-  for (let number = 2; ; number++) {
-    const candidate = `${base} ${number}`;
-    if (!taken.has(candidate)) return candidate;
-  }
+  return freeMenuName(
+    base,
+    existing.map((menu) => menu.name),
+  );
 }

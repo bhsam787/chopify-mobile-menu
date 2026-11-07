@@ -6,7 +6,7 @@
  * Every adapter lists the theme versions it was checked on; selectors for
  * unchecked themes are best effort until verified (see docs/PLAN.md §4).
  */
-export interface ThemeAdapter {
+interface ThemeAdapter {
   id: string;
   /** Theme schema names (case-insensitive). */
   themes: string[];
@@ -16,7 +16,7 @@ export interface ThemeAdapter {
   verified: string[];
 }
 
-export const ADAPTERS: ThemeAdapter[] = [
+const ADAPTERS: ThemeAdapter[] = [
   {
     id: "dawn",
     themes: [
@@ -77,7 +77,7 @@ export const ADAPTERS: ThemeAdapter[] = [
 ];
 
 /** Used for themes without an adapter. Only ever applies below the breakpoint. */
-export const GENERIC_TRIGGER = [
+const GENERIC_TRIGGER = [
   "[aria-controls*='menu-drawer' i]",
   "[aria-controls*='menudrawer' i]",
   "[aria-controls*='mobile-menu' i]",
@@ -90,9 +90,7 @@ export const GENERIC_TRIGGER = [
   "header-drawer summary",
 ].join(", ");
 
-export function findAdapter(
-  schemaName: string | undefined,
-): ThemeAdapter | undefined {
+function findAdapter(schemaName: string | undefined): ThemeAdapter | undefined {
   if (!schemaName) return undefined;
   const name = schemaName.toLowerCase();
   return ADAPTERS.find((adapter) =>

@@ -45,8 +45,8 @@ export type RouteKey = (typeof ROUTE_KEYS)[number];
 
 /**
  * Where a node goes when tapped. Resource links keep the GID; the storefront
- * gets the current, localized URL from Shopify (see the hidden links menu),
- * so handle changes don't break links. `handle`/`title`/`url` are a snapshot
+ * gets the current, localized URL from Shopify (via the reference
+ * metafields written on publish), so handle changes don't break links. `handle`/`title`/`url` are a snapshot
  * for the editor and as fallback.
  */
 export interface ResourceLink<T extends ResourceType = ResourceType> {

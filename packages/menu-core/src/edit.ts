@@ -22,21 +22,16 @@ export interface NodeLocation {
 
 export function locate(design: Design, id: string): NodeLocation | undefined {
   const search = (node: Node, path: string[]): NodeLocation | undefined => {
-    if (isParentNode(node)) {
-      const children = childNodes(node);
-      for (let index = 0; index < children.length; index++) {
-        const child = children[index];
-        if (child.id === id)
-          return { node: child, parent: node, index, path: [...path, node.id] };
-        const found = search(child, [...path, node.id]);
-        if (found) return found;
-      }
-      return undefined;
-    }
-    for (const child of childNodes(node)) {
+    const childPath = [...path, node.id];
+    const children = childNodes(node);
+    for (let index = 0; index < children.length; index++) {
+      const child = children[index];
       if (child.id === id)
-        return { node: child, index: 0, path: [...path, node.id] };
-      const found = search(child, [...path, node.id]);
+        // Tab panels and accordion bodies have no parent list to move within.
+        return isParentNode(node)
+          ? { node: child, parent: node, index, path: childPath }
+          : { node: child, index: 0, path: childPath };
+      const found = search(child, childPath);
       if (found) return found;
     }
     return undefined;
@@ -190,42 +185,6 @@ export function duplicateNode(
     design: insertNode(design, location.parent.id, copy, location.index + 1),
     newId: copy.id,
   };
-}
-
-/** Where a new widget goes: into the selected container, or right after the selected node. */
-export function insertionPoint(
-  design: Design,
-  selectedId: string | null,
-  screenId: string,
-): { containerId: string; index?: number } {
-  const screen =
-    design.screens.find((candidate) => candidate.id === screenId) ??
-    design.screens[0];
-  if (!selectedId) return { containerId: screen.root.id };
-  const location = locate(design, selectedId);
-  if (!location) return { containerId: screen.root.id };
-  if (location.node.type === "container")
-    return { containerId: location.node.id };
-  if (location.node.type === "accordion")
-    return { containerId: location.node.child.id };
-  if (location.parent)
-    return { containerId: location.parent.id, index: location.index + 1 };
-  return { containerId: screen.root.id };
-}
-
-/** Which screen a node belongs to ("header"/"footer" for the pinned parts). */
-export function screenOf(design: Design, id: string): string | undefined {
-  if (design.header.id === id) return "header";
-  if (
-    design.footer &&
-    (design.footer.id === id ||
-      locate(design, id)?.path[0] === design.footer.id)
-  )
-    return "footer";
-  return design.screens.find(
-    (screen) =>
-      screen.root.id === id || locate(design, id)?.path[0] === screen.root.id,
-  )?.id;
 }
 
 export function addScreen(

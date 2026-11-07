@@ -1,6 +1,6 @@
 import { redirect, Form, useActionData, useLoaderData } from "react-router";
 import { login } from "../../shopify.server";
-import { loginErrorMessage } from "./error.server";
+import { loginErrorMessage } from "../auth.login/error.server";
 import styles from "./styles.module.css";
 
 export const loader = async ({ request }) => {

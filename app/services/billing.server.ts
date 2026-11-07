@@ -52,7 +52,7 @@ const stateOf = (shop: Shop): PlanState => ({
 });
 
 /** The plan as last read (no request to Shopify). */
-export async function storedPlan(shopDomain: string): Promise<PlanState> {
+async function storedPlan(shopDomain: string): Promise<PlanState> {
   return stateOf(
     await prisma.shop.findUniqueOrThrow({ where: { shop: shopDomain } }),
   );
@@ -65,7 +65,7 @@ export async function storedPlan(shopDomain: string): Promise<PlanState> {
  * plan no longer covers stops showing. Throws if Shopify can't be reached:
  * callers decide whether the stored plan is good enough.
  */
-export async function syncPlan(
+async function syncPlan(
   admin: Admin,
   shopDomain: string,
   { force = false }: { force?: boolean } = {},

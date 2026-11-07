@@ -223,7 +223,7 @@ function Bubble({ line }: { line: GuideLine | null }) {
 }
 
 /**
- * Dance moves (see `.chm-bot[data-move]` in editor.css). While it has
+ * Dance moves (see `.chm-bot[data-move]` in guide-bot.css). While it has
  * nothing to point at, the helper switches to another one every few seconds.
  */
 const MOVES = [
@@ -255,7 +255,7 @@ const MOVING_PARTS =
  * a glide instead of a jump: every part eases from where it is now to where
  * its new animation starts, and that animation waits for the glide.
  */
-export function glideTo(bot: HTMLElement, change: () => void) {
+function glideTo(bot: HTMLElement, change: () => void) {
   const parts = [...bot.querySelectorAll<SVGElement>(MOVING_PARTS)];
   const pose = (part: Element) => {
     const style = getComputedStyle(part);

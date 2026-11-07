@@ -152,7 +152,7 @@ export function widgetSample(
         })),
       };
     case "card":
-      return { ...card(0), variant: "studio", ratio: 0.55 } as Node;
+      return { ...card(0), ratio: 0.55 } as Node;
     case "row":
       return row(0, 56);
     case "accordion":
@@ -222,6 +222,14 @@ export function widgetSample(
   }
 }
 
+/** Gray placeholder text around a spacer or divider in its preview. */
+const placeholder = (text: string): Node => ({
+  id: newId("t"),
+  type: "text",
+  text,
+  style: { size: 13, color: "#8A8A8A" },
+});
+
 /**
  * The widget as it appears in the section library: the section it adds, with
  * spacers and dividers shown between placeholder text so they're visible.
@@ -239,19 +247,9 @@ export function widgetPreview(
         layout: "stack",
         gap: 0,
         children: [
-          {
-            id: newId("t"),
-            type: "text",
-            text: "Content above",
-            style: { size: 13, color: "#8A8A8A" },
-          },
+          placeholder("Content above"),
           { ...node, height: 28 },
-          {
-            id: newId("t"),
-            type: "text",
-            text: "Content below",
-            style: { size: 13, color: "#8A8A8A" },
-          },
+          placeholder("Content below"),
         ],
       };
     case "divider":
@@ -261,19 +259,9 @@ export function widgetPreview(
         layout: "stack",
         gap: 12,
         children: [
-          {
-            id: newId("t"),
-            type: "text",
-            text: "Section above",
-            style: { size: 13, color: "#8A8A8A" },
-          },
+          placeholder("Section above"),
           node,
-          {
-            id: newId("t"),
-            type: "text",
-            text: "Section below",
-            style: { size: 13, color: "#8A8A8A" },
-          },
+          placeholder("Section below"),
         ],
       };
     default:

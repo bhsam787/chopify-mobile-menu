@@ -39,8 +39,8 @@ import {
   SliderField,
 } from "./designControls";
 import { ImageField } from "./ImageField";
-import { ItemList } from "./ItemList";
-import { LiveSearchFields } from "./LiveSearchFields";
+import { ItemList, updateItem } from "./ItemList";
+import { LIVE_SEARCH_OFF, LiveSearchFields } from "./LiveSearchFields";
 
 const line = (body: ReactNode) => (
   <svg
@@ -321,7 +321,7 @@ export function HeaderFields({
               onChange={(field) =>
                 set({
                   liveSearch: {
-                    ...(node.liveSearch ?? { enabled: false, layout: "list" }),
+                    ...(node.liveSearch ?? LIVE_SEARCH_OFF),
                     field,
                   },
                 })
@@ -391,11 +391,10 @@ export function HeaderFields({
                       `Message ${index + 2}`,
                       (value) =>
                         set({
-                          announcementItems: (node.announcementItems ?? []).map(
-                            (candidate) =>
-                              candidate.id === item.id
-                                ? { ...candidate, text: value }
-                                : candidate,
+                          announcementItems: updateItem(
+                            node.announcementItems ?? [],
+                            item.id,
+                            { text: value },
                           ),
                         }),
                     )
@@ -440,7 +439,7 @@ export function HeaderFields({
  * Ready-made header designs, each shown as the real header with the
  * merchant's logo and colors. Picking one changes only the layout.
  */
-export function HeaderStylePicker({
+function HeaderStylePicker({
   design,
   node,
   context,

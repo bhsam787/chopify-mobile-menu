@@ -167,7 +167,7 @@ function menuCompletions(context: CompletionContext): CompletionResult | null {
   }
   const word = context.matchBefore(/\.[\w-]*/);
   if (!word || (word.from === word.to && !context.explicit)) return null;
-  const parts = new Map(MENU_PARTS.map((part) => [part.selector, part.label]));
+  const parts = new Set(MENU_PARTS.map((part) => part.selector));
   return {
     from: word.from,
     options: [
@@ -190,7 +190,6 @@ function menuCompletions(context: CompletionContext): CompletionResult | null {
 
 export interface CssEditorHandle {
   format: () => void;
-  insert: (text: string) => void;
   /** Adds an empty rule for `selector` at the end, cursor inside it. */
   addRule: (selector: string) => void;
   /**
@@ -326,14 +325,6 @@ export function CssCodeEditor({
         } else addRule(selector);
       },
       format: () => format(editor),
-      insert: (text) => {
-        const { to } = editor.state.selection.main;
-        editor.dispatch({
-          changes: { from: to, insert: text },
-          selection: { anchor: to + text.indexOf("\n  ") + 3 },
-        });
-        editor.focus();
-      },
     });
     return () => {
       handleRef?.(null);

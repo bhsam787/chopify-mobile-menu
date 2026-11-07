@@ -29,13 +29,11 @@ const RADIUS_PRESETS = [
 export function BoxFields({
   value,
   onChange,
-  background = true,
   padding = true,
   border = true,
 }: {
   value: BoxStyle | undefined;
   onChange: (box: BoxStyle) => void;
-  background?: boolean;
   padding?: boolean;
   border?: boolean;
 }) {
@@ -58,13 +56,11 @@ export function BoxFields({
         target=":scope"
         help="The box itself: its background color and how rounded its corners are."
       >
-        {background && (
-          <ColorPicker
-            label="Background"
-            value={box.background}
-            onChange={(next) => set({ background: next })}
-          />
-        )}
+        <ColorPicker
+          label="Background"
+          value={box.background}
+          onChange={(next) => set({ background: next })}
+        />
         <SliderField
           label="Corner radius"
           value={box.radius}

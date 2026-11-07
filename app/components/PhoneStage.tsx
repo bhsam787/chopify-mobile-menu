@@ -10,14 +10,12 @@ export function PhoneStage({
   design,
   context,
   scale = 0.6,
-  height = 760,
   interactive = false,
   size = "base",
 }: {
   design: Design;
   context: PreviewContext;
   scale?: number;
-  height?: number;
   interactive?: boolean;
   size?: "base" | "large";
 }) {
@@ -38,7 +36,6 @@ export function PhoneStage({
           design={design}
           context={context}
           scale={scale}
-          height={height}
           interactive={interactive}
         />
       </div>

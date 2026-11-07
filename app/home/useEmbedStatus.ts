@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 /** Handle of the app embed block (its Liquid file name). */
-export const EMBED_HANDLE = "menu-embed";
+const EMBED_HANDLE = "menu-embed";
 
 export type EmbedStatus = "loading" | "active" | "inactive" | "unknown";
 

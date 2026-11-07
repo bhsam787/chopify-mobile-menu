@@ -21,7 +21,7 @@ import {
   setItemTitle,
   type ListFrame,
 } from "./items";
-import { SAMPLE_LINK } from "./lists";
+import { SAMPLE_LINK } from "./elements";
 
 /**
  * Tabs moved between a bar on top and a column on the side. On a canvas the

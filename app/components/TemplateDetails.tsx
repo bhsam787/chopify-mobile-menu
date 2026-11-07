@@ -1,7 +1,7 @@
 import { INCLUDED_EVERYWHERE, type TemplateCopy } from "./templateCopy";
 
-/** A small check mark for the "included" chips. */
-const CHECK = (
+/** A small check mark for feature lists (template previews, plan cards). */
+export const CHECK = (
   <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
     <path
       d="m3.5 8.5 3 3 6-7"

@@ -6,7 +6,7 @@ import { SearchField, TextField } from "./controls";
 import { DesignWorkspace } from "./DesignWorkspace";
 import { RichTextField } from "./RichTextField";
 
-export interface ShopLanguage {
+interface ShopLanguage {
   locale: string;
   name: string;
   primary: boolean;
@@ -39,16 +39,16 @@ export function TranslationsPanel({
   const [focused, setFocused] = useState<TextEntry | null>(null);
 
   const entries = useMemo(() => collectTexts(design), [design]);
-  const texts = design.translations[locale] ?? {};
-  /** A built-in word is translated when it has a ready-made translation. */
-  const valueOf = (entry: TextEntry) => texts[entry.key] ?? "";
-  const builtIn = (entry: TextEntry) =>
+  const valueOf = (entry: TextEntry, language = locale) =>
+    design.translations[language]?.[entry.key] ?? "";
+  const builtIn = (entry: TextEntry, language = locale) =>
     entry.key.startsWith("ui.")
-      ? builtInText(locale, entry.key.slice(3) as UiTextKey)
+      ? builtInText(language, entry.key.slice(3) as UiTextKey)
       : undefined;
-  const isDone = (entry: TextEntry) =>
-    Boolean(valueOf(entry).trim() || builtIn(entry));
-  const done = entries.filter(isDone).length;
+  /** A built-in word is translated when it has a ready-made translation. */
+  const isDone = (entry: TextEntry, language = locale) =>
+    Boolean(valueOf(entry, language).trim() || builtIn(entry, language));
+  const done = entries.filter((entry) => isDone(entry)).length;
 
   if (!others.length)
     return (
@@ -79,13 +79,13 @@ export function TranslationsPanel({
   );
   const groups = [...new Set(shown.map((entry) => entry.group))];
   const language = others.find((candidate) => candidate.locale === locale);
-  // Only the text being worked on is outlined (built-in words have no item).
 
   return (
     <DesignWorkspace
       design={design}
       context={{ ...context, locale }}
       screenId={focused?.screenId ?? design.screens[0].id}
+      // Only the text being worked on is outlined (built-in words have no item).
       selectedId={focused?.nodeId}
       label={focused ? focused.field : (language?.name ?? locale)}
       hint={
@@ -103,16 +103,8 @@ export function TranslationsPanel({
             aria-label="Language"
           >
             {others.map((candidate) => {
-              const translated = entries.filter(
-                (entry) =>
-                  (
-                    design.translations[candidate.locale]?.[entry.key] ?? ""
-                  ).trim() ||
-                  (entry.key.startsWith("ui.") &&
-                    builtInText(
-                      candidate.locale,
-                      entry.key.slice(3) as UiTextKey,
-                    )),
+              const translated = entries.filter((entry) =>
+                isDone(entry, candidate.locale),
               ).length;
               return (
                 <button

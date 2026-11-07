@@ -1,11 +1,6 @@
 import { useEffect, useId, useState, type ReactNode } from "react";
 import { useFetcher } from "react-router";
-import type {
-  LinkRef,
-  ResourceLink,
-  RouteKey,
-  Screen,
-} from "@chopi/menu-core";
+import type { LinkRef, ResourceLink, RouteKey, Screen } from "@chopi/menu-core";
 import { ROUTES, resourceKey } from "@chopi/menu-core";
 import type { ResolvedResource } from "@chopi/menu-renderer";
 import { TextField } from "./controls";
@@ -48,12 +43,42 @@ const ROUTE_ICONS: Record<RouteKey, string> = {
   cart: "cart",
 };
 
-interface PickedResource {
+/** A collection or product as Shopify's resource picker returns it. */
+export interface PickedResource {
   id: string;
   handle: string;
   title: string;
   image?: { originalSrc?: string; url?: string } | null;
   images?: { originalSrc?: string; url?: string }[];
+}
+
+/**
+ * The link to a picked collection or product. Its image goes to the preview
+ * right away (`onResource`), before the page loads it.
+ */
+export function linkToPicked(
+  type: "collection" | "product",
+  picked: PickedResource,
+  onResource: (key: string, resource: ResolvedResource) => void,
+): ResourceLink<"collection" | "product"> {
+  const url = `/${type === "collection" ? "collections" : "products"}/${picked.handle}`;
+  const image =
+    picked.image?.originalSrc ??
+    picked.image?.url ??
+    picked.images?.[0]?.originalSrc ??
+    picked.images?.[0]?.url;
+  onResource(resourceKey(type, picked.id), {
+    url,
+    title: picked.title,
+    image,
+  });
+  return {
+    type,
+    id: picked.id,
+    handle: picked.handle,
+    title: picked.title,
+    url,
+  };
 }
 
 /**
@@ -90,25 +115,7 @@ export function LinkField({
         multiple: false,
       })) as PickedResource[] | undefined;
       const picked = selection?.[0];
-      if (!picked) return;
-      const url = `/${type === "collection" ? "collections" : "products"}/${picked.handle}`;
-      const image =
-        picked.image?.originalSrc ??
-        picked.image?.url ??
-        picked.images?.[0]?.originalSrc ??
-        picked.images?.[0]?.url;
-      onResource(resourceKey(type, picked.id), {
-        url,
-        title: picked.title,
-        image,
-      });
-      choose({
-        type,
-        id: picked.id,
-        handle: picked.handle,
-        title: picked.title,
-        url,
-      });
+      if (picked) choose(linkToPicked(type, picked, onResource) as LinkRef);
     } finally {
       setBusy(false);
     }

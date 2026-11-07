@@ -82,9 +82,10 @@ function designAnchor(mount: HTMLElement, selectedId: string) {
   return { selected, focused: focused ?? null, anchor: focused ?? selected };
 }
 
-/** The name tag on the part being designed, and a soft glow around it. */
+/** CSS editor: the hovered part, and every part the chosen selector matches. */
 const PICK_CSS = `.chm-pick, .chm-pick * { cursor: crosshair !important; } .chm-pick .chm-pick-hover { outline: 2px solid #2c6ecb !important; outline-offset: -2px; background-color: rgba(44,110,203,.08); } .chm-pick-match { outline: 2px dashed #e8890c !important; outline-offset: -2px; }`;
 
+/** The name tag on the part being designed, and a soft glow around it. */
 const HIGHLIGHT_CSS = `.chm-editor .is-selected{box-shadow:0 0 0 4px rgba(44,110,203,.22)} .chm-has-tag .chm-body{position:relative} .chm-editor .is-focus{outline:2px dashed #E8890C!important;outline-offset:2px;box-shadow:0 0 0 5px rgba(232,137,12,.18)!important;transition:outline-color .15s} .chm-design-tag--focus{background:#E8890C!important} .chm-design-tag{position:absolute;z-index:20;transform:translateY(-100%);padding:3px 8px;border-radius:6px 6px 6px 0;background:#2C6ECB;color:#fff;font:600 11px/1.3 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;white-space:nowrap;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.2)}`;
 
 /** In "Preview" mode: hidden sections are hidden and nothing looks selectable. */
@@ -202,7 +203,7 @@ function enableDragScroll(root: HTMLElement): () => void {
   };
 }
 
-const PREVIEW_FONT = `-apple-system, BlinkMacSystemFont, "San Francisco", "Segoe UI", Roboto, "Helvetica Neue", sans-serif`;
+export const PREVIEW_FONT = `-apple-system, BlinkMacSystemFont, "San Francisco", "Segoe UI", Roboto, "Helvetica Neue", sans-serif`;
 
 /**
  * Live phone preview. Uses the storefront renderer inside a shadow root, so
@@ -245,18 +246,8 @@ export function MenuPreview({
   const startHidden = useRef(Boolean(highlightLabel));
   /** The focused part last scrolled to (scroll only when it changes). */
   const focusedRef = useRef<string | null | undefined>(null);
-  const callbacks = useRef({
-    onSelect,
-    onScreenChange,
-    routes: context.routes,
-    context,
-  });
-  callbacks.current = {
-    onSelect,
-    onScreenChange,
-    routes: context.routes,
-    context,
-  };
+  const callbacks = useRef({ onSelect, onScreenChange, context });
+  callbacks.current = { onSelect, onScreenChange, context };
 
   const pickRef = useRef(onPick);
   pickRef.current = onPick;
@@ -351,7 +342,7 @@ export function MenuPreview({
     );
     const stopDragScroll = interactive ? enableDragScroll(mount) : undefined;
     const stopLinkNotes = interactive
-      ? enableLinkNotes(mount, callbacks.current.routes)
+      ? enableLinkNotes(mount, callbacks.current.context.routes)
       : undefined;
     return () => {
       stopDragScroll?.();
@@ -543,12 +534,10 @@ export function MenuPreview({
     if (!mount) return;
     mount.querySelectorAll(".chm-design-tag").forEach((tag) => tag.remove());
     if (!highlightLabel || !selectedId || interactive) return;
-    const selected = mount.querySelector<HTMLElement>(
-      `[data-chm-node="${CSS.escape(selectedId)}"]`,
-    );
-    if (!selected) return;
+    const target = designAnchor(mount, selectedId);
+    if (!target) return;
     // On the part being worked on (the first one that's shown), else the item.
-    const { focused, anchor } = designAnchor(mount, selectedId)!;
+    const { selected, focused, anchor } = target;
     // The scroll area is the tag's positioning box (set by .chm-has-tag, so
     // it survives re-renders, which replace the menu's markup).
     mount.classList.add("chm-has-tag");
