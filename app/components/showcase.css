@@ -2253,3 +2253,93 @@
     animation: none;
   }
 }
+
+/* Feature requests: Chopi has a bright idea (the bulb glows, rays flicker). */
+.chm-mbb--idea {
+  border-color: rgba(242, 183, 5, 0.3);
+  background:
+    radial-gradient(
+      90% 140% at 0% 50%,
+      rgba(255, 216, 77, 0.28),
+      transparent 62%
+    ),
+    linear-gradient(120deg, #fffbea, #f9fbf5);
+}
+.chm-mbb--idea .chm-mbb__eyebrow {
+  color: #a77700;
+}
+.chm-frb__glow {
+  animation: chm-frb-glow 2.4s ease-in-out infinite;
+}
+.chm-frb__rays {
+  transform-box: view-box;
+  transform-origin: 88px 19px;
+  animation: chm-frb-rays 2.4s ease-in-out infinite;
+}
+.chm-frb__body {
+  transform-box: view-box;
+  transform-origin: 44px 92px;
+  animation: chm-frb-bounce 2.4s ease-in-out infinite;
+}
+.chm-frb__arm {
+  transform-box: view-box;
+  transform-origin: 67px 50px;
+  animation: chm-frb-reach 2.4s ease-in-out infinite;
+}
+@keyframes chm-frb-glow {
+  0%,
+  100% {
+    fill: #ffe78a;
+    filter: drop-shadow(0 0 0 rgba(255, 216, 77, 0));
+  }
+  45%,
+  70% {
+    fill: #ffd84d;
+    filter: drop-shadow(0 0 6px rgba(255, 196, 0, 0.75));
+  }
+}
+@keyframes chm-frb-rays {
+  0%,
+  25%,
+  100% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  45%,
+  70% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes chm-frb-bounce {
+  0%,
+  30%,
+  100% {
+    transform: translateY(0);
+  }
+  42% {
+    transform: translateY(-4px);
+  }
+  54% {
+    transform: translateY(0);
+  }
+}
+@keyframes chm-frb-reach {
+  0%,
+  30%,
+  100% {
+    transform: rotate(0deg);
+  }
+  45%,
+  70% {
+    transform: rotate(-8deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chm-frb__glow,
+  .chm-frb__rays,
+  .chm-frb__body,
+  .chm-frb__arm {
+    animation: none;
+  }
+}

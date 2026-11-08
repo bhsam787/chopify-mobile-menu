@@ -19,6 +19,7 @@ import {
 import { SUPPORT_TOPICS, type SupportTopic } from "../support/topics";
 import { SelectField, TextField } from "../editor/controls";
 import { MenuButtonBanner } from "../home/MenuButtonBanner";
+import { FeatureRequestBanner } from "../home/FeatureRequestBanner";
 import showcaseStyles from "../components/showcase.css?url";
 
 export const links: LinksFunction = () => [
@@ -227,6 +228,10 @@ const FAQ: { topic: string; questions: Question[] }[] = [
   },
 ];
 
+/** Starts a feature request off, so merchants know what helps us most. */
+const FEATURE_PROMPT =
+  "I'd love Chopi - Menu to…\n\nIt would help my store because…";
+
 export default function Help() {
   const { shopEmail, canMessage, embedUrl } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
@@ -238,20 +243,27 @@ export default function Help() {
 
   const openForm = () => modal.current?.showOverlay();
 
-  // Arriving from "Still not working?" on Menu button: open the form, ready
-  // for the theme's name.
+  /** Opens the form ready for a feature request. */
+  const requestFeature = () => {
+    setTopic("An idea or feature request");
+    setMessage((current) => current || FEATURE_PROMPT);
+    openForm();
+  };
+
+  // Arriving from another page's banner: open the form, prefilled.
+  // ?message=menu-button ("Still not working?"), ?message=feature.
   useEffect(() => {
     if (!canMessage) return;
-    if (
-      new URLSearchParams(window.location.search).get("message") !==
-      "menu-button"
-    )
-      return;
-    setTopic("Something isn't working");
-    setMessage(
-      "My theme's menu icon doesn't open the Chopi menu.\nTheme name: ",
-    );
-    modal.current?.showOverlay();
+    const reason = new URLSearchParams(window.location.search).get("message");
+    if (reason === "menu-button") {
+      setTopic("Something isn't working");
+      setMessage(
+        "My theme's menu icon doesn't open the Chopi menu.\nTheme name: ",
+      );
+      openForm();
+    } else if (reason === "feature") requestFeature();
+    // Runs once on arrival; the helpers only set state and open the modal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canMessage]);
   const send = () =>
     fetcher.submit({ topic, replyTo, message }, { method: "post" });
@@ -394,6 +406,8 @@ export default function Help() {
             ))}
           </div>
         </s-section>
+
+        {canMessage && <FeatureRequestBanner onRequest={requestFeature} />}
       </s-stack>
 
       <s-modal id="support-message" heading="Message the developer" ref={modal}>

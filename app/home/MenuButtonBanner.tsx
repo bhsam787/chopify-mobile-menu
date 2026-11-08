@@ -169,7 +169,7 @@ export function MenuButtonBanner() {
       </div>
       <div className="chm-mbb__action">
         <s-button variant="primary" href="/app/menu-button">
-          Show Chopi my menu icon
+          Fix my menu icon
         </s-button>
       </div>
     </section>

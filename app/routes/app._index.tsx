@@ -13,9 +13,11 @@ import { unpublishMenu } from "../services/publish.server";
 import { countUnlinked } from "../services/menu-stats.server";
 import { currentPlan, liveMenuCovered } from "../services/billing.server";
 import { usesCanvas } from "../billing/plans";
+import { supportConfigured } from "../services/support.server";
 import { buildPreviewContext } from "../services/preview-context.server";
 import galleryStyles from "../components/gallery.css?url";
 import { MenuButtonBanner } from "../home/MenuButtonBanner";
+import { FeatureRequestBanner } from "../home/FeatureRequestBanner";
 import showcaseStyles from "../components/showcase.css?url";
 import { FEATURE_LABELS, TEMPLATE_COPY } from "../components/templateCopy";
 import {
@@ -106,6 +108,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   return {
     shop: session.shop,
     apiKey: process.env.SHOPIFY_API_KEY || "",
+    // The feature-request banner leads to Help's message form, if it's on.
+    canMessage: supportConfigured(),
     menus,
     featured: featuredRow
       ? {
@@ -157,6 +161,7 @@ export default function Home() {
     shop,
     apiKey,
     liveNotCovered,
+    canMessage,
   } = useLoaderData<typeof loader>();
   const embed = useEmbedStatus();
   const fetcher = useFetcher<typeof action>();
@@ -266,6 +271,7 @@ export default function Home() {
 
         {published && guide}
         {published && <MenuButtonBanner />}
+        {canMessage && <FeatureRequestBanner />}
       </s-stack>
 
       <s-modal
