@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "01c6f4382b86d4e4ac9d63f402d506ae"
-application_url = "https://example.com"
+application_url = "https://158-220-87-60.sslip.io"
 embedded = true
 name = "Chopi - Menu"
 
@@ -36,7 +36,7 @@ api_version = "2026-10"
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
 
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [ "https://158-220-87-60.sslip.io/api/auth" ]
 
 [build]
 automatically_update_urls_on_dev = true

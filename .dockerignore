@@ -1,3 +1,18 @@
-.cache
-build
+# Never send secrets or local state into the image.
+.env
+.env.*
+
+
 node_modules
+build
+.cache
+.react-router
+.shopify
+.shopify.lock
+.git
+.playwright-mcp
+.claude
+brand
+docs
+*.log
+.DS_Store

@@ -1,0 +1,17 @@
+# Runs Chopi - Menu on the VPS (see docs/DEPLOY.md). The server's own Nginx
+# serves HTTPS and forwards the app's domain here; the app only listens on
+# localhost, so it never clashes with other sites on the server.
+# Settings come from .env.production next to this file (never committed;
+# template: deploy/production.env.example).
+
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      PORT: "3000"
+    ports:
+      - "127.0.0.1:3100:3000"
+    # Keeps the server's other sites and mail responsive.
+    mem_limit: 1g

@@ -1,0 +1,51 @@
+# Push to main → check → deploy to the VPS (see docs/DEPLOY.md).
+# The server pulls main and rebuilds the Docker image; the running app keeps
+# serving until the new one is built, then Docker swaps them.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One deploy at a time; a newer push waits instead of cancelling a build.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run lint
+      - run: npm run typecheck
+
+  deploy:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to the VPS
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          # The server's own SSH identity: GitHub refuses any other machine.
+          HOST_KEY: "158.220.87.60 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKa5tEcfJSfFEjTste9NeT1d8bjKGxa4h/JPcyr3gHfy"
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$HOST_KEY" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy deploy@158.220.87.60 '
+            set -e
+            cd /opt/chopi-menu
+            git fetch --quiet origin main
+            git reset --hard origin/main
+            docker compose up -d --build --remove-orphans
+            docker image prune -f
+          '
