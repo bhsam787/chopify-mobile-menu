@@ -275,8 +275,8 @@ Other template rules:
 ## 8b. Help and support
 
 - `/app/help`: answers about every feature (grouped FAQ) and a **Message the developer** form (pop-up: topic, reply-to email pre-filled from the shop, message).
-- `app/services/support.server.ts` checks the input, limits each shop to 5 messages an hour, stores the message (`SupportMessage`, deleted with the shop on `shop/redact`) and emails it through Resend's HTTP API with reply-to set to the merchant. If the email fails, the message stays in the database.
-- Env: `SUPPORT_EMAIL` (inbox), `SUPPORT_FROM_EMAIL` (sender on a domain verified in Resend), `RESEND_API_KEY`. Without them the form is hidden.
+- `app/services/support.server.ts` checks the input, limits each shop to 5 messages an hour, stores the message (`SupportMessage`, deleted with the shop on `shop/redact`) and emails it with reply-to set to the merchant: over SMTP (nodemailer, e.g. the mailcow server on the VPS) when `SMTP_*` is set, else through Resend's HTTP API. If the email fails, the message stays in the database.
+- Env: `SUPPORT_EMAIL` (inbox), `SUPPORT_FROM_EMAIL` (sender), and either `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS` or `RESEND_API_KEY`. Without them the form is hidden.
 
 ## 9. App Store readiness (applies to every phase)
 

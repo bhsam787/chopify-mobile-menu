@@ -1,13 +1,16 @@
+import nodemailer from "nodemailer";
 import prisma from "../db.server";
 import { SUPPORT_TOPICS } from "../support/topics";
 
 /**
  * Messages merchants send from the Help page: stored on the shop (so none is
- * lost), then emailed to the developer through Resend's HTTP API.
+ * lost), then emailed to the developer, through your own mail server (SMTP)
+ * when it's set up, else through Resend's HTTP API.
  *
- * Env: SUPPORT_EMAIL (where messages go), SUPPORT_FROM_EMAIL (a sender on a
- * domain verified in Resend, e.g. "Chopi - Menu <support@yourdomain.com>"),
- * RESEND_API_KEY.
+ * Env: SUPPORT_EMAIL (where messages go) and SUPPORT_FROM_EMAIL (the sender,
+ * e.g. "Chopi - Menu <support@yourdomain.com>"), plus either
+ * SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS (a mailbox on your mail server)
+ * or RESEND_API_KEY.
  */
 
 const MESSAGE_MAX = 5000;
@@ -15,13 +18,52 @@ const MESSAGE_MAX = 5000;
 const PER_HOUR = 5;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const smtpConfigured = () =>
+  Boolean(
+    process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS,
+  );
+
 /** Whether messages can be emailed (else the Help page hides the form). */
 export function supportConfigured(): boolean {
   return Boolean(
     process.env.SUPPORT_EMAIL &&
     process.env.SUPPORT_FROM_EMAIL &&
-    process.env.RESEND_API_KEY,
+    (smtpConfigured() || process.env.RESEND_API_KEY),
   );
+}
+
+interface Email {
+  subject: string;
+  text: string;
+  replyTo: string;
+}
+
+/** Sends one email to the developer; throws when it couldn't be sent. */
+async function sendEmail({ subject, text, replyTo }: Email) {
+  const from = process.env.SUPPORT_FROM_EMAIL!;
+  const to = process.env.SUPPORT_EMAIL!;
+  if (smtpConfigured()) {
+    const port = Number(process.env.SMTP_PORT) || 587;
+    const transport = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port,
+      // 465 is TLS from the start; 587 upgrades with STARTTLS (required).
+      secure: port === 465,
+      requireTLS: port !== 465,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    });
+    await transport.sendMail({ from, to, replyTo, subject, text });
+    return;
+  }
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ from, to: [to], reply_to: replyTo, subject, text }),
+  });
+  if (!response.ok) throw new Error(`Resend responded ${response.status}`);
 }
 
 export type SupportResult =
@@ -72,27 +114,17 @@ export async function sendSupportMessage(
     data: { shopId: shop.id, topic, replyTo, message },
   });
   try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: process.env.SUPPORT_FROM_EMAIL,
-        to: [process.env.SUPPORT_EMAIL],
-        reply_to: replyTo,
-        subject: `[Chopi - Menu] ${topic} (${shopDomain})`,
-        text: [
-          `Store: ${shopDomain}`,
-          `Topic: ${topic}`,
-          `Reply to: ${replyTo}`,
-          "",
-          message,
-        ].join("\n"),
-      }),
+    await sendEmail({
+      subject: `[Chopi - Menu] ${topic} (${shopDomain})`,
+      text: [
+        `Store: ${shopDomain}`,
+        `Topic: ${topic}`,
+        `Reply to: ${replyTo}`,
+        "",
+        message,
+      ].join("\n"),
+      replyTo,
     });
-    if (!response.ok) throw new Error(`Resend responded ${response.status}`);
     await prisma.supportMessage.update({
       where: { id: saved.id },
       data: { emailed: true },
