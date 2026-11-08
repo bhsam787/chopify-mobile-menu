@@ -1,21 +1,21 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useLocalDate } from "../components/LocalDate";
 import type {
+  ActionFunctionArgs,
   HeadersFunction,
   LinksFunction,
   LoaderFunctionArgs,
 } from "react-router";
-import { useLoaderData, useRouteError } from "react-router";
+import { useFetcher, useLoaderData, useRouteError } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
-import { currentPlan, liveMenuCovered } from "../services/billing.server";
-import { planSelectionUrl } from "../services/partner-api.server";
 import {
-  PAID_PLANS,
-  PLAN_NAMES,
-  TRIAL_DAYS,
-  planForHandle,
-} from "../billing/plans";
+  currentPlan,
+  liveMenuCovered,
+  syncPlan,
+  testChargesFor,
+} from "../services/billing.server";
+import { PAID_PLANS, PLAN_NAMES, TRIAL_DAYS } from "../billing/plans";
 import { ChopiStage } from "../home/HomeHero";
 import { CHECK } from "../components/TemplateDetails";
 import showcaseStyles from "../components/showcase.css?url";
@@ -25,24 +25,97 @@ export const links: LinksFunction = () => [
 ];
 
 /**
- * Plans and pricing. Plans live in Shopify App Pricing: choosing one opens
- * Shopify's hosted plan page, which sends the merchant back here (the plan's
- * welcome link) with `plan_handle`, so the plan is re-read right away.
+ * Plans and pricing, charged through Shopify's Billing API. Choosing a plan
+ * creates the subscription and sends the merchant to Shopify to approve it;
+ * Shopify brings them back here (`?subscribed=`), where the plan is re-read.
+ * Shopify also tells the app about every later change (webhook
+ * app_subscriptions/update).
  */
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
-  const chosen = planForHandle(
-    new URL(request.url).searchParams.get("plan_handle"),
-  );
+  const subscribed = new URL(request.url).searchParams.get("subscribed");
   // This page shows the plan as it is right now, not a cached one.
   const state = await currentPlan(admin, session.shop, { force: true });
   return {
     ...state,
-    // Just back from Shopify's plan page with a new plan.
-    welcome: chosen !== null && chosen === state.plan,
+    // Just back from approving the charge in Shopify.
+    welcome: subscribed !== null && subscribed === state.plan,
     live: await liveMenuCovered(session.shop, state.livePlan),
-    selectUrl: planSelectionUrl(session.shop),
   };
+};
+
+/** Shopify's own words from a Billing API error (they say what to fix). */
+function billingErrorMessage(error: unknown): string {
+  const data = (error as { errorData?: unknown } | null)?.errorData as
+    unknown[] | { message?: string; graphQLErrors?: unknown[] } | undefined;
+  // userErrors arrive as a list; request errors as { graphQLErrors, message }.
+  const list = Array.isArray(data)
+    ? data
+    : [...(data?.graphQLErrors ?? []), ...(data?.message ? [data] : [])];
+  const messages = list
+    .map((entry) =>
+      typeof entry === "object" && entry && "message" in entry
+        ? String((entry as { message: unknown }).message)
+        : "",
+    )
+    .filter(Boolean);
+  return messages.length
+    ? messages.join("; ")
+    : error instanceof Error
+      ? error.message
+      : "Unknown error";
+}
+
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const { admin, billing, session } = await authenticate.admin(request);
+  const form = await request.formData();
+  const state = await currentPlan(admin, session.shop, { force: true });
+  const isTest = testChargesFor(state.devStore);
+
+  if (form.get("intent") === "subscribe") {
+    const plan = PAID_PLANS.find(
+      (candidate) => candidate.key === form.get("plan"),
+    );
+    if (!plan) return { ok: false as const, error: "Choose a plan." };
+    // Back to this page inside the admin once the charge is approved.
+    const store = session.shop.replace(/\.myshopify\.com$/, "");
+    const returnUrl = `https://admin.shopify.com/store/${store}/apps/${process.env.SHOPIFY_API_KEY}/app/pricing?subscribed=${plan.key}`;
+    // Redirects (outside the app frame) to Shopify's approval page. Upgrades
+    // and downgrades replace the current subscription; Shopify prorates.
+    try {
+      await billing.request({ plan: plan.name, isTest, returnUrl });
+    } catch (error) {
+      // The redirect itself is thrown as a Response: let it through.
+      if (error instanceof Response) throw error;
+      const reason = billingErrorMessage(error);
+      console.error(`Billing request failed for ${session.shop}: ${reason}`);
+      return {
+        ok: false as const,
+        error: `Shopify couldn't start the plan: ${reason}`,
+      };
+    }
+  }
+
+  if (form.get("intent") === "cancel") {
+    try {
+      const { appSubscriptions } = await billing.check({ isTest });
+      for (const subscription of appSubscriptions)
+        await billing.cancel({
+          subscriptionId: subscription.id,
+          isTest,
+          prorate: true,
+        });
+      await syncPlan(admin, session.shop, { force: true });
+      return { ok: true as const, cancelled: true };
+    } catch (error) {
+      console.error(`Plan cancel failed for ${session.shop}`, error);
+      return {
+        ok: false as const,
+        error: "Couldn't cancel your plan. Please try again.",
+      };
+    }
+  }
+  return { ok: false as const, error: "Something went wrong." };
 };
 
 const FREE_FEATURES = [
@@ -101,9 +174,27 @@ export default function Pricing() {
     cancelAtEndOfCycle,
     welcome,
     live,
-    selectUrl,
     checkFailed,
   } = useLoaderData<typeof loader>();
+  const billingFetcher = useFetcher<typeof action>();
+  const cancelModal = useRef<HTMLElementTagNameMap["s-modal"]>(null);
+  const pendingPlan =
+    billingFetcher.state !== "idle"
+      ? billingFetcher.formData?.get("plan")
+      : null;
+  const cancelling =
+    billingFetcher.state !== "idle" &&
+    billingFetcher.formData?.get("intent") === "cancel";
+
+  useEffect(() => {
+    const result = billingFetcher.data;
+    if (billingFetcher.state !== "idle" || !result) return;
+    if (!result.ok) shopify.toast.show(result.error, { isError: true });
+    else if ("cancelled" in result) {
+      cancelModal.current?.hideOverlay();
+      shopify.toast.show("You're on Free. Your live theme shows its own menu.");
+    }
+  }, [billingFetcher.state, billingFetcher.data]);
 
   useEffect(() => {
     if (welcome)
@@ -113,10 +204,12 @@ export default function Pricing() {
   // Only a trial that hasn't ended yet is worth mentioning.
   const inTrial = Boolean(trialEndsAt && new Date(trialEndsAt) > new Date());
   const trialEnd = useLocalDate(trialEndsAt);
-  // Shopify's plan page lives in the admin, outside the app's frame.
-  const choosePlan = () => {
-    if (selectUrl) window.open(selectUrl, "_top");
-  };
+  // Creates the subscription; Shopify then asks the merchant to approve it.
+  const choosePlan = (key: string) =>
+    billingFetcher.submit(
+      { intent: "subscribe", plan: key },
+      { method: "post" },
+    );
 
   const status = devStore
     ? "This is a development store, so everything is unlocked, including your live theme. Test freely: plans only apply once a store belongs to a merchant."
@@ -210,9 +303,20 @@ export default function Pricing() {
                 <li className="is-muted">Your live theme needs a plan</li>
               </ul>
               <div className="chm-plan__action">
-                <s-button inlineSize="fill" disabled>
-                  {plan === "FREE" ? "Your current plan" : "Always included"}
-                </s-button>
+                {plan === "FREE" || devStore ? (
+                  <s-button inlineSize="fill" disabled>
+                    {plan === "FREE" ? "Your current plan" : "Always included"}
+                  </s-button>
+                ) : (
+                  <s-button
+                    inlineSize="fill"
+                    commandFor="cancel-plan"
+                    command="--show"
+                    disabled={Boolean(pendingPlan) || cancelling}
+                  >
+                    Switch to Free
+                  </s-button>
+                )}
               </div>
             </div>
 
@@ -261,8 +365,9 @@ export default function Pricing() {
                           ? "secondary"
                           : "primary"
                       }
-                      disabled={current || !selectUrl}
-                      onClick={choosePlan}
+                      disabled={current || Boolean(pendingPlan) || cancelling}
+                      loading={pendingPlan === paid.key}
+                      onClick={() => choosePlan(paid.key)}
                     >
                       {label}
                     </s-button>
@@ -288,6 +393,32 @@ export default function Pricing() {
           </div>
         </s-section>
       </s-stack>
+
+      <s-modal id="cancel-plan" heading="Switch to Free?" ref={cancelModal}>
+        <s-paragraph>
+          Your {PLAN_NAMES[plan]} plan ends now and you won&apos;t be charged
+          for it again. On your live theme, your theme&apos;s own menu shows
+          again; your menus stay saved and keep working on draft themes.
+        </s-paragraph>
+        <s-button
+          slot="primary-action"
+          variant="primary"
+          tone="critical"
+          loading={cancelling}
+          onClick={() =>
+            billingFetcher.submit({ intent: "cancel" }, { method: "post" })
+          }
+        >
+          Switch to Free
+        </s-button>
+        <s-button
+          slot="secondary-actions"
+          commandFor="cancel-plan"
+          command="--hide"
+        >
+          Keep my plan
+        </s-button>
+      </s-modal>
     </s-page>
   );
 }

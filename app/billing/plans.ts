@@ -1,9 +1,9 @@
 import { walkDesign, type Design } from "@chopi/menu-core";
 
 /**
- * The app's plans, shared by the server (gating) and the UI (pricing page,
- * publish dialog). Prices, trial and handles must match the plans set up in
- * the Partner Dashboard (Shopify App Pricing): Shopify bills from there.
+ * The app's plans, shared by the server (gating, the Billing API config in
+ * shopify.server.ts) and the UI (pricing page, publish dialog). Charged
+ * through Shopify's Billing API: a recurring subscription every 30 days.
  */
 export type PlanKey = "FREE" | "STARTER" | "PRO";
 export type PaidPlanKey = Exclude<PlanKey, "FREE">;
@@ -12,9 +12,10 @@ export const TRIAL_DAYS = 14;
 
 export interface PaidPlan {
   key: PaidPlanKey;
-  /** The plan's handle in the Partner Dashboard. */
-  handle: string;
+  /** Shown on Shopify's approval screen and the merchant's bill; it identifies the plan. */
   name: string;
+  /** In USD, every 30 days. */
+  amount: number;
   price: string;
   tagline: string;
   features: string[];
@@ -23,8 +24,8 @@ export interface PaidPlan {
 export const PAID_PLANS: PaidPlan[] = [
   {
     key: "STARTER",
-    handle: "starter",
     name: "Starter",
+    amount: 9.99,
     price: "$9.99",
     tagline: "Show your template menus on your live store",
     features: [
@@ -36,8 +37,8 @@ export const PAID_PLANS: PaidPlan[] = [
   },
   {
     key: "PRO",
-    handle: "pro",
     name: "Pro",
+    amount: 14.99,
     price: "$14.99",
     tagline: "Everything in Starter, plus your own free-form designs",
     features: [
@@ -57,9 +58,9 @@ export const PLAN_NAMES: Record<PlanKey, string> = {
 
 const RANK: Record<PlanKey, number> = { FREE: 0, STARTER: 1, PRO: 2 };
 
-/** The plan a Partner Dashboard handle stands for (null: not one of ours). */
-export function planForHandle(handle: string | null | undefined) {
-  return PAID_PLANS.find((plan) => plan.handle === handle)?.key ?? null;
+/** The plan a Billing API subscription stands for (null: not one of ours). */
+export function planForName(name: string | null | undefined) {
+  return PAID_PLANS.find((plan) => plan.name === name)?.key ?? null;
 }
 
 /** Whether the menu has a free-form canvas anywhere (it then needs Pro). */

@@ -3,15 +3,11 @@ import type { Design } from "@chopi/menu-core";
 import prisma from "../db.server";
 import type { Admin } from "./admin-graphql.server";
 import { gql } from "./admin-graphql.server";
-import {
-  billingConfigured,
-  fetchActiveSubscription,
-} from "./partner-api.server";
 import { writeEntitlement } from "./publish.server";
 import {
   livePlan,
   planAllows,
-  planForHandle,
+  planForName,
   requiredPlan,
   usesCanvas,
   type PaidPlanKey,
@@ -29,11 +25,37 @@ const SHOP_BILLING = `#graphql
         partnerDevelopment
       }
     }
+    currentAppInstallation {
+      activeSubscriptions {
+        id
+        name
+        status
+        test
+        trialDays
+        createdAt
+      }
+    }
   }
 `;
 
+interface Subscription {
+  id: string;
+  name: string;
+  status: string;
+  test: boolean;
+  trialDays: number;
+  createdAt: string;
+}
+
+/**
+ * Test charges are free and only made on development stores (see the
+ * pricing page): elsewhere they don't count, so no one gets a plan for free.
+ */
+export const testChargesFor = (isDevStore: boolean) =>
+  isDevStore || process.env.SHOPIFY_BILLING_TEST === "true";
+
 export interface PlanState {
-  /** The plan the merchant chose (Shopify App Pricing). */
+  /** The plan the merchant subscribed to (Billing API). */
   plan: PlanKey;
   /** A development store: unrestricted, whatever `plan` is. */
   devStore: boolean;
@@ -59,13 +81,14 @@ async function storedPlan(shopDomain: string): Promise<PlanState> {
 }
 
 /**
- * The shop's plan, read from Shopify App Pricing when the stored one is
- * older than a few minutes (or `force`, e.g. right after a plan change).
- * When it changed, the storefront's entitlement is rewritten so a menu the
- * plan no longer covers stops showing. Throws if Shopify can't be reached:
- * callers decide whether the stored plan is good enough.
+ * The shop's plan, read from its active Billing API subscription when the
+ * stored one is older than a few minutes (or `force`: on the pricing page
+ * and when Shopify reports a subscription change). When it changed, the
+ * storefront's entitlement is rewritten so a menu the plan no longer covers
+ * stops showing. Throws if Shopify can't be reached: callers decide whether
+ * the stored plan is good enough.
  */
-async function syncPlan(
+export async function syncPlan(
   admin: Admin,
   shopDomain: string,
   { force = false }: { force?: boolean } = {},
@@ -75,28 +98,46 @@ async function syncPlan(
   });
   const fresh =
     shop.planCheckedAt && Date.now() - shop.planCheckedAt.getTime() < FRESH_MS;
-  if ((fresh && !force) || !billingConfigured()) return stateOf(shop);
+  if (fresh && !force) return stateOf(shop);
 
   // Also re-read whether it's a development store: one handed over to a
   // merchant stops being unrestricted.
-  const { shop: shopNode } = await gql<{
+  const data = await gql<{
     shop: { id: string; plan: { partnerDevelopment: boolean } };
+    currentAppInstallation: { activeSubscriptions: Subscription[] };
   }>(admin, SHOP_BILLING);
-  const isDevStore = Boolean(shopNode.plan?.partnerDevelopment);
-  const subscription = await fetchActiveSubscription(shopNode.id);
-  let plan: PlanKey = "FREE";
-  if (subscription) {
-    const plans = subscription.items
-      .map((item) => planForHandle(item.handle))
-      .filter((key): key is PaidPlanKey => key !== null);
-    // A paid plan we don't know (renamed in the Partner Dashboard) still
-    // counts as paid: never block a paying merchant over a handle.
-    plan = plans.includes("PRO") ? "PRO" : "STARTER";
-    if (!plans.length)
-      console.warn(
-        `Unknown plan handle for ${shopDomain}: ${subscription.items.map((item) => item.handle).join(", ")}`,
-      );
+  const isDevStore = Boolean(data.shop.plan?.partnerDevelopment);
+  const subscriptions = data.currentAppInstallation.activeSubscriptions.filter(
+    (subscription) =>
+      subscription.status === "ACTIVE" &&
+      (!subscription.test || testChargesFor(isDevStore)),
+  );
+  const plans = subscriptions
+    .map((subscription) => planForName(subscription.name))
+    .filter((key): key is PaidPlanKey => key !== null);
+  let plan: PlanKey = plans.includes("PRO")
+    ? "PRO"
+    : plans.length
+      ? "STARTER"
+      : "FREE";
+  // A paid subscription we don't know (a renamed plan) still counts as paid:
+  // never block a paying merchant over a name.
+  if (plan === "FREE" && subscriptions.length) {
+    plan = "STARTER";
+    console.warn(
+      `Unknown plan for ${shopDomain}: ${subscriptions.map((subscription) => subscription.name).join(", ")}`,
+    );
   }
+  const current = subscriptions.find(
+    (subscription) => planForName(subscription.name) === plan,
+  );
+  const trialEnd = current?.trialDays
+    ? new Date(
+        new Date(current.createdAt).getTime() +
+          current.trialDays * 24 * 60 * 60 * 1000,
+      )
+    : null;
+
   // Storefront first: if this write fails the stored plan stays old, so the
   // next check sees the change again and retries instead of skipping it.
   if (plan !== shop.plan || isDevStore !== shop.isDevStore)
@@ -105,10 +146,9 @@ async function syncPlan(
     where: { id: shop.id },
     data: {
       plan,
-      trialEndsAt: subscription?.trialEndsAt
-        ? new Date(subscription.trialEndsAt)
-        : null,
-      cancelAtEndOfCycle: subscription?.cancelAtEndOfCycle ?? false,
+      trialEndsAt: trialEnd && trialEnd > new Date() ? trialEnd : null,
+      // Billing API cancellations take effect right away.
+      cancelAtEndOfCycle: false,
       planCheckedAt: new Date(),
       isDevStore,
     },
@@ -118,7 +158,7 @@ async function syncPlan(
 
 /**
  * The plan for gating: fresh from Shopify when possible, else the stored one
- * (a short Partner API outage shouldn't stop merchants from working).
+ * (a short Shopify outage shouldn't stop merchants from working).
  */
 export async function currentPlan(
   admin: Admin,

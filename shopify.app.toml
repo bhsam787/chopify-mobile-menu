@@ -22,6 +22,11 @@ api_version = "2026-10"
   uri = "/webhooks/app/uninstalled"
   topics = [ "app/uninstalled" ]
 
+  # Plan changes (approved, cancelled, frozen, expired): the live menu follows.
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/subscriptions_update"
+  topics = [ "app_subscriptions/update" ]
+
   [[webhooks.subscriptions]]
   uri = "/webhooks/app/scopes_update"
   topics = [ "app/scopes_update" ]
