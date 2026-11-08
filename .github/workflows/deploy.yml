@@ -48,4 +48,6 @@ jobs:
             git reset --hard origin/main
             docker compose up -d --build --remove-orphans
             docker image prune -f
+            # Keep the build cache from filling the disk: drop what is older than a week.
+            docker builder prune -f --filter until=168h
           '
