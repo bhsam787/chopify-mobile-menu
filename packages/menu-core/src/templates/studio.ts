@@ -8,6 +8,7 @@ import {
   grid,
   header,
   screen,
+  search,
   stack,
   tabs,
   thumbRow,
@@ -20,6 +21,7 @@ import { templateImage, type TemplateImageName } from "./images";
  * light grey, a "Suits" sub-menu with thumbnail rows and a related look.
  */
 const INK = "#252A3A";
+const SAND = "#EDE7DD";
 const PANEL = { background: "#FFFFFF", radius: 16, padding: 12 } as const;
 
 const CATEGORIES: [string, TemplateImageName][] = [
@@ -179,16 +181,31 @@ export function studio(options: { tabs: boolean }): Design {
       text: INK,
       mutedText: "#6B6F7A",
       background: "#FFFFFF",
-      canvas: "#EFEFEF",
+      canvas: options.tabs ? "#EFEFEF" : SAND,
       accent: INK,
       accentText: "#FFFFFF",
       radius: 16,
     },
-    header: header({
-      logoAlign: "center",
-      showLanguage: true,
-      box: { background: "#FFFFFF", padding: [12, 16, 12, 16] },
-    }),
+    // Simple: logo left with shop buttons (search opens from its icon) on
+    // warm sand; with tabs: centered logo and an always-visible search field.
+    header: options.tabs
+      ? header({
+          logoAlign: "center",
+          showLanguage: true,
+          searchBar: true,
+          ...search("Search shirts, suits, jeans…", {
+            layout: "grid",
+            field: "pill",
+            accent: INK,
+            design: { fieldBackground: "#F1F1F3", fieldBorder: "transparent" },
+          }),
+          box: { background: "#FFFFFF", padding: [12, 16, 12, 16] },
+        })
+      : header({
+          icons: ["search", "account", "cart"],
+          ...search("What are you looking for?", { accent: INK }),
+          box: { background: SAND, padding: [12, 16, 12, 16] },
+        }),
     main: stack([stack([body], { gap: 16, box: PANEL })], {
       box: { padding: 12 },
     }),

@@ -3,8 +3,9 @@
  * (logo position, shortcut buttons, search, promo line), so the merchant's
  * logo, colors, spacing, language switcher and close button stay as they are.
  */
+import { newId } from "./tree";
 import { HEADER_BUTTONS } from "./types";
-import type { HeaderButton, HeaderIcon, HeaderNode } from "./types";
+import type { HeaderButton, HeaderIcon, HeaderNode, LiveSearch } from "./types";
 
 export type HeaderStyleKey =
   "classic" | "centered" | "search" | "shop" | "announcement" | "minimal";
@@ -108,4 +109,25 @@ export function headerButtonOrder(node: HeaderNode): HeaderButton[] {
     (HEADER_BUTTONS as readonly string[]).includes(button),
   );
   return [...new Set([...chosen, ...HEADER_BUTTONS])] as HeaderButton[];
+}
+
+/** Live search as it's first switched on (in the editor and in templates). */
+export function defaultLiveSearch(
+  overrides: Partial<LiveSearch> = {},
+): LiveSearch {
+  return {
+    enabled: true,
+    layout: "list",
+    field: "pill",
+    productLimit: 6,
+    menuLinks: true,
+    suggestions: true,
+    collections: true,
+    recent: true,
+    popular: ["New arrivals", "Bestsellers", "Gift ideas"].map((text) => ({
+      id: newId("ps"),
+      text,
+    })),
+    ...overrides,
+  };
 }

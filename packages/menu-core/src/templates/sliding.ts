@@ -16,6 +16,7 @@ import {
   tabs,
   thumbRow,
   row,
+  search,
 } from "./build";
 import { templateImage, type TemplateImageName } from "./images";
 
@@ -40,7 +41,7 @@ const divider = (): Node => ({
 const rows = (items: Node[]): Node =>
   stack(
     items.flatMap((item, index) => (index ? [divider(), item] : [item])),
-    { gap: 0 },
+    { gap: 0, box: { background: "#FFFFFF" } },
   );
 
 const rowStyle = {
@@ -241,13 +242,25 @@ export function sliding(): Design {
       text: WINE,
       mutedText: "#8A6A78",
       background: "#FFFFFF",
-      canvas: "#FFFFFF",
+      // Blush behind the header, tabs and photo band; the lists sit on white.
+      canvas: BAND,
       accent: WINE,
       accentText: "#FFFFFF",
       radius: 18,
     },
     header: header({
-      box: { background: "#FFFFFF", padding: [16, 15, 16, 15] },
+      icons: ["cart"],
+      searchBar: true,
+      ...search("Search toys, gifts, clothing…", {
+        layout: "grid",
+        accent: WINE,
+        design: {
+          fieldBackground: "#FFFFFF",
+          fieldBorder: "#F0D9E3",
+          fieldText: WINE,
+        },
+      }),
+      box: { background: BAND, padding: [16, 15, 8, 15] },
       iconColor: WINE,
     }),
     main: stack(
@@ -262,13 +275,13 @@ export function sliding(): Design {
             activeColor: "#FFFFFF",
             inactiveBackground: "transparent",
             inactiveColor: WINE,
-            track: "#ECE8EA",
+            track: "#F3E1E9",
             inset: 15,
             text: { size: 14, weight: 600 },
           },
         ),
       ],
-      { gap: 0, box: { padding: [16, 0, 0, 0] } },
+      { gap: 0, box: { padding: [8, 0, 0, 0] } },
     ),
     // A thin line above the Account row, like the design's top shadow.
     footer: stack(
@@ -282,7 +295,7 @@ export function sliding(): Design {
           box: { padding: [20, 24, 20, 24] },
         }),
       ],
-      { gap: 0 },
+      { gap: 0, box: { background: "#FFFFFF" } },
     ),
     screens: [food, nursery, toys, textiles, occasions, brands, sale],
   });

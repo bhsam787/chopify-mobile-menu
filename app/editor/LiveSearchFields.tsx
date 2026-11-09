@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import {
+  defaultLiveSearch,
   newId,
   resolveTexts,
   UI_TEXT_DEFAULTS,
@@ -55,24 +56,6 @@ const LAYOUTS: { key: LiveSearchLayout; name: string; description: string }[] =
 export const LIVE_SEARCH_OFF: LiveSearch = { enabled: false, layout: "list" };
 
 /** What live search starts with when it's turned on. */
-function defaultLiveSearch(): LiveSearch {
-  return {
-    enabled: true,
-    layout: "list",
-    field: "pill",
-    productLimit: 6,
-    menuLinks: true,
-    suggestions: true,
-    collections: true,
-    recent: true,
-    popular: [
-      { id: newId("ps"), text: "New arrivals" },
-      { id: newId("ps"), text: "Bestsellers" },
-      { id: newId("ps"), text: "Gift ideas" },
-    ],
-  };
-}
-
 const WORD_KEYS: (keyof SearchWords)[] = [
   "recent",
   "clear",

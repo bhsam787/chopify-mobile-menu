@@ -1,4 +1,5 @@
 /** Small builders that keep the template files close to the Figma designs they come from. */
+import { defaultLiveSearch } from "../headerStyles";
 import { NO_LINK } from "../links";
 import { newId } from "../tree";
 import type {
@@ -12,6 +13,7 @@ import type {
   HeaderNode,
   IconName,
   LinkRef,
+  LiveSearch,
   Node,
   PillNode,
   RowNode,
@@ -188,6 +190,20 @@ export function header(options: Partial<HeaderNode> = {}): HeaderNode {
     close: "plain",
     showLanguage: false,
     ...options,
+  };
+}
+
+/**
+ * Live search for a template header: results while typing, with the field
+ * style and colors the template asks for.
+ */
+export function search(
+  placeholder: string,
+  options: Partial<LiveSearch> = {},
+): Pick<HeaderNode, "searchPlaceholder" | "liveSearch"> {
+  return {
+    searchPlaceholder: placeholder,
+    liveSearch: defaultLiveSearch(options),
   };
 }
 

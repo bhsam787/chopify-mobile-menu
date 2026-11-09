@@ -402,3 +402,9 @@ Resolved:
 - The picker outlines what's under the pointer, swallows clicks (the theme's drawer stays shut), builds a selector (id → stable attributes like `aria-controls` → classes → named ancestor path; ≤3 matches), asks "Is this your menu icon?", then POSTs `{token, selector, theme}` as text/plain to `/api/menu-button`. The token is an HMAC (app secret) of shop + theme + 1 h expiry; the endpoint saves through the offline session (`unauthenticated.admin`). The admin page polls while the window is open.
 - Stored per theme in `chopi.menu_buttons`; the loader uses it after the embed's own "Menu button selector" setting and before the theme adapters. "Back to automatic" removes it.
 
+
+### 2026-11-09 — Templates: search headers, less repetition
+- Every template now has its own header: search bar (pill / box / underline field), shop icons (search, account, cart), a promo ticker (Botanical) or a dark header (Image Tiles). Built with `search()` in `templates/build.ts`, from `defaultLiveSearch()` (`headerStyles.ts`, shared with the editor).
+- The botanical family now differs: Botanical Grid green + ticker, Image Tiles dark-green header, Circle Tiles terracotta with underline tabs. Studio Simple sits on warm sand with shop icons.
+- Sliding Menu: blush (`#FDF5F8`) behind the header, tabs and photo band; lists stay white.
+- `.chm-body` never scrolls sideways (`overflow-x: hidden`): Safari showed a horizontal bar in previews.

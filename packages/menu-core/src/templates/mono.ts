@@ -9,6 +9,7 @@ import {
   header,
   pill,
   row,
+  search,
   stack,
   tabs,
 } from "./build";
@@ -80,6 +81,18 @@ export function mono(): Design {
     },
     header: header({
       showLanguage: true,
+      icons: ["account", "cart"],
+      searchBar: true,
+      ...search("Search meals, shakes, snacks", {
+        field: "box",
+        layout: "grid",
+        accent: INK,
+        design: {
+          fieldBackground: "#F4F4F4",
+          fieldBorder: "transparent",
+          fieldRadius: 8,
+        },
+      }),
       box: { background: "#FFFFFF", padding: [12, 16, 12, 16] },
     }),
     main: stack(

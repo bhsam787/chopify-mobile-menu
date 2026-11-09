@@ -6,6 +6,7 @@ import {
   design,
   header,
   scrollRow,
+  search,
   stack,
   thumbRow,
 } from "./build";
@@ -117,15 +118,19 @@ export function accordion(): Design {
       accentText: "#FFFFFF",
       radius: 12,
     },
-    header: header({ close: "circle", box: { padding: [12, 16, 4, 16] } }),
+    // The search field asks "What are you looking for?"; the chips under it
+    // are the quick answers.
+    header: header({
+      close: "circle",
+      searchBar: true,
+      ...search("What are you looking for?", {
+        field: "underline",
+        accent: GREEN,
+      }),
+      box: { padding: [12, 16, 4, 16] },
+    }),
     main: stack(
       [
-        {
-          id: newId("hd"),
-          type: "heading",
-          text: "What are you looking for?",
-          style: { size: 18, weight: 500, color: TEXT },
-        },
         scrollRow([
           chip("Build-a-set", "botanical/bundle"),
           chip("Special deals", "botanical/sets", true),

@@ -1,6 +1,14 @@
 import { newId } from "../tree";
 import type { Design } from "../types";
-import { badge, banner, design, header, stack, thumbRow } from "./build";
+import {
+  badge,
+  banner,
+  design,
+  header,
+  search,
+  stack,
+  thumbRow,
+} from "./build";
 import { templateImage, type TemplateImageName } from "./images";
 
 /**
@@ -40,7 +48,14 @@ export function spotlight(): Design {
       accentText: "#FFFFFF",
       radius: 16,
     },
-    header: header({ box: { background: SOFT, padding: [10, 16, 10, 16] } }),
+    header: header({
+      icons: ["search", "account"],
+      ...search("Search suits, shirts, shoes…", {
+        layout: "carousel",
+        accent: INK,
+      }),
+      box: { background: SOFT, padding: [10, 16, 10, 16] },
+    }),
     main: stack(
       [
         {

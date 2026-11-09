@@ -40,7 +40,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .chm-editor .is-selected { outline: 2px solid #2C6ECB; outline-offset: 1px; }
 .chm-editor .is-hovered:not(.is-selected) { outline: 1px dashed #2C6ECB; outline-offset: 1px; }
 
-.chm-body { flex: 1; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; -webkit-overflow-scrolling: touch; }
+.chm-body { flex: 1; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; -webkit-overflow-scrolling: touch; }
 .chm-screens { flex: 1 0 auto; }
 .chm-screen { display: none; }
 .chm-screen.is-active { display: block; animation: chm-in .3s var(--chm-ease); }
