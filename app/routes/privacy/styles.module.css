@@ -1,0 +1,35 @@
+.page {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 3rem 1.25rem 5rem;
+  font: 1rem/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+  color: #1f2124;
+}
+
+.page h1 {
+  font-size: 2rem;
+  margin: 0 0 0.25rem;
+}
+
+.page h2 {
+  font-size: 1.2rem;
+  margin: 2rem 0 0.5rem;
+}
+
+.page p,
+.page ul {
+  margin: 0 0 1rem;
+}
+
+.page li {
+  margin-bottom: 0.5rem;
+}
+
+.page a {
+  color: #005bd3;
+}
+
+.muted {
+  color: #616a75;
+}
