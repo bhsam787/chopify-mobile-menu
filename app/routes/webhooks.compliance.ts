@@ -1,22 +1,24 @@
 import type { ActionFunctionArgs } from "react-router";
-import { authenticate } from "../shopify.server";
 import { deleteShopData } from "../models/shop.server";
+import { verifyWebhook } from "../services/webhooks.server";
 
 /**
  * Mandatory GDPR compliance webhooks. The app stores no customer data, so
  * customer requests need no action; `shop/redact` deletes all shop data.
- * `authenticate.webhook` rejects requests with an invalid HMAC (401).
+ * Verified without the shop's session: `shop/redact` arrives 48 hours after
+ * the uninstall, when the shop's token can no longer be refreshed. A wrong
+ * HMAC is rejected with 401.
  */
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { shop, topic } = await authenticate.webhook(request);
+  const { shop, topic } = await verifyWebhook(request);
 
   console.log(`Received ${topic} webhook for ${shop}`);
 
   switch (topic) {
-    case "CUSTOMERS_DATA_REQUEST":
-    case "CUSTOMERS_REDACT":
+    case "customers/data_request":
+    case "customers/redact":
       break;
-    case "SHOP_REDACT":
+    case "shop/redact":
       await deleteShopData(shop);
       break;
     default:

@@ -50,7 +50,31 @@ const shopify = shopifyApp({
 });
 
 export const addDocumentResponseHeaders = shopify.addDocumentResponseHeaders;
-export const authenticate = shopify.authenticate;
+/**
+ * A malformed `host` query parameter (security scanners send garbage) makes
+ * the library's `new URL()` throw a TypeError, which would be a 500. It's a
+ * bad request: answer 400.
+ */
+const authenticateAdmin: typeof shopify.authenticate.admin = async (
+  request,
+) => {
+  try {
+    return await shopify.authenticate.admin(request);
+  } catch (error) {
+    if (
+      error instanceof TypeError &&
+      (error as { code?: string }).code === "ERR_INVALID_URL"
+    ) {
+      throw new Response("Bad request", { status: 400 });
+    }
+    throw error;
+  }
+};
+
+export const authenticate = {
+  ...shopify.authenticate,
+  admin: authenticateAdmin,
+};
 export const login = shopify.login;
 /** Admin API access without a request session (e.g. the storefront menu-button picker). */
 export const unauthenticated = shopify.unauthenticated;
